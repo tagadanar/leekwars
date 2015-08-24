@@ -2,7 +2,8 @@
 function getArrayDistFromCenter(){
 	var result = [];
 	for(var i = 0; i <= 612; i++){
-		result[i] = getCellDistance(i, 306);
+		// on prend la distance pure, *2 pour augmenter le rejet des 4 coins.
+		result[i] = getDistance(i, 306)*2;
 	}
 	return result;
 };
@@ -445,7 +446,9 @@ function getCellzQualityToAttack(weapon){
 }
 
 // environ 1600k op en 1v6 avec 3mp partout.
+// environ 4000k op vs 3leek avec 16, 15 et 12 MP; crash occasionnel avec le find best move ensuite..
 function getCellzQualityToHide(){
+	var op = getOperations(); // TODO remove
 	var enemies = getAliveEnemies();
 	var myCellToIgnore = getCell();
 	var leekToIgnore = getAllAllyBulb();// ignorer les bulbs car ils bougent souvent juste après moi
@@ -486,6 +489,7 @@ function getCellzQualityToHide(){
 		else return -1;
 	});
 	
+	debugW("OP_cell_to_hide:"+(getOperations()-op));
 	return cellzDanger;
 }
 
