@@ -131,7 +131,7 @@ function getAreaCell(c, area){
 		result = [ c + 17, c + 18, c - 17, c - 18, c + 35, c - 35, c + 1, c - 1, c + 36, c - 36, c + 34, c - 34, c - 54, c - 53, c - 52, c - 51, c - 16, c + 19, c - 19, c + 16, c + 51, c + 52, c + 53, c + 54];
 	}
 	var tmp = result;
-	for(var r in tmp) if(r < 0 || r > 612 || getCellDistance(c, r) > 5) removeElement(result, r);
+	for(var r in tmp) if(r < 0 || r > 612 || getCellDistance(c, r) > 5 || isObstacle(r)) removeElement(result, r);
 	return result;
 }
 
@@ -208,14 +208,11 @@ function getClosestPathCell(cells, c){
 	else return getClosestCell(cells, c);
 };
 
-function needShield(){
-	var n = false;
+function needShield(limit){
 	for(var e in getAliveEnemies()){
-		if(getStrength(e) > 199){
-			n = true;
-		}
+		if(getStrength(e) > limit) return true;
 	}
-	return n;
+	return false;
 }
 
 function getBestSafeCellToTeleport(assocCellToDangerScore){
@@ -478,10 +475,10 @@ function getSimplfiedPotentialDmg(enemy){
 	var enemyPotentialDmg = 0;
 	var nbAttack = 2;
 	if(str >= mgc){
-		enemyPotentialDmg= (1+(str/100))*60;// dmg per attack
+		enemyPotentialDmg= (1+(str/100))*65;// dmg per attack
 		enemyPotentialDmg=((enemyPotentialDmg*(1-(getRelativeShield()/100)))-getAbsoluteShield())*nbAttack;
 	}else{
-		enemyPotentialDmg = (1+(mgc/100))*50 *nbAttack;
+		enemyPotentialDmg = (1+(mgc/100))*60 *nbAttack;
 	}
 	if(enemyPotentialDmg<0) enemyPotentialDmg=0;
 	return enemyPotentialDmg;
@@ -600,6 +597,36 @@ function getCellzQualityToAttack(weapon){
 	return arrayResult;
 }
 
+// TODO manage inline
+function getBiggestArea(enemy){
+	var area = 0;
+	for(var w in getWeapons(enemy)){
+		if(getWeaponArea(w) == AREA_CIRCLE_3) return AREA_CIRCLE_3;
+		else if(getWeaponArea(w) == AREA_CIRCLE_2) area = 2;
+		else if(getWeaponArea(w) == AREA_CIRCLE_1 && area < 1) area = 1;
+	}
+	for(var c in getChips(enemy)){
+		if(getChipArea(c) == AREA_CIRCLE_3) return AREA_CIRCLE_3;
+		else if(getChipArea(c) == AREA_CIRCLE_2) area = 2;
+		else if(getChipArea(c) == AREA_CIRCLE_1 && area < 1) area = 1;
+	}
+	if(area==2) return AREA_CIRCLE_2;
+	if(area==1) return AREA_CIRCLE_1;
+	return AREA_POINT;
+}
+
+// TODO manage chip
+function getBiggestRange(enemy){
+	var range = 0, tmp;
+	for(var w in getWeapons(enemy)){
+		tmp = getWeaponMaxScope(w);
+		if(tmp > range) range = tmp;
+	}
+	if(range == 12 || range == 0) range = 8;
+	return range;
+}
+
+// TODO manage chip+weapon los specifics.
 // environ 1600k op en 1v6 avec 3mp partout.
 // environ 4000k op vs 3leek avec 16, 15 et 12 MP; crash occasionnel avec le find best move ensuite..
 function getCellzQualityToHide(){
@@ -608,31 +635,50 @@ function getCellzQualityToHide(){
 	var myCellToIgnore = getCell();
 	var leekToIgnore = getAllAllyBulb();// ignorer les bulbs car ils bougent souvent juste après moi
 	push(leekToIgnore, getLeek()); // m'ignorer moi car je vais bouger, et je ne compte pas me cacher derrière moi même.
-	var cellzDistFromCenter = getArrayDistFromCenter();
+	//var cellzDistFromCenter = getArrayDistFromCenter();
 	var cellzDanger = [];
 	for(var i = 0; i <= 612; i++) cellzDanger[i] = 0;
-	
+	var cellzTmpDanger = [];
+
 	for(var enemy in enemies){
+		var area = getBiggestArea(enemy);
+		var range = getBiggestRange(enemy);
 		var enemyCell = getCell(enemy);
 		push(leekToIgnore, enemy); // s'ignorer soit mm pour les tests de ligne de vue après move.
 		var moveCellz = getEnemyMoveCells(getCell(enemy), getMP(enemy), myCellToIgnore);
 		var potDmg = getSimplfiedPotentialDmg(enemy);
-		var range = 8; // magnum
 		for(var i = 0; i <= 612; i++){
-			var dist = 0; // on essaye de s'éloigner des enemies si ils font du dégats.
-			if(potDmg > 50) dist = getCellDistance(enemyCell, i); // 50 arbitraire, réfléchir à mieux.
+			cellzTmpDanger[i]=0;
 			if(!isObstacle(i) && (isEmptyCell(i) || i == myCellToIgnore)){
 				for(var mCell in moveCellz){
 					if(getCellDistance(mCell, i) <= range && lineOfSight(mCell, i, leekToIgnore)){
-						var tmpDmg = potDmg + cellzDistFromCenter[i] - dist;
+						var tmpDmg = potDmg;
 						if(tmpDmg < 0) tmpDmg = 0;
-						cellzDanger[i] += tmpDmg;
+						cellzTmpDanger[i] += tmpDmg;
 						break;
 					}
 				}
 			}
 		}
 		removeElement(leekToIgnore, enemy); // on le retire pour rajouter le suivant
+		
+		// traitement des aoe puis add dans le cellzDanger de retour.
+		var toAdd;
+		for(var i: var v in cellzTmpDanger){
+			toAdd=0;
+			if(v==0){ // case non toucher directement, possibilité d'aoe
+				var nearCells = getAreaCell(i, area);
+				for(var ncell in nearCells){
+					if(cellzTmpDanger[ncell] > 0){
+						var aoedmg = getDamagePercentage(i, ncell, area);
+						if(aoedmg > toAdd) toAdd = aoedmg;
+					}
+				}
+			}else{
+				toAdd = v;
+			}
+			cellzDanger[i] += toAdd;
+		}
 	}
 	
 	cellzDanger = arrayFilter(cellzDanger, function(key, val){
@@ -676,29 +722,7 @@ function getCellzToUseGazorOnCell(c){
 	return retour;
 };
 
-// retourne le danger d'une case, le score le plus bas win.
-function getDangerScore(cell, cellzToHide){
-	var nearCells = getAreaCell(cell, AREA_CIRCLE_3);
-	var dangerScore = cellzToHide[cell];
-	for(var ncell in nearCells){
-		if(cellzToHide[ncell] && getCellDistance(cell, ncell) < 2) dangerScore += cellzToHide[ncell]/8;
-		else if(cellzToHide[ncell] && getCellDistance(cell, ncell) < 3) dangerScore += cellzToHide[ncell]/32;
-		else if(cellzToHide[ncell]) dangerScore += cellzToHide[ncell]/128;
-		// implicitement les obstacles ont un score de 0, donc gut :)
-	}
-	return dangerScore;
-}
-
-function getDangerZone(cellzToHide){
-	var assocCellToDangerScore = [];
-	for(var sCell: var damage in cellzToHide){
-		assocCellToDangerScore[sCell] = getDangerScore(sCell, cellzToHide);
-	}
-	return assocCellToDangerScore;
-}
-
-
-function findBestMove(cellzToHide, cellzToAttack, assocCellToDangerScore, weaponOrChip){
+function findBestMove(cellzToHide, cellzToAttack, weaponOrChip){
 	var moveCellz = getMoveCells(getCell(), getMP());
 	if(count(moveCellz)<9) return null; // sécurité anti-block CHEAP
 	var selfCell = getCell();
@@ -712,6 +736,7 @@ function findBestMove(cellzToHide, cellzToAttack, assocCellToDangerScore, weapon
 	
 	// key: cell, value: targetCell
 	var assocCellToBestTarget = [];
+	var assocCellToDamage = [];
 	var solutions = [];
 	var mpMove1 = null, mpMove2 = null;
 	
@@ -722,13 +747,16 @@ function findBestMove(cellzToHide, cellzToAttack, assocCellToDangerScore, weapon
 		else if(isWeapon(weaponOrChip)) cellzAttack = getCellsToUseWeaponOnCell(weaponOrChip, targetCell, [selfCell]);
 		else cellzAttack = getCellsToUseChipOnCell(weaponOrChip, targetCell, [selfCell]);
 		for(var cell in cellzAttack){
-			if(!assocCellToBestTarget[cell]) assocCellToBestTarget[cell] = targetCell;
+			if(!assocCellToBestTarget[cell] || assocCellToDamage[cell] < damage){
+				assocCellToBestTarget[cell] = targetCell;
+				assocCellToDamage[cell] = damage;
+			}
 		}
 	}
 	
 	for(var sCell: var damage in cellzToHide){
-		if(danger_max == null || danger_max < assocCellToDangerScore[sCell]) danger_max = assocCellToDangerScore[sCell];
-		if(danger_min == null || danger_min > assocCellToDangerScore[sCell]) danger_min = assocCellToDangerScore[sCell];
+		if(danger_max == null || danger_max < damage) danger_max = damage;
+		if(danger_min == null || danger_min > damage) danger_min = damage;
 	}
 	//showScoreGreenWithMax(assocCellToDangerScore, danger_max);
 
@@ -743,12 +771,11 @@ function findBestMove(cellzToHide, cellzToAttack, assocCellToDangerScore, weapon
 						// FORMULE DU SCORE:
 						var score = cellzToAttack[target]/damage_max*ratioDmg;
 						if(selfLife/2 > damage) score *= 2;
-						score += ratioDanger - (assocCellToDangerScore[sCell]/(danger_max+1)*ratioDanger);
-						//if(assocCellToDangerScore[sCell] <= danger_min) score += bonusSafe;
+						score += ratioDanger - (damage/(danger_max+1)*ratioDanger);
 						if(damage == 0) score += bonusSafe;
 						if(selfLife < damage) score -= malusDanger;
 
-						push(solutions, ["aCell": aCell, "target": target, "sCell": sCell, "damage":round(cellzToAttack[target]), "danger": round(assocCellToDangerScore[sCell]), "score": round(score)]);
+						push(solutions, ["aCell": aCell, "target": target, "sCell": sCell, "damage":round(cellzToAttack[target]), "danger": damage, "score": round(score)]);
 					}
 				}
 			}
