@@ -1,3 +1,26 @@
+/* GLOBAL */
+
+global ENTITY_LEEK_ = 0;
+global ENTITY_PUNY_BULB = 1;
+global ENTITY_ROCKY_BULB = 2;
+global ENTITY_ICED_BULB = 3;
+global ENTITY_HEALER_BULB = 4;
+global ENTITY_METALLIC_BULB = 5;
+global ENTITY_FIRE_BULB = 6;
+global ENTITY_LIGHTNING_BULB = 7;
+
+function getEntityType(entity){
+	if(!isSummon(entity)) return ENTITY_LEEK_;
+	var chips = getChips(entity);
+	if(inArray(chips, CHIP_VACCINE)) return ENTITY_HEALER_BULB;
+	if(inArray(chips, CHIP_FORTRESS)) return ENTITY_METALLIC_BULB;
+	if(inArray(chips, CHIP_ROCKFALL)) return ENTITY_ROCKY_BULB;
+	if (inArray(chips, CHIP_ICEBERG)) return ENTITY_ICED_BULB;
+	if (inArray(chips, CHIP_METEORITE)) return ENTITY_FIRE_BULB;
+	if (inArray(chips, CHIP_LIGHTNING)) return ENTITY_LIGHTNING_BULB;
+	return ENTITY_PUNY_BULB; 
+}
+
 /* USEFULL FUNCTION */
 function getArrayDistFromCenter(){
 	var result = [];
@@ -45,14 +68,14 @@ function getALLCellToIgnore(){
 	return toIgnore;
 }
 
-// healer_bulb, iced_bulb, rocky_bulb, puny_bulb
+// Use global
 function countAllyBulb(type){
 	var bulbz = getAllAllyBulb();
 	if(type == null) return count(bulbz);
 	else{
 		var nb = 0;
 		for(var b in bulbz){
-			if(getName(b) == type){
+			if(getEntityType == type){
 				nb++;
 			}
 		}
@@ -469,16 +492,19 @@ function getMySimplifiedPotentialDmgInOneAttack(weapon, enemy){
 	return potentialDMG;
 }
 
-function getSimplfiedPotentialDmg(enemy){
+function getSimplfiedPotentialDmg(enemy, ratio){
 	var str = getStrength(enemy);
 	var mgc = getMagic(enemy);
 	var enemyPotentialDmg = 0;
 	var nbAttack = 2;
+	var dmgStr = 65 * ratio/100;
+	var dmgMgc = 60 * ratio/100;
+	if(isSummon(enemy)) nbAttack = 1; // TODO quand les summoner arriveront y'a du taff à faire ici...
 	if(str >= mgc){
-		enemyPotentialDmg= (1+(str/100))*65;// dmg per attack
+		enemyPotentialDmg= (1+(str/100))*dmgStr;// dmg per attack
 		enemyPotentialDmg=((enemyPotentialDmg*(1-(getRelativeShield()/100)))-getAbsoluteShield())*nbAttack;
 	}else{
-		enemyPotentialDmg = (1+(mgc/100))*60 *nbAttack;
+		enemyPotentialDmg = (1+(mgc/100))*dmgMgc *nbAttack;
 	}
 	if(enemyPotentialDmg<0) enemyPotentialDmg=0;
 	return enemyPotentialDmg;
@@ -615,7 +641,7 @@ function getBiggestArea(enemy){
 	return AREA_POINT;
 }
 
-// TODO manage chip
+// TODO manage chip && megalazer
 function getBiggestRange(enemy){
 	var range = 0, tmp;
 	for(var w in getWeapons(enemy)){
@@ -627,8 +653,8 @@ function getBiggestRange(enemy){
 }
 
 // TODO manage chip+weapon los specifics.
-// environ 1600k op en 1v6 avec 3mp partout.
-// environ 4000k op vs 3leek avec 16, 15 et 12 MP; crash occasionnel avec le find best move ensuite..
+// environ 11120k op en 1v6 avec 3mp partout.
+// environ ??k op vs 3leek avec 16, 15 et 12 MP; => à tester.
 function getCellzQualityToHide(){
 	var op = getOperations(); // TODO remove
 	var enemies = getAliveEnemies();
@@ -641,20 +667,25 @@ function getCellzQualityToHide(){
 	var cellzTmpDanger = [];
 
 	for(var enemy in enemies){
+		var eType = getEntityType(enemy);
+		if(eType == ENTITY_PUNY_BULB 
+		|| eType == ENTITY_HEALER_BULB 
+		|| eType == ENTITY_METALLIC_BULB
+		|| (getStrength(enemy) < 1 && getMagic(enemy) < 1)) continue;
+		
 		var area = getBiggestArea(enemy);
 		var range = getBiggestRange(enemy);
 		var enemyCell = getCell(enemy);
 		push(leekToIgnore, enemy); // s'ignorer soit mm pour les tests de ligne de vue après move.
 		var moveCellz = getEnemyMoveCells(getCell(enemy), getMP(enemy), myCellToIgnore);
-		var potDmg = getSimplfiedPotentialDmg(enemy);
+		var potDmg = getSimplfiedPotentialDmg(enemy, 100);
+		if(potDmg < 0) potDmg = 0;
 		for(var i = 0; i <= 612; i++){
 			cellzTmpDanger[i]=0;
 			if(!isObstacle(i) && (isEmptyCell(i) || i == myCellToIgnore)){
 				for(var mCell in moveCellz){
 					if(getCellDistance(mCell, i) <= range && lineOfSight(mCell, i, leekToIgnore)){
-						var tmpDmg = potDmg;
-						if(tmpDmg < 0) tmpDmg = 0;
-						cellzTmpDanger[i] += tmpDmg;
+						cellzTmpDanger[i] = potDmg;
 						break;
 					}
 				}
@@ -670,7 +701,7 @@ function getCellzQualityToHide(){
 				var nearCells = getAreaCell(i, area);
 				for(var ncell in nearCells){
 					if(cellzTmpDanger[ncell] > 0){
-						var aoedmg = getDamagePercentage(i, ncell, area);
+						var aoedmg = getSimplfiedPotentialDmg(enemy, getDamagePercentage(i, ncell, area));
 						if(aoedmg > toAdd) toAdd = aoedmg;
 					}
 				}
@@ -720,7 +751,39 @@ function getCellzToUseGazorOnCell(c){
 			push(retour, cell);
 	}
 	return retour;
-};
+}
+
+function getCellzToUseLiberationOnCell(c){
+	var result = [];
+	var selfCell = getCell();
+	for(var i = 0; i <= 612; i++){
+		var dist = getCellDistance(c, i);
+		if((isEmptyCell(i)||i==selfCell) && dist <= 5 && dist >=2 && lineOfSight(i, c)) push(result, i);
+	}
+	return result;
+}
+
+function findMoveLiberate(cellzToHide, weapon){
+	if(getCooldown(CHIP_LIBERATION)!=0) return null;
+	var interestingTarget = [];
+	for(var e in getAliveEnemies()){
+		var potDmg = getMySimplifiedPotentialDmgInOneAttack(weapon, e);
+		if(!isAlreadyOnEffect(e, WEAPON_GAZOR) && potDmg <= 40){
+			push(interestingTarget, e);
+		}
+	}
+	if(isEmpty(interestingTarget)) return null;
+	else{
+		var arrayAttack = [];
+		for(var e in interestingTarget){
+			arrayAttack[getCell(e)] = getSimplifiedWeaponInfos(weapon)['avg']*(1+getStrength()/100);
+		}
+		var bestMove = findBestMove(cellzToHide, arrayAttack, CHIP_LIBERATION);
+		debugE("libe bestmv:"+bestMove);
+		if(bestMove != null && bestMove["danger"] < getLife()) return bestMove;
+	}
+	return null;
+}
 
 function findBestMove(cellzToHide, cellzToAttack, weaponOrChip){
 	var moveCellz = getMoveCells(getCell(), getMP());
@@ -744,6 +807,7 @@ function findBestMove(cellzToHide, cellzToAttack, weaponOrChip){
 		if(damage_max == null || damage > damage_max) damage_max = damage;
 		var cellzAttack;
 		if(weaponOrChip == WEAPON_GAZOR) cellzAttack = getCellzToUseGazorOnCell(targetCell);
+		else if(weaponOrChip == CHIP_LIBERATION) cellzAttack = getCellzToUseLiberationOnCell(targetCell);
 		else if(isWeapon(weaponOrChip)) cellzAttack = getCellsToUseWeaponOnCell(weaponOrChip, targetCell, [selfCell]);
 		else cellzAttack = getCellsToUseChipOnCell(weaponOrChip, targetCell, [selfCell]);
 		for(var cell in cellzAttack){
@@ -759,7 +823,7 @@ function findBestMove(cellzToHide, cellzToAttack, weaponOrChip){
 		if(danger_min == null || danger_min > damage) danger_min = damage;
 	}
 	//showScoreGreenWithMax(assocCellToDangerScore, danger_max);
-
+	debug("min_danger:"+danger_min+" max_danger:"+danger_max);
 	for(var aCell: var target in assocCellToBestTarget){
 		mpMove1 = getPathLength(selfCell, aCell);
 		if(mpMove1 != null){
