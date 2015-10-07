@@ -1,3 +1,11 @@
+global __debug_operation;
+function startOp(){
+	__debug_operation = getOperations();
+}
+function stopOp(title){
+	debug(title + ": " + (getOperations()-__debug_operation-7));
+}
+
 /* GLOBAL */
 
 global ENTITY_LEEK_ = 0;
@@ -46,7 +54,7 @@ function getCellArea(c, area){
 	return null;
 }
 
-// OPE PREPARE:3361497
+// OPE PREPARE:~3361497
 if(getTurn()==1){
 	for(var i=0;i<613;i++){
 		push(areaCells1, prepareCellArea(i, AREA_CIRCLE_1));
@@ -56,50 +64,71 @@ if(getTurn()==1){
 }
 
 /* USEFULL FUNCTION */
-function getArrayDistFromCenter(){
+function getNextPlaya(current, max){
+	if(current < max) return current+1;
+	if(current == max) return 1;
+}
+
+function getListOfLeekWhoPlayBefore(leek){
+	var arrayLeekToOrder = [];
+	for(var a in getAliveAllies()){
+		arrayLeekToOrder[a] = getEntityTurnOrder(a);
+	}
+	for(var e in getAliveEnemies()){
+		arrayLeekToOrder[e] = getEntityTurnOrder(e);
+	}
+	var max = count(arrayLeekToOrder);
+	var next = getNextPlaya(arrayLeekToOrder[getLeek()], max);
 	var result = [];
-	for(var i = 0; i <= 612; i++){
-		// on prend la distance pure, *2 pour augmenter le rejet des 4 coins.
-		result[i] = getDistance(i, 306)*2;
+	while(arrayLeekToOrder[leek] != next){
+		push(result, next);
+		next = getNextPlaya(next, max);
 	}
 	return result;
-};
+}
 
-function isInArray(value, array){
-	for(var v in array) if(value == v) return true;
-	return false;
-};
+function getHealerCells(){
+	var cellz = [];
+	for(var al in getAliveAllies()) if(getEntityType(al) == ENTITY_HEALER_BULB) push(cellz, getCell(al));
+	return cellz;
+}
 
 function getAllAllyBulbCell(){
 	var bulbz = [];
 	for(var al in getAliveAllies()) if(isSummon(al)) push(bulbz, getCell(al));
 	return bulbz;
-};
+}
 
 function getAllAllyBulb(){
 	var bulbz = [];
 	for(var al in getAliveAllies()) if(isSummon(al)) push(bulbz, al);
 	return bulbz;
-};
+}
 
 function getAllAllyLeek(){
 	var leekz = [];
 	for(var al in getAliveAllies()) if(!isSummon(al)) push(leekz, al);
 	return leekz;
-};
+}
 
 function getAllBulbCellToIgnore(){
 	var bulbz = getAllAllyBulbCell();
 	for(var en in getAliveEnemies()) if(isSummon(en)) push(bulbz, getCell(en));
 	return bulbz;
-};
+}
+
+function getAllEnemyBulb(){
+	var bulbz = [];
+	for(var en in getAliveEnemies()) if(isSummon(en)) push(bulbz, en);
+	return bulbz;
+}
 
 function getEnemiesToIgnore(){
 	var enemiesToIgnore = [];
 	for(var en in getAliveEnemies()) push(enemiesToIgnore, en);
 	for(var al in getAliveAllies()) if(isSummon(al)) push(enemiesToIgnore, al);
 	return enemiesToIgnore;
-};
+}
 
 function getALLCellToIgnore(){
 	var toIgnore = [];
@@ -168,7 +197,7 @@ function getEnemyLeek(selfCell){
 	var near = getNearestEnemy();
 	var issum = isSummon(near);
 	if(issum == false) return near;
-	var dst = 30;
+	var dst = 50;
 	var enemies = getAliveEnemies();
 	for(var enemy in enemies){
 		var tmp = getCellDistance(selfCell, getCell(enemy));
@@ -180,11 +209,11 @@ function getEnemyLeek(selfCell){
 	return near;
 }
 
-var getAnotherEnemyLeek = function(selfCell, notThisEnemy){
+function getAnotherEnemyLeek(selfCell, notThisEnemy){
 	var near = getNearestEnemy();
 	var issum = isSummon(near) || near == notThisEnemy;
 	if(issum == false) return near;
-	var dst = 30;
+	var dst = 50;
 	var enemies = getAliveEnemies();
 	for(var enemy in enemies){
 		var tmp = getCellDistance(selfCell, getCell(enemy));
@@ -197,7 +226,7 @@ var getAnotherEnemyLeek = function(selfCell, notThisEnemy){
 };
 
 // renvoie le poireau sans prendre en compte les bulbes.
-var getEnemyLeekByPath = function(selfCell){
+function getEnemyLeekByPath(selfCell){
 	var near, dst = 30;
 	var enemies = getAliveEnemies();
 	var toIgnore = getEnemiesToIgnore();
@@ -230,6 +259,27 @@ function getReachableCells(cell, mp, ignoreCells){
 				if((isEmptyCell(c) || inArray(ignoreCells,c)) && !inArray(stack, c)){
 					push(stack, c);
 					push(next, c);
+				}
+			}
+		}
+		tmp = next;
+		next = [];
+		mp--;
+	}
+	return stack;
+}
+
+// cells must be in form : [cell:dist]
+function newReachableCells(cells, mp, ignoreCells){ 
+	var stack = cells;
+	var tmp = cells;
+	var next = [];
+	while(mp > 0){
+		for(var currentWorkingCell : var dist in tmp){
+			for(var c in @getCellArea(currentWorkingCell, AREA_CIRCLE_1)){
+				if((isEmptyCell(c) || inArray(ignoreCells, c)) && stack[c] == null){
+					stack[c] = dist+1;
+					next[c] = dist+1;
 				}
 			}
 		}
@@ -284,24 +334,29 @@ function needShield(limit){
 	return false;
 }
 
-function getBestSafeCellToTeleport(cellsToHide){
+function getBestSafeCellToTeleport(cellsToHide, moveCells){
 	var selfCell = getCell();
 	var selfLife = getLife();
 	var toIgnore = getALLCellToIgnore();
 	var tmpDmg = 1000000, tmpDistMid = 50;
-	var bestCell = null;
+	var bestCell = null, mvCell = null;
 	for(var c: var dmg in cellsToHide){
-		var dist = getCellDistance(selfCell, c);
 		var distFromMid = getCellDistance(306, c);
-		if(canUseChipOnCell(CHIP_TELEPORTATION, c) && selfLife > dmg && (bestCell==null || dmg < tmpDmg || (dmg == tmpDmg && distFromMid < tmpDistMid))){
+		if(getCellDistance(selfCell, c)>5 && selfLife/1.5 > dmg && (bestCell==null || dmg < tmpDmg || (dmg == tmpDmg && distFromMid < tmpDistMid))){
 			if(getPath(c, selfCell, toIgnore) != null){
-				debugW("cellcoolbegood:"+c + " &dmg=" + dmg);
-				bestCell = c;
-				tmpDmg = dmg;
-				tmpDistMid = distFromMid;
+				var cellFrom = getCellToUseChipOnCell(CHIP_TELEPORTATION, c);
+				if(canUseChipOnCell(CHIP_TELEPORTATION, c)
+				|| inArray(moveCells, cellFrom)){
+					debugW("cellcoolbegood:"+c + " &dmg=" + dmg);
+					mvCell = cellFrom;
+					bestCell = c;
+					tmpDmg = dmg;
+					tmpDistMid = distFromMid;
+				}
 			}
 		}
 	}
+	if(mvCell!=null)moveTowardCell(mvCell);
 	return bestCell;
 }
 
@@ -445,8 +500,8 @@ function summonHealerBulb(leek){
 	for(var cell in cells) if(getCellDistance(c, cell) > 1 && canUseChipOnCell(CHIP_HEALER_BULB, cell)) {
 		summon(CHIP_HEALER_BULB, cell, function(){		
 		
-			// if solo on perma apply vaccine
-			if(getFightType() == FIGHT_TYPE_SOLO && getLife(leek) > getTotalLife(leek)/2) useChip(CHIP_VACCINE, leek);
+			// if solo et que y'a pas urgence on perma apply vaccine
+			if(getFightType() == FIGHT_TYPE_SOLO && getLife(leek) > getTotalLife(leek)/2 && !isAlreadyOnEffect(leek, CHIP_VACCINE)) useChip(CHIP_VACCINE, leek);
 			// vaccin sur un ally non-bulb, qui n'a pas déjà vaccin, et qui n'est pas fulllife et qui n'a pas besoin urgement de heal
 			for(var ally in getAliveAllies()) if(!isSummon(ally) && !isAlreadyOnEffect(ally, CHIP_VACCINE) && getLife(ally) < getTotalLife(ally) && getLife(ally) > getTotalLife(ally)/2) useChip(CHIP_VACCINE, ally);
 			// cure sur un ally non-bulb, à qui il manque au moins 100hp
@@ -455,6 +510,7 @@ function summonHealerBulb(leek){
 			for(var ally in getAliveAllies()) if(!isSummon(ally) && getLife(ally) < getTotalLife(ally) - 100)
 			{
 				useChip(CHIP_DRIP, ally);
+				// TODO marche pas ce truc en mousse... faire un truc lancé DRIP en aoe quand j'ai pas la los/range.
 				for(var cc in getCellArea(getCell(ally), AREA_CIRCLE_2)){
 					useChip(CHIP_DRIP, cc);
 				}
@@ -479,6 +535,7 @@ function summonHealerBulb(leek){
 			for(var ally in getAliveAllies()) if(!isSummon(ally) && getLife(ally) < getTotalLife(ally) - 100)
 			{
 				useChip(CHIP_DRIP, ally);
+				// TODO marche pas ce truc en mousse... faire un truc lancé DRIP en aoe quand j'ai pas la los/range.
 				for(var cc in getCellArea(getCell(ally), AREA_CIRCLE_2)){
 					useChip(CHIP_DRIP, cc);
 				}
@@ -509,8 +566,41 @@ function summonHealerBulb(leek){
 				useChip(CHIP_BANDAGE, getLeek());
 			}
 			
-			if(getBirthTurn() != getTurn())
-				moveAwayFrom(getNearestEnemy(), round(rand()) + 1);
+			moveAwayFrom(getNearestEnemy(), round(rand()) + 4);
+		});
+		break;
+	}
+}
+
+function summonMetalBulb(leek){
+	var c = getCell(leek);
+	var cells = getCellArea(c, AREA_CIRCLE_1);
+	for(var cell in cells) if(canUseChipOnCell(CHIP_HEALER_BULB, cell)) {
+		summon(CHIP_METALLIC_BULB, cell, function(){
+			if(getFightType()==FIGHT_TYPE_SOLO){
+				useChip(CHIP_WALL, leek);
+				useChip(CHIP_ARMOR, leek);
+				useChip(CHIP_SHIELD, leek);
+				useChip(CHIP_SEVEN_LEAGUE_BOOTS, leek);
+				moveTowardCell(getCellToUseChip(CHIP_SEVEN_LEAGUE_BOOTS, leek));
+				useChip(CHIP_WALL, leek);
+				useChip(CHIP_ARMOR, leek);
+				useChip(CHIP_SHIELD, leek);
+				useChip(CHIP_SEVEN_LEAGUE_BOOTS, leek);
+				
+				useChip(CHIP_SEVEN_LEAGUE_BOOTS, getLeek());
+				moveTowardCell(getCellToUseChip(CHIP_SEVEN_LEAGUE_BOOTS, leek));				
+			}else{
+				for(var ally in getAliveAllies()) if(!isSummon(ally) && !isAlreadyOnEffect(ally, CHIP_ARMOR)) useChip(CHIP_ARMOR, ally);
+				for(var ally in getAliveAllies()) if(!isSummon(ally) && !isAlreadyOnEffect(ally, CHIP_SEVEN_LEAGUE_BOOTS)) useChip(CHIP_SEVEN_LEAGUE_BOOTS, ally);
+				for(var ally in getAliveAllies()) if(!isSummon(ally) && !isAlreadyOnEffect(ally, CHIP_SHIELD)) useChip(CHIP_SHIELD, ally);
+				for(var ally in getAliveAllies()) if(!isSummon(ally) && !isAlreadyOnEffect(ally, CHIP_WALL)) useChip(CHIP_WALL, ally);
+				moveToward(getNearestAlly());
+				for(var ally in getAliveAllies()) if(!isSummon(ally) && !isAlreadyOnEffect(ally, CHIP_ARMOR)) useChip(CHIP_ARMOR, ally);
+				for(var ally in getAliveAllies()) if(!isSummon(ally) && !isAlreadyOnEffect(ally, CHIP_SEVEN_LEAGUE_BOOTS)) useChip(CHIP_SEVEN_LEAGUE_BOOTS, ally);
+				for(var ally in getAliveAllies()) if(!isSummon(ally) && !isAlreadyOnEffect(ally, CHIP_SHIELD)) useChip(CHIP_SHIELD, ally);
+				for(var ally in getAliveAllies()) if(!isSummon(ally) && !isAlreadyOnEffect(ally, CHIP_WALL)) useChip(CHIP_WALL, ally);
+			}
 		});
 		break;
 	}
@@ -567,7 +657,6 @@ function getSimplfiedPotentialDmg(enemy, ratio){
 	var nbAttack = 2;
 	var dmgStr = 65 * ratio/100;
 	var dmgMgc = 50 * ratio/100;
-	if(isSummon(enemy)) nbAttack = 1; // TODO quand les summoner arriveront y'a du taff à faire ici...
 	if(str >= mgc){
 		enemyPotentialDmg= (1+(str/100))*dmgStr;// dmg per attack
 		enemyPotentialDmg=((enemyPotentialDmg*(1-(getRelativeShield()/100)))-getAbsoluteShield())*nbAttack;
@@ -585,7 +674,6 @@ function getSimplfiedPotentialDmgUnshielded(enemy, ratio){
 	var nbAttack = 2;
 	var dmgStr = 80 * ratio/100;
 	var dmgMgc = 50 * ratio/100;
-	if(isSummon(enemy)) nbAttack = 1; // TODO quand les summoner arriveront y'a du taff à faire ici...
 	if(str >= mgc){
 		enemyPotentialDmg= (1+(str/100))*dmgStr*nbAttack;
 	}else{
@@ -686,36 +774,55 @@ function getCellzQualityToHeal(){
 function getCellzQualityToAttack(weapon){
 	var coefAllyLeek = 6;
 	var coefAllyBulb = 1;
+	var coefAllyBulbHealer = 3;
+	var coefAllyPunyBulb = 0.1;
 	var coefEnmyLeek = 5;
-	var coefEnmyBulb = 1;
+	var coefEnmyBulb = 2;
+	var coefEnmyBulbHealer = 4;
+	var coefEnmyBulbMetal = 3;
+	var coefEnmyPunyBulb = 0.1;
+	if(getMagic()>199 && weapon==WEAPON_GAZOR){
+		if(getFightType()==FIGHT_TYPE_SOLO) coefEnmyBulbMetal = 0;
+		else coefEnmyBulbMetal = 1;
+	}
 	var self = getLeek();
 
 	var weaponArea = getWeaponArea(weapon);
 	var arrayCellToLeeks = [];
-
-	for(var i = 0; i <= 612; i++){
-		if(isObstacle(i)) arrayCellToLeeks[i] = null;
-		else arrayCellToLeeks[i] = getWeaponTargets(weapon, i);
-	}
-	
 	var arrayResult = [];
+	
 	for(var i = 0; i <= 612; i++){
 		arrayResult[i] = 0;//["cell":i, "score":0];
-		if(arrayCellToLeeks[i] != null){
-			for(var leek in arrayCellToLeeks[i]){
+		if(!isObstacle(i)){
+			for(var leek in getWeaponTargets(weapon, i)){
 				if(isAlly(leek) && leek != self){
-					if(isSummon(leek))
-						arrayResult[i] -= getMySimplifiedPotentialDmgInOneAttack(weapon, leek) * getDamagePercentage(i, getCell(leek), weaponArea)/100 * coefAllyBulb;
-					else
+					if(isSummon(leek)){
+						var entityType = getEntityType(leek);
+						if(entityType == ENTITY_HEALER_BULB)
+							arrayResult[i] -= getMySimplifiedPotentialDmgInOneAttack(weapon, leek) * getDamagePercentage(i, getCell(leek), weaponArea)/100 * coefAllyBulbHealer;
+						else if(entityType == ENTITY_PUNY_BULB)
+							arrayResult[i] -= getMySimplifiedPotentialDmgInOneAttack(weapon, leek) * getDamagePercentage(i, getCell(leek), weaponArea)/100 * coefAllyPunyBulb;
+						else
+							arrayResult[i] -= getMySimplifiedPotentialDmgInOneAttack(weapon, leek) * getDamagePercentage(i, getCell(leek), weaponArea)/100 * coefAllyBulb;
+					}else
 						arrayResult[i] -= getMySimplifiedPotentialDmgInOneAttack(weapon, leek) * getDamagePercentage(i, getCell(leek), weaponArea)/100 * coefAllyLeek;
 				}
 				// possible amélioration de perf en retirant la condition superflu
 				else if(isEnemy(leek)){
 					if(isSummon(leek)){
-						if(getEntityType(leek) == ENTITY_HEALER_BULB)
-							arrayResult[i] += getMySimplifiedPotentialDmgInOneAttack(weapon, leek) * getDamagePercentage(i, getCell(leek), weaponArea)/100 * coefEnmyBulb * 2;
+						var entityType = getEntityType(leek);
+						if(entityType == ENTITY_HEALER_BULB)
+							arrayResult[i] += getMySimplifiedPotentialDmgInOneAttack(weapon, leek) * getDamagePercentage(i, getCell(leek), weaponArea)/100 * coefEnmyBulbHealer;
+						else if(entityType == ENTITY_METALLIC_BULB){
+							var toto = getMySimplifiedPotentialDmgInOneAttack(weapon, leek) * getDamagePercentage(i, getCell(leek), weaponArea)/100 * coefEnmyBulbMetal;
+							debugE("CoefBulbMetal:" + coefEnmyBulbMetal);
+							debugE("result:" + toto);
+							arrayResult[i] += toto;
+						}
+						else if(entityType == ENTITY_PUNY_BULB)
+							arrayResult[i] += getMySimplifiedPotentialDmgInOneAttack(weapon, leek) * getDamagePercentage(i, getCell(leek), weaponArea)/100 * coefEnmyPunyBulb;
 						else 
-							arrayResult[i] += getMySimplifiedPotentialDmgInOneAttack(weapon, leek) * getDamagePercentage(i, getCell(leek), weaponArea)/100 * coefEnmyBulb * 3;
+							arrayResult[i] += getMySimplifiedPotentialDmgInOneAttack(weapon, leek) * getDamagePercentage(i, getCell(leek), weaponArea)/100 * coefEnmyBulb;
 					}else 
 						arrayResult[i] += getMySimplifiedPotentialDmgInOneAttack(weapon, leek) * getDamagePercentage(i, getCell(leek), weaponArea)/100 * coefEnmyLeek;
 				}
@@ -753,7 +860,7 @@ function getBiggestArea(enemy){
 	return AREA_POINT;
 }
 
-// TODO manage chip && megalazer
+// TODO manage chip
 function getBiggestRange(enemy){
 	var range = 0, tmp;
 	for(var w in getWeapons(enemy)){
@@ -766,7 +873,7 @@ function getBiggestRange(enemy){
 
 function getMLazerDmg(enemy){
 	var str = getStrength(enemy);
-	var dmgStr = 100;
+	var dmgStr = 120;
 	var nbAttack = 2;
 	var enemyPotentialDmg= (1+(str/100))*dmgStr;// dmg per attack
 	enemyPotentialDmg=((enemyPotentialDmg*(1-(getRelativeShield()/100)))-getAbsoluteShield())*nbAttack;
@@ -792,12 +899,13 @@ function getCellzQualityToHide(){
 	var op = getOperations(); // TODO remove
 	var enemies = getAliveEnemies();
 	var myCellToIgnore = getCell();
-	var leekToIgnore = getAllAllyBulb();// ignorer les bulbs car ils bougent souvent juste après moi
-	push(leekToIgnore, getLeek()); // m'ignorer moi car je vais bouger, et je ne compte pas me cacher derrière moi même.
-	//var cellzDistFromCenter = getArrayDistFromCenter();
+	var cellToIgnore = [myCellToIgnore];
+	var leekToIgnore = [getLeek()]; // m'ignorer moi car je vais bouger, et je ne compte pas me cacher derrière moi même.
+	var leekToIgnoreLazer = getAliveAllies();
+	pushAll(leekToIgnoreLazer, getAliveEnemies());
 	var cellzDanger = [];
 	for(var i = 0; i <= 612; i++) cellzDanger[i] = 0;
-	var cellzTmpDanger = [], dist, los;
+	var cellzTmpDanger = [], isLazer = [], dist, los;
 	var isSolo = getFightType()==FIGHT_TYPE_SOLO;
 	
 	var potDmgUnshielded, dangerLiberate;
@@ -806,71 +914,76 @@ function getCellzQualityToHide(){
 		if(eType == ENTITY_PUNY_BULB 
 		|| eType == ENTITY_HEALER_BULB 
 		|| eType == ENTITY_METALLIC_BULB
-		|| (getStrength(enemy) < 1 && getMagic(enemy) < 1)) continue;
+		|| (getStrength(enemy) <= 100 && getMagic(enemy) <= 100)) continue;
 		
-		if(isSolo) dangerLiberate = canLiberate(enemy) && getAbsoluteShield()>76 && getMagic()==0;
+		if(isSolo) dangerLiberate = canLiberate(enemy) && getAbsoluteShield()>76 && getMagic(enemy)==0;
 		var gazor = isGazor(enemy);
 		var area = getBiggestArea(enemy);
-		var range = 7;
+		var range = 8;
 		if(!gazor) range = getBiggestRange(enemy);
 		var Mlazer = 0;
 		if(range == 12 && getStrength(enemy) > 299){
 			Mlazer = getMLazerDmg(enemy);
 			range = 8;
-		}else{
-			range = 8;
 		}
 		
 		//var inline = IsInLine(enemy);
 		var enemyCell = getCell(enemy);
+		var eMp = getMP(enemy);
+		var listLeekWhoPlayBefore = getListOfLeekWhoPlayBefore(enemy);
+		var listCellLeekPlayBefore = [];
+		for(var leek in listLeekWhoPlayBefore) push(listCellLeekPlayBefore, getCell(leek));
 		push(leekToIgnore, enemy); // s'ignorer soit mm pour les tests de ligne de vue après move.
-		var moveCellz = getReachableCells(getCell(enemy), getMP(enemy), [myCellToIgnore]);
-		var potDmg = getSimplfiedPotentialDmg(enemy, 100);
-		if(isSolo && dangerLiberate) potDmgUnshielded = getSimplfiedPotentialDmgUnshielded(enemy, 100);
+		pushAll(leekToIgnore, listLeekWhoPlayBefore);
+		pushAll(cellToIgnore, listCellLeekPlayBefore);
+		var moveCellz = @newReachableCells([getCell(enemy):0], eMp, cellToIgnore);
+		var potDmg = @getSimplfiedPotentialDmg(enemy, 100);
+		if(isSolo && dangerLiberate) potDmgUnshielded = @getSimplfiedPotentialDmgUnshielded(enemy, 100);
 		if(potDmg < 0) potDmg = 0;
 		for(var i = 0; i <= 612; i++){
 			cellzTmpDanger[i]=0;
+			isLazer[i]=false;
 			if(!isObstacle(i) && (isEmptyCell(i) || i == myCellToIgnore)){
-				for(var mCell in moveCellz){
+				for(var mCell: var mpused in moveCellz){
 					// IF SOLO I PLAY AROUND LIBERATE. TODO test in team for operation.
-					dist = getCellDistance(mCell, i);
-					los = lineOfSight(mCell, i, leekToIgnore);
+					dist = @getCellDistance(mCell, i);
+					los = @lineOfSight(mCell, i, leekToIgnore);
 					if(gazor){
 						if(isOnSameLine(mCell, i) && dist >=3 && dist <= 7 && los){
-							cellzTmpDanger[i] = potDmg;
+							cellzTmpDanger[i] = @potDmg;
 							break;
 						}
 					}else if(isSolo && dangerLiberate && dist <= 5 && los){
-						cellzTmpDanger[i] = potDmgUnshielded;
+						cellzTmpDanger[i] = @potDmgUnshielded;
 						break;
-					}else if(isSolo && Mlazer>0 && isOnSameLine(mCell,i) && dist >= 4 && dist <= 12 && los){
-						cellzTmpDanger[i] = Mlazer;
+					}else if(Mlazer>0 && isOnSameLine(mCell,i) && dist >= 4 && dist <= 12 && lineOfSight(mCell, i, leekToIgnoreLazer)){
+						cellzTmpDanger[i] = @Mlazer;
+						if(dist > 9) isLazer[i]=true;
 						break;
 					}else if(getCellDistance(mCell, i) <= range && lineOfSight(mCell, i, leekToIgnore)){
-						cellzTmpDanger[i] = potDmg;
+						cellzTmpDanger[i] = @potDmg;
 						if(!isSolo || (!dangerLiberate && Mlazer == 0)) break;
 					}
 				}
 			}
 		}
 		removeElement(leekToIgnore, enemy); // on le retire pour rajouter le suivant
-		
+		for(var leek in listLeekWhoPlayBefore) removeElement(leekToIgnore, leek);
+		for(var cell in listCellLeekPlayBefore) removeElement(cellToIgnore, cell);
 		// traitement des aoe puis add dans le cellzDanger de retour.
-		var toAdd;
 		for(var i: var v in cellzTmpDanger){
-			toAdd=0;
 			if(v==0){ // case non toucher directement, possibilité d'aoe
-				var nearCells = getCellArea(i, area);
+				var nearCells = @getCellArea(i, area);
 				for(var ncell in nearCells){
+					if(isLazer[ncell]==true)break;
 					if(cellzTmpDanger[ncell] > 0){
-						var aoedmg = getSimplfiedPotentialDmg(enemy, getDamagePercentage(i, ncell, area));
-						if(aoedmg > toAdd) toAdd = aoedmg;
+						cellzDanger[i] += @getSimplfiedPotentialDmg(enemy, getDamagePercentage(i, ncell, area));
+						break;//normalement je fais les cases dans l'ordre donc jpeux break
 					}
 				}
 			}else{
-				toAdd = v;
+				cellzDanger[i] += @v;
 			}
-			cellzDanger[i] += toAdd;
 		}
 	}
 	
@@ -878,14 +991,9 @@ function getCellzQualityToHide(){
 		if(!isObstacle(key) && (isEmptyCell(key) || key == myCellToIgnore)) return true;
 		return false;
 	});
-	cellzDanger = arraySort(cellzDanger, function(val1, val2){
-		if(val1 > val2) return 1;
-		else if(val1 == val2) return 0;
-		else return -1;
-	});
 	
 	debugW("OP_cell_to_hide:"+(getOperations()-op));
-	return cellzDanger;
+	return @cellzDanger;
 }
 
 function getCellzToUseGazorOnCell(c){
@@ -948,14 +1056,25 @@ function findMoveLiberate(cellzToHide, weapon){
 	return null;
 }
 
+function getDistanceToClosestHealer(cell, healerCells){
+	if(isEmpty(healerCells)) return null;
+	var dist = null, tmpdist;
+	for(var c in healerCells){
+		tmpdist = getCellDistance(cell, c);
+		if(dist == null || tmpdist < dist) dist = tmpdist;
+	}
+	return dist*2;
+}
+
 function findBestMove(cellzToHide, cellzToAttack, weaponOrChip){
 	var self = getLeek();
 	var selfMP = getMP();
 	var selfCell = getCell();
 	var psnDmg = getPsnDmg(self)["turn"];
-	var moveCellz = getReachableCells(selfCell, selfMP, []);
+	var moveCellz = @newReachableCells([selfCell:0], selfMP, []);
 	if(count(moveCellz)<9) return null; // sécurité anti-block CHEAP
 	var selfLife = getLife();
+	var selfTotalLife = getTotalLife();
 	var ratioDmg = 100;
 	var ratioDanger = 200;
 	var bonusSafe = 50;
@@ -963,6 +1082,7 @@ function findBestMove(cellzToHide, cellzToAttack, weaponOrChip){
 	var danger_min=null, danger_max=null, damage_max=null;
 	
 	var distToMid=null, distToNearEnemy=null;
+	var healerCells = getHealerCells();
 	// key: cell, value: targetCell
 	var assocCellToBestTarget = [];
 	var assocCellToDamage = [];
@@ -990,46 +1110,41 @@ function findBestMove(cellzToHide, cellzToAttack, weaponOrChip){
 		if(danger_min == null || danger_min > damage) danger_min = damage;
 	}
 	//showScoreGreenWithMax(assocCellToDangerScore, danger_max);
+	var brk = false;
+	var best = null;
 	debug("min_danger:"+danger_min+" max_danger:"+danger_max);
 	for(var aCell: var target in assocCellToBestTarget){
-		mpMove1 = getPathLength(selfCell, aCell);
-		if(mpMove1 != null){
-			var mpLeft = selfMP - mpMove1;
-			for(var sCell: var damage in cellzToHide){
-				if(getCellDistance(aCell, sCell) <= mpLeft){
-					mpMove2 = getPathLength(aCell, sCell, [selfCell]);
-					if(mpMove2 != null && mpMove2 <= mpLeft){
-						// FORMULE DU SCORE:
-						var score = cellzToAttack[target]/damage_max*ratioDmg;
-						if(damage < (selfLife-psnDmg)/2) score *= 3;
-						score += ratioDanger - (damage/(danger_max+1)*ratioDanger);
-						if(damage < danger_min+selfLife/7) score += bonusSafe;
-						if(damage > selfLife) score -= malusDanger;
-						//modulo distance de l'enemie et de la case 306
-						distToMid = getCellDistance(sCell, 306);
-						distToNearEnemy = getCellDistance(sCell, getCell(getNearestEnemy()));
-						score -= distToMid;
-						score += distToNearEnemy;
-						// FIN FORMULE DU SCORE
-						push(solutions, ["aCell": aCell, "target": target, "sCell": sCell, "damage":round(cellzToAttack[target]), "danger": damage, "score": round(score)]);
-					}
+		mpMove1 = moveCellz[aCell];
+		var mpLeft = selfMP - mpMove1;
+		if(mpMove1 != null && mpLeft >= 0){
+			var reachable = @newReachableCells([aCell:0], mpLeft, [selfCell]);
+			for(var sCell:var mpused in reachable){
+				// FORMULE DU SCORE:
+				var score = cellzToAttack[target]/damage_max*ratioDmg;
+				if(cellzToHide[sCell] < (selfLife-psnDmg)/2) score *= 3;
+				score += ratioDanger - (cellzToHide[sCell]/(danger_max+1)*ratioDanger);
+				if(cellzToHide[sCell] < danger_min+selfLife/5) score += bonusSafe;
+				if(cellzToHide[sCell] > selfLife) score -= malusDanger;
+				//modulo distance de l'enemie et de la case 306
+				distToMid = getCellDistance(sCell, 306);
+				distToNearEnemy = getCellDistance(sCell, getCell(getNearestEnemy()));
+
+				if(selfLife-psnDmg < selfTotalLife-200 && !isEmpty(healerCells)) score -= getDistanceToClosestHealer(sCell, healerCells);
+				score -= distToMid;
+				score += distToNearEnemy;
+				// FIN FORMULE DU SCORE
+				var s = ["aCell": aCell, "target": target, "sCell": sCell, "damage":round(cellzToAttack[target]), "danger": cellzToHide[sCell], "score": round(score)];
+				//push(solutions, s);
+				if(best==null || best["score"] < s["score"]) best = s;
+				if(getOperations()> OPERATIONS_LIMIT-800000){
+					brk=true;
+					break;
 				}
 			}
 		}
+		if(brk) break;
 	}
+	if(brk) debugE("BREAKED§§§§§§§");
 	
-	// NOW I HAVE TO CHOOSE A PLAY BETWEEN ALL.
-	var best = null;
-	for(var s in solutions){
-		if(best==null) best = s;
-		else{
-			//compare best with s, keep the best.
-			if(best["score"] < s["score"]) best = s;
-			
-			// best safe:
-			//if(s["danger"] < best["danger"]) best = s;
-			//else if(s["danger"] == best["danger"] && s["damage"] > best["damage"]) best = s;
-		}
-	}
 	return best;	
 }
