@@ -5,8 +5,8 @@
 // @description	Transforme les liens vers des images en image dans le chat
 // @author		Tagadanar
 // @projectPage	https://github.com/tagadanar/leekwars/
-// @updateURL	 https://github.com/tagadanar/leekwars/raw/master/Multi%20Account%20Manager/MultiAccountManager.user.js
-// @downloadURL	https://github.com/tagadanar/leekwars/raw/master/Multi%20Account%20Manager/MultiAccountManager.user.js
+// @updateURL	 https://github.com/tagadanar/leekwars/raw/master/imagechat.js
+// @downloadURL	https://github.com/tagadanar/leekwars/raw/master/imagechat.js
 // @match		 http://leekwars.com/*
 // @grant		 none
 // ==/UserScript==
