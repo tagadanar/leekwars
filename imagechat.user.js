@@ -39,7 +39,7 @@
     $("div.chat-message-messages>div>a").each(function(index, elem) {
       testImage(elem.href, function(url, result){
         if(result=="success"){
-          $(elem).replaceWith("<img src='"+ url +"' alt='"+url+"' style='max-width:100%;'  />");
+            $(elem).replaceWith("<a href='"+ url + "' target='_blank'><img src='"+ url +"' alt='"+url+"' style='max-width:90%; 	max-height:200px;'  /></a>");
         }
       });
     });
