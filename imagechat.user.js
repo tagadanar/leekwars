@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name      [Leek Wars] Image Chat
 // @namespace  https://github.com/tagadanar/leekwars/
-// @version   1
+// @version   1.1
 // @description Transforme les liens vers des images en image dans le chat
 // @author    Tagadanar
 // @projectPage https://github.com/tagadanar/leekwars/
