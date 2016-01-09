@@ -1,0 +1,33 @@
+include('_NEW_WORKINPROGRESS');
+
+// représentation schematique d'un tour une fois l'ia fini
+ 
+debugW("MON ID:"+_SELF);
+// on réfresh toutes les données de toutes les globals qui doivent être refresh à tous les tours
+reachableCells = getReachableCells([getCell():0], getMP(), []);
+updateEnnemiesWithMessage();
+for(var enemy in getAliveEnemies()){
+	getEnemyDamageMap(enemy);
+}
+
+maps_danger = getFinalDamageMapByLeek();
+colorMap();
+
+debug('END : '+ getOperations());
+pause();
+
+//_LEEKS = [];
+
+// on recréé la map des actions
+startOp();
+setMapActions();
+stopOp("setMapActions");
+debug("nbActions:"+count(map_actions));
+pause();
+
+var bestMove;
+bestMove = getBestMove();
+debug('bestMove : '+bestMove);
+pause();
+
+debug(getOperations());
