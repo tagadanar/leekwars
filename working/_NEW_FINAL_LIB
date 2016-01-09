@@ -318,11 +318,20 @@ function updateEnnemiesWithMessage(){
 		absShield = getAbsoluteShield(leek);
 		dmgReturn = getDamageReturn(leek);
 		
-		if(	leekInfo['eStr'] == null ||
-			leekInfo['eMgc'] == null ||
-			leekInfo['eWsd'] == null ||
-			leekInfo['eTP'] == null ||
-			leekInfo['eMP'] == null
+		//Rosh : Ajout du test de différence de valeur stockées afin de ne rafraichir les données que lorsque c'est utile
+		if(	(leekInfo['life'] == null || leekInfo['life'] != life) ||
+			(leekInfo['psnlife'] == null || leekInfo['psnlife'] != psnlife) ||
+			(leekInfo['str'] == null || leekInfo['str'] != str) ||
+			(leekInfo['mgc'] == null || leekInfo['mgc'] != mgc) ||
+			(leekInfo['wsd'] == null || leekInfo['wsd'] != wsd) ||
+			(leekInfo['rst'] == null || leekInfo['rst'] != rst) ||
+			(leekInfo['agi'] == null || leekInfo['agi'] != agi) ||
+			(leekInfo['snc'] == null || leekInfo['snc'] != snc) ||
+			(leekInfo['tp'] == null || leekInfo['tp'] != tp) ||
+			(leekInfo['mp'] == null || leekInfo['mp'] != mp) ||
+			(leekInfo['relShield'] == null || leekInfo['relShield'] != relShield) ||
+			(leekInfo['absShield'] == null || leekInfo['absShield'] != absShield) ||
+			(leekInfo['dmgReturn'] == null || leekInfo['dmgReturn'] != life)
 		){
 			leekInfo = [
 				'refreshed': true
