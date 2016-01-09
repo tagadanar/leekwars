@@ -1,0 +1,114 @@
+include("_NEW_GLOBAL");
+
+// init turn 1
+if(getTurn()==1){
+	for(var obs in getObstacles()){
+		_OBSTACLES[obs] = true;
+	}
+	for(var i=0;i<613;i++){
+		_areaCells1[i] = prepareCellArea(i, AREA_CIRCLE_1);
+		_areaCells2[i] = prepareCellArea(i, AREA_CIRCLE_2);
+		_areaCells3[i] = prepareCellArea(i, AREA_CIRCLE_3);
+	}
+	for(var i=0;i<150;i++){ // reminder: idmax à 110 @janvier2016
+		if(isWeapon(i)){
+			_ITEM_ISWEAP[i]=true;
+			if(i==WEAPON_GAZOR) _ITEM_MINRANGE[i]=4; // on se tire pas dessus !
+			else _ITEM_MINRANGE[i]=getWeaponMinRange(i);
+			_ITEM_MAXRANGE[i]=getWeaponMaxRange(i);
+			_ITEM_INLINE[i]=isInlineWeapon(i);
+			_ITEM_NEEDLOS[i]=weaponNeedLos(i);
+			_ITEM_COST[i]=getWeaponCost(i);
+			_ITEM_AREA[i]=getWeaponArea(i);
+			_ITEM_EFFECTS[i]=getWeaponEffects(i);
+		}else if(isChip(i)){
+			_ITEM_ISWEAP[i]=false;
+			if(i==CHIP_PLAGUE) _ITEM_MINRANGE[i]=4; // on se tire pas dessus !
+			else if(i==CHIP_TOXIN) _ITEM_MINRANGE[i]=2;
+			else if(i==CHIP_SOPORIFIC) _ITEM_MINRANGE[i]=3;
+			else if(i==CHIP_BALL_AND_CHAIN) _ITEM_MINRANGE[i]=3;
+			else _ITEM_MINRANGE[i]=getChipMinRange(i);
+			_ITEM_MAXRANGE[i]=getChipMaxRange(i);
+			_ITEM_INLINE[i]=isInlineChip(i);
+			_ITEM_NEEDLOS[i]=chipNeedLos(i);
+			_ITEM_COST[i]=getChipCost(i);
+			_ITEM_AREA[i]=getChipArea(i);
+			_ITEM_EFFECTS[i]=getChipEffects(i);
+		}
+	}
+}
+//init every turn
+_LEEKS_CELL=[];
+for(var leek in getAliveAllies()+getAliveEnemies()){
+	if(_SELF!=leek) _LEEKS_CELL[getCell(leek)] = leek;
+}
+// a uncomment si t'utilise getCellToUseWeapChipOnCell pour avoir la plus proche en terme de path
+//_SELF_FULLMAP_PATH_DIST=[];
+//_SELF_FULLMAP_PATH_DIST=getReachableCells([getCell():0], 100, []);
+
+
+// fonctions
+// return an array of cell according to AREA_CIRCLE_XX
+// AREA_CIRCLE_1 = 3
+// AREA_CIRCLE_2 = 4
+// AREA_CIRCLE_3 = 5
+function prepareCellArea(@c, @area){
+	if(_OBSTACLES[c]!=null) return null; // c'est un obstacle, pas besoin de préparer
+	var x = getCellX(c), y = getCellY(c), result = [];
+	// AREA_CIRCLE_1
+	var cell = getCellFromXY(x, y-1);
+	if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+	cell = getCellFromXY(x, y+1);
+	if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+	cell = getCellFromXY(x-1, y);
+	if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+	cell = getCellFromXY(x+1, y);
+	if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+	// AREA_CIRCLE_2
+	if(area > AREA_CIRCLE_1){
+		cell = getCellFromXY(x, y-2);
+		if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+		cell = getCellFromXY(x, y+2);
+		if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+		cell = getCellFromXY(x-2, y);
+		if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+		cell = getCellFromXY(x+2, y);
+		if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+		cell = getCellFromXY(x-1, y-1);
+		if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+		cell = getCellFromXY(x+1, y+1);
+		if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+		cell = getCellFromXY(x-1, y+1);
+		if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+		cell = getCellFromXY(x+1, y-1);
+		if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+	}
+	// AREA_CIRCLE_3
+	if(area > AREA_CIRCLE_2){
+		cell = getCellFromXY(x, y-3);
+		if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+		cell = getCellFromXY(x, y+3);
+		if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+		cell = getCellFromXY(x-3, y);
+		if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+		cell = getCellFromXY(x+3, y);
+		if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+		cell = getCellFromXY(x-2, y-1);
+		if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+		cell = getCellFromXY(x+2, y+1);
+		if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+		cell = getCellFromXY(x-2, y+1);
+		if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+		cell = getCellFromXY(x+2, y-1);
+		if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+		cell = getCellFromXY(x-1, y-2);
+		if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+		cell = getCellFromXY(x+1, y+2);
+		if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+		cell = getCellFromXY(x-1, y+2);
+		if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+		cell = getCellFromXY(x+1, y-2);
+		if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+	}
+    return @result;
+}
