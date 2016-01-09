@@ -1,0 +1,634 @@
+include('_NEW_PRELOAD');
+
+// _________________________________________________________________________
+// debug tools :
+global __debug_operation;
+function startOp(){
+	__debug_operation = getOperations();
+}
+function stopOp(title){
+	debug(title + ": " + (getOperations()-__debug_operation-7));
+	
+}
+
+// _________________________________________________________________________
+// fonction utilitaire
+
+// return un id unique pour une weap/chip & un array d'idleek peu importe l'ordre.
+// ainsi que la case cible pour les armes à aoe (mettre null sinon pour les lazer !)
+function getUniqueID(@array, @w, @to){
+	sort(array);
+	return @(w+string(array)+to);
+}
+
+global ENTITY_LEEK_ = 0;
+global ENTITY_PUNY_BULB = 1;
+global ENTITY_ROCKY_BULB = 2;
+global ENTITY_ICED_BULB = 3;
+global ENTITY_HEALER_BULB = 4;
+global ENTITY_METALLIC_BULB = 5;
+global ENTITY_FIRE_BULB = 6;
+global ENTITY_LIGHTNING_BULB = 7;
+
+function getEntityType(@entity){
+	if(!isSummon(entity)) return @ENTITY_LEEK_;
+	var chips = getChips(entity);
+	if(inArray(chips, CHIP_VACCINE)) return @ENTITY_HEALER_BULB;
+	if(inArray(chips, CHIP_ARMOR)) return @ENTITY_METALLIC_BULB;
+	if(inArray(chips, CHIP_ROCKFALL)) return @ENTITY_ROCKY_BULB;
+	if(inArray(chips, CHIP_ICEBERG)) return @ENTITY_ICED_BULB;
+	if(inArray(chips, CHIP_METEORITE)) return @ENTITY_FIRE_BULB;
+	if(inArray(chips, CHIP_LIGHTNING)) return @ENTITY_LIGHTNING_BULB;
+	return @ENTITY_PUNY_BULB; 
+}
+
+function colorMap(){
+	var max=0;
+	for(var v in maps_danger) if(v > max) max = v;
+	for(var cell: var score in maps_danger){
+		if(max==0) mark(cell, COLOR_GREEN);
+		else mark(cell, getColor(score/max*255, 255-(score/max*255), 0));
+	}
+}
+
+// _________________________________________________________________________
+// Actual function
+// AREA_CIRCLE_XXX
+
+function getBiggestArea(@enemy){
+	var area = 0;
+	for(var w in getWeapons(enemy)){
+		if(getWeaponArea(w) == AREA_CIRCLE_3) return AREA_CIRCLE_3;
+		else if(getWeaponArea(w) == AREA_CIRCLE_2) area = 2;
+		else if(getWeaponArea(w) == AREA_CIRCLE_1 && area < 1) area = 1;
+	}
+	for(var c in getChips(enemy)){
+		if(getChipArea(c) == AREA_CIRCLE_3) return AREA_CIRCLE_3;
+		else if(getChipArea(c) == AREA_CIRCLE_2) area = 2;
+		else if(getChipArea(c) == AREA_CIRCLE_1 && area < 1) area = 1;
+	}
+	if(area==2) return AREA_CIRCLE_2;
+	if(area==1) return AREA_CIRCLE_1;
+	return AREA_POINT;
+}
+
+function getNextPlaya(current, max){
+	if(current < max) return current+1;
+	if(current == max) return 1;
+}
+
+function getListOfLeekWhoPlayBefore(@leek){
+	var arrayLeekToOrder = [];
+	for(var a in getAliveAllies()){
+		arrayLeekToOrder[a] = getEntityTurnOrder(a);
+	}
+	for(var e in getAliveEnemies()){
+		arrayLeekToOrder[e] = getEntityTurnOrder(e);
+	}
+	var max = count(arrayLeekToOrder);
+	var next = getNextPlaya(arrayLeekToOrder[getLeek()], max);
+	var result = [];
+	while(arrayLeekToOrder[leek] != next){
+		push(result, next);
+		next = getNextPlaya(next, max);
+	}
+	return @result;
+}
+
+function getDamagePercentage(@cell1, @cell2, @area) {     
+	if (cell1 == cell2) return 100;
+	var dist = getCellDistance(cell1, cell2),
+	areaDist = area-2;// tricks pour win 5op ! mais la func bug si area_circle change de value de constante où si on appelle pas ça avec area_circle (ce qui ne devrait pas arrivé dans mon code)
+	if(dist > areaDist ) return 0;
+	return @(100 - ((50 / areaDist) * dist));
+}
+
+function getAllEnemyBulb(){
+	var bulbz = [];
+	for(var en in getAliveEnemies()) if(isSummon(en)) push(bulbz, en);
+	return bulbz;
+}
+
+// return an array of cells according to AREA_CIRCLE_XX
+// cost 3, 4 or 5 op more than @_areaCellsX[cell]
+// depending of number of if()
+// 1 op per if + 1 for calling func + 1 from I dunno ?
+// so use directly the array for final version of optimised func
+function getCellArea(@c, @area){
+	if(area == AREA_CIRCLE_1) return @_areaCells1[c];
+	if(area == AREA_CIRCLE_2) return @_areaCells2[c];
+	if(area == AREA_CIRCLE_3) return @_areaCells3[c];
+	return null;
+}
+
+// renvoie si la puce a un effet positif ou négatif sur la cible
+function isPositivChip(@c){
+	return @_CHIP_ISPOSITIV[c];
+}
+
+// renvoie si la puce fait partie des puces non-standard
+// soit summon, resurrection (cible les morts), teleport & inversion (déplacement)
+function isSpecialChip(@c){
+	return @(_CHIP_ISSPECIAL[c]!=null);
+}
+
+// return an array of cell that can be targeted with lazer from c using minrange
+function getLazerTargetsCell(@c, @minrange){
+	var x = getCellX(c), y = getCellY(c), result = [];
+	var cell = getCellFromXY(x+minrange, y);
+	if(cell!=null && _OBSTACLES[cell]==null && lineOfSight(c, cell)) push(result, cell);
+	cell = getCellFromXY(x-minrange, y);
+	if(cell!=null && _OBSTACLES[cell]==null && lineOfSight(c, cell)) push(result, cell);
+	cell = getCellFromXY(x, y+minrange);
+	if(cell!=null && _OBSTACLES[cell]==null && lineOfSight(c, cell)) push(result, cell);
+	cell = getCellFromXY(x, y-minrange);
+	if(cell!=null && _OBSTACLES[cell]==null && lineOfSight(c, cell)) push(result, cell);
+	return @result;
+}
+
+// return lazerTargets array
+function getLazerTargetsFromCell(@from, @to, @minrange, @maxrange){
+	var xFrom = getCellX(from), yFrom = getCellY(from),
+		xTo = getCellX(to), yTo = getCellY(to), result = [],
+		inc = 0, maxInc = maxrange-minrange, tmpCell, tmpContent;
+	
+	if(xFrom==xTo){
+		if(yFrom<yTo){
+			// y++
+			while(true){
+				tmpCell = getCellFromXY(xTo, yTo+inc);
+				if(tmpCell == null || _OBSTACLES[tmpCell]!=null || inc > maxInc) break;
+				tmpContent = getCellContent(tmpCell);
+				if(tmpContent == CELL_PLAYER) push(result, getLeekOnCell(tmpCell));
+				inc++;
+			}
+		}else{
+			// y--
+			while(true){
+				tmpCell = getCellFromXY(xTo, yTo-inc);
+				if(tmpCell == null || _OBSTACLES[tmpCell]!=null || inc > maxInc) break;
+				tmpContent = getCellContent(tmpCell);
+				if(tmpContent == CELL_PLAYER) push(result, getLeekOnCell(tmpCell));
+				inc++;
+			}
+		}
+	}else if(yFrom==yTo){
+		if(xFrom<xTo){
+			// x++
+			while(true){
+				tmpCell = getCellFromXY(xTo+inc, yTo);
+				if(tmpCell == null || _OBSTACLES[tmpCell]!=null || inc > maxInc) break;
+				tmpContent = getCellContent(tmpCell);
+				if(tmpContent == CELL_PLAYER) push(result, getLeekOnCell(tmpCell));
+				inc++;
+			}
+		}else{
+			// x--
+			while(true){
+				tmpCell = getCellFromXY(xTo-inc, yTo);
+				if(tmpCell == null || _OBSTACLES[tmpCell]!=null || inc > maxInc) break;
+				tmpContent = getCellContent(tmpCell);
+				if(tmpContent == CELL_PLAYER) push(result, getLeekOnCell(tmpCell));
+				inc++;
+			}
+		}
+	}
+	
+	return @result;
+}
+
+// renvoie un array de cell depuis lesquel on peut tirer sur cell
+// ne fonctionne que pour le leek qui l'utilise, j'utilise leekToIgnore = [getLeek()]
+// pour les lignes de vue et _LEEKS pour les cases non accessibles (ou il y a tout le monde sauf le leek)
+// donc pas pour les bulbes cette fonction !
+function _getCellsToUseWeapChipOnCell(@weapChip, @cell){
+	var leekToIgnore = [getLeek()],result = [],
+	x = getCellX(cell), y = getCellY(cell),
+	minrange = _ITEM_MINRANGE[weapChip],
+	maxrange = _ITEM_MAXRANGE[weapChip],
+	inline = _ITEM_INLINE[weapChip],
+	needlos = _ITEM_NEEDLOS[weapChip];
+	for(var x1 = x-maxrange; x1 <= x+maxrange; x1++){
+		for(var y1 = y-maxrange; y1 <= y+maxrange; y1++){
+			var fromCell = getCellFromXY(x1, y1);
+			if(fromCell!=null 
+			&& _OBSTACLES[fromCell]==null 
+			&& _LEEKS_CELL[fromCell]==null){
+				var dist = getCellDistance(fromCell,cell);
+				if(dist >= minrange && dist <= maxrange
+				&& (!needlos || lineOfSight(fromCell, cell, leekToIgnore))
+				&& (!inline || isOnSameLine(fromCell,cell))){
+					push(result, fromCell);
+				}
+			}
+		}
+	}
+	return @result;
+}
+
+// commented pour le moment
+/*
+function _getCellToUseWeapChipOnCell(@weapChip, @cell){
+	var leekToIgnore = [getLeek()],result, mpDist = 100,
+	x = getCellX(cell), y = getCellY(cell), isWeap = isWeapon(weapChip),
+	minrange = isWeap ? getWeaponMinRange(weapChip) : getChipMinRange(weapChip),
+	maxrange = isWeap ? getWeaponMaxRange(weapChip) : getChipMaxRange(weapChip),
+	inline = isWeap ? isInlineWeapon(weapChip) : isInlineChip(weapChip),
+	needlos = isWeap ? weaponNeedLos(weapChip) : chipNeedLos(weapChip);
+	for(var x1 = x-maxrange; x1 <= x+maxrange; x1++){
+		for(var y1 = y-maxrange; y1 <= y+maxrange; y1++){
+			var fromCell = getCellFromXY(x1, y1);
+			if(fromCell!=null 
+			&& _OBSTACLES[fromCell]==null 
+			&& _LEEKS_CELL[fromCell]==null){
+				var dist = getCellDistance(fromCell,cell);
+				if(dist >= minrange && dist <= maxrange
+				&& (!needlos || lineOfSight(fromCell, cell, leekToIgnore))
+				&& (!inline || isOnSameLine(fromCell,cell))){
+					if(_SELF_FULLMAP_PATH_DIST[fromCell]!=null && _SELF_FULLMAP_PATH_DIST[fromCell]<mpDist){
+						mpDist=_SELF_FULLMAP_PATH_DIST[fromCell];
+						result=fromCell;
+					}
+				}
+			}
+		}
+	}
+	return @result;
+}
+*/
+
+// _________________________________________________________________________
+// MOVE FUNCTION
+
+// return reachable cell as an array of [cell:dist]
+// cells must be in form : [cell:dist]
+// TODO probablement des optis à faire pour les ignoreCells
+function getReachableCells(@cells, mp, @ignoreCells){
+	var stack = cells;
+	var tmp = cells;
+	var next = [];
+	while(mp--){
+		for(var currentWorkingCell : var dist in tmp){
+			for(var c in @_areaCells1[currentWorkingCell]){
+				if(stack[c] == null && (isEmptyCell(c) || inArray(ignoreCells, c))){
+					stack[c] = dist+1;
+					next[c] = dist+1;
+				}
+			}
+		}
+		tmp = @next;
+		next = [];
+	}
+	return @stack;
+}
+
+/**
+ * Stock dans la globale le tableau des ennemis avec leurs armes et leurs données
+ * Avant le stockage, on vérifie si il y a un message pour nous. Si c'est le cas, on le récup et on stock son contenu
+ */
+function updateEnnemiesWithMessage(){
+	/************RECUPERATION ET STOCKAGE DU MESSAGE*****************/
+	var messages = getMessages();
+	//Si on a recu un message
+	if(messages != null && !isEmpty(messages)){
+		var message = messages[count(messages) - 1];
+		//Si il est du bon type
+		if(getMessageType(message) == MESSAGE_CUSTOM){
+			_LEEKS = getMessageParams(message);
+		}
+	}
+	/************RECUPERATION ET STOCKAGE DU MESSAGE*****************/
+	
+	var totallife, life, psnlife, str, mgc, wsd, rst, agi, snc, tp, mp, relShield, absShield, dmgReturn;
+	//Pour chaque poireau en vie actuellement
+	for(var leek in getAliveAllies()+getAliveEnemies()){
+		var leekInfo = _LEEKS[leek];
+		totallife = getTotalLife(leek);
+		life = getLife(leek);
+		psnlife = getLife(leek);
+		str = getStrength(leek);
+		mgc = getMagic(leek);
+		wsd = getWisdom(leek);
+		rst = getResistance(leek);
+		agi = getAgility(leek);
+		snc = getScience(leek);
+		tp = getTP(leek);
+		mp = getMP(leek);
+		relShield = getRelativeShield(leek);
+		absShield = getAbsoluteShield(leek);
+		dmgReturn = getDamageReturn(leek);
+		
+		if(	leekInfo['eStr'] == null ||
+			leekInfo['eMgc'] == null ||
+			leekInfo['eWsd'] == null ||
+			leekInfo['eTP'] == null ||
+			leekInfo['eMP'] == null
+		){
+			leekInfo = [
+				'refreshed': true
+				,"totallife":totallife
+				,"life":life
+				,"psnlife":psnlife//TODO -psnDmgTurn+vaccinTurn
+				,"str":str
+				,"mgc":mgc
+				,"wsd":wsd
+				,"rst":rst
+				,"agi":agi
+				,"snc":snc
+				,"tp":tp
+				,"mp":mp
+				,"relShield":relShield
+				,"absShield":absShield
+				,"dmgReturn":dmgReturn
+				,'finalMap': null
+			];
+			
+			if(isEnemy(leek)){
+				var itemsInfo = [];
+				var weapChips = getWeapChipScore(leek, str, mgc, wsd);
+				weapChips = arraySort(weapChips, function(a, b){
+					if(a<b) return 1;
+					else if(a>b) return -1;
+					return 0;
+				});
+
+				for(var weapChip : var dmg in weapChips){
+					push(itemsInfo, [
+						'item' : weapChip,
+						'damage' : dmg,
+						'map' : []
+					]);
+				}
+
+				leekInfo['items'] = itemsInfo;
+			}
+		}
+		_LEEKS[leek] = leekInfo;
+	}
+}
+
+function getWeapChipScore(@enemy, eStr, eMgc, eWsd){
+    var selfRelShield = getRelativeShield(),
+    selfAbsShield = getAbsoluteShield();
+   
+    var dmg, cost, effects, allChipWeap = [];
+    for(var item in getWeapons(enemy)+getChips(enemy)){
+        if(item == CHIP_LIBERATION) continue; // todo score par rapport à mon shield.
+		if(isSpecialChip(item))continue;
+        dmg=0;
+        if(isWeapon(item)){
+            effects = getWeaponEffects(item);
+            cost = getWeaponCost(item);
+        }else{
+            if(getCooldown(item)!=0) continue;
+            effects = getChipEffects(item);
+            cost = getChipCost(item);
+        }
+       
+        if(effects[0][0] == EFFECT_DAMAGE || effects[0][0] == EFFECT_POISON){
+            for(var e in effects){
+                if(e[0] == EFFECT_DAMAGE ){
+                    var tmp = ((e[1]+e[2])/2)*(1+(eStr/100));
+                    tmp = (tmp*(1-(selfRelShield/100)))-selfAbsShield;
+                    dmg+= tmp;
+                }
+                else if(e[0] == EFFECT_POISON){
+                    dmg += ((e[1]+e[2])/2)*(1+(eMgc/100)) *e[3];
+                }
+                else if(e[0] == EFFECT_HEAL){
+                    dmg -= ((e[1]+e[2])/2)*(1+(eWsd/100));
+                }
+                // ici add les effets d'entrave en score pts->dmg
+            }
+            allChipWeap[item] = dmg/cost;
+        }else continue;
+    }
+   
+    return @allChipWeap;
+}
+
+// fonction TAGA qui remplace celle d'au dessus à terme:
+function getWeapChipDmg(@weapOrChip, @eMgc, @eStr, @eWsd, @eTp){
+    var selfAbsShield = getAbsoluteShield();
+    var selfRelShield = getRelativeShield();
+    var dmg = 0;
+    var effects;
+    //Si c'est une arme
+    if(isWeapon(weapOrChip)){
+        //On récupère ses effets
+        effects = getWeaponEffects(weapOrChip);
+    }else{ // c'est une chip
+        // la chip est en cooldown, pas de dégât possible.
+        if(getChipCooldown(weapOrChip)!=0) return 0;
+        // special case Liberation:
+        // basé sur les dégats de lazer au prorata du nombre de TP restant.
+        if(weapOrChip==CHIP_LIBERATION) return (100*(1+(eStr/100))/8*(eTp-5));
+        effects = getChipEffects(weapOrChip);
+    }
+    for(var e in effects){
+        if(e[0] == EFFECT_DAMAGE){
+            var tmp = e[2]*(1+(eStr/100));
+            tmp = (tmp*(1-(selfRelShield/100)))-selfAbsShield;
+            dmg+= tmp;
+        }
+        else if(e[0] == EFFECT_POISON){
+            dmg += e[2]*(1+(eMgc/100)) *(e[3]-1); // 1tour de moins que le max.
+            // soit 100%, 67%, 33% sur 3 tours vu les effects de heal/libération.
+        }
+        else if(e[0] == EFFECT_HEAL){
+            dmg -= e[2]*(1+(eWsd/100));
+        }
+        // si un jour on veut prendre en compte les entraves ou autre truc chelou, c'est ici qu'on rajoute un "score de dmg" par MP/TP/FORCE/MAGIE entravé
+    }
+    // vérif qu'on est pas en négatif
+    if(dmg < 0) dmg = 0;
+    return dmg;
+}
+ 
+// VERSION EDIT DE getDmgMap par taga
+// le but de la fonction, retourner une map des dégâts que peut faire l'arme en 1 coup (donc pour X TP, X étant le cout de l'arme/chip)
+// elle prend en compte les aoe de cette arme exclusivement, ça simplifie l'algo et donnera de meilleur result plus tard
+/**
+ * Retourne un tableau de la forme [cell:damage] pour un ennemi donné à une arme/puce donnée
+ *
+ * @param int enemy ID de l'ennemi ciblé
+ * @param int weaponOrChip ID de l'arme ou de la puce à tester
+ * TAGA suppression de ce param:@param float damageOfThisWeaponOrChip Degats précédemment calculés de cette arme/Puce
+ */
+function getDmgMap(@enemy, @weaponOrChip){
+    // ANALYSE DU CONTEXTE
+    // TAGA on recup le dégât max de l'arme
+    // TAGA remove de maxarea et issolo, des notions qu'on doit plus utiliser
+    // vu qu'on gère l'area d'une seule arme à la fois
+    var eMgc = getMagic(enemy);
+    var eStr = getStrength(enemy);
+    var eWsd = getWisdom(enemy);
+    var eMp = getMP(enemy);
+    var eTp = getTP(enemy);
+    var eCell = getCell(enemy);
+    var damage = getWeapChipDmg(weaponOrChip, eMgc, eStr, eWsd, eTp);
+    // inutile de faire la map de dégât si la puce/arme n'en fait pas.
+    if(damage==0) return null; // TODO TAGA remember to handle this return.
+    //TAGA remove des @ useless
+    //ajout de needlos pour rendre le code plus générique et gérer spark par exemple
+    var area, maxscope, minscope, inline, needlos;
+    if(isWeapon(weaponOrChip)){
+        area = getWeaponArea(weaponOrChip);
+        maxscope = getWeaponMaxRange(weaponOrChip);
+        minscope = getWeaponMinRange(weaponOrChip);
+        inline = isInlineWeapon(weaponOrChip);
+        needlos = weaponNeedLos(weaponOrChip);
+    }else{// isChip
+        area = getChipArea(weaponOrChip);
+        maxscope = getChipMaxRange(weaponOrChip);
+        minscope = getChipMinRange(weaponOrChip);
+        inline = isInlineChip(weaponOrChip);
+        needlos = chipNeedLos(weaponOrChip);
+    }
+   
+    // ignoring me cuz i move, him cuz he wont be block by himself, & everything that play before
+    // TAGA OPTIMISATION de la créa de tableau
+    var leekToIgnore = [getLeek(), enemy] + getListOfLeekWhoPlayBefore(enemy);
+    var cellToIgnore = [];
+    for(var l in leekToIgnore) push(cellToIgnore, getCell(l));
+   
+    var ignored;
+    // TODO : il faut aussi ignorer les leeks adv qui joue avant l'adv, mais méga flemme de le faire bien là...
+    if(area == AREA_LASER_LINE) ignored = getAliveAllies()+getAllEnemyBulb();
+    else ignored = @leekToIgnore;
+ 
+    // TAGATODO : IL FAUT UTILISER LA NEW VERSION SINON CA VA PAS MARCHER
+    // his move
+    var moveCells = getReachableCells([eCell:0], eMp, cellToIgnore);
+    // the first map.
+    var map = [];
+    for(var i=0;i<613;i++){
+        if(isObstacle(i)) continue; // AJOUT TAGA : si c'est un obstacle on fait pas la cell
+        // TODO utiliser le tableau d'obstacle _OBSTACLES[i]!=null à la place plus tard poir opti
+        // je vire la notion d'area_circle ici, on gère qu'une arme à la fois, on connait son area du coup.
+        map[i]= 0;
+ 
+        // du coup je check juste si le mec peut toucher la case, je met le dégât de l'arme
+        for(var mc:var nbmp in moveCells){
+            var dist = getCellDistance(i, mc);
+            if(dist <= maxscope
+            && dist >= minscope
+            && (!needlos ||lineOfSight(i, mc, ignored))
+            && (!inline || isOnSameLine(i, mc))){
+                map[i] = damage;
+                break;
+            }
+        }//end movecellz
+    }//end mapcells
+   
+    var finalmap = [];
+    var needArea = (area==AREA_CIRCLE_1 || area==AREA_CIRCLE_2 || area==AREA_CIRCLE_3);
+    // j'ai du mal à bien réfléchir, mais jpense que si y'a pas besoin des area, on peut directement return map ici en fait..
+    for(var i=0;i<613;i++){
+        if(!isObstacle(i)){ // pareil pour _OBSTACLES[i]!=null
+            if(map[i] > 0){
+                // tir directe, on fiat les dégâts indiquer
+                finalmap[i] = map[i];
+            }else if(needArea){
+                // ici utiliser la nouvelle version de getCellARea qui est plus opti
+                for(var c in getCellArea(i, area)){
+                    // RAPPEL : les cells dans mes maps d'area sont ordonné, d'abord les area_circle_1, puis 2, puis 3, donc break dès que je trouve du dégât, ça sera forcément la valeur la plus haute, ça éco beaucoup d'opération, surtout pour le gaozer et les grosses aoe
+                    if(map[c]>0)
+                        finalmap[i] = getDamagePercentage(i, c, area)/100 * damage;
+                        // TODO : je ne suis pas sur, mais je crois que la réduction en % d'area s'applique avant la réduction absolu, donc là y'a une erreur d'estimation dedégât si on joue de l'armure, et il faudrait précalculé les valeurs à 1 2 et 3 de dist avant cette boucle pour l'arme en question, pour les utiliser ici
+                        break;
+                }
+                if(finalmap[i]==null) finalmap[i]=0;
+            }
+        }
+    }
+    // on retourne la ref du tab pour pas copier bêtement
+    return @finalmap;
+}
+
+/**
+ * Stock dans la globale la map de degats de l'ennemi donné en fonction des maps de dégats de chaque arme
+ *
+ * @param int enemy
+ *
+ * //@return array Tableau de type [cell:danger]
+ */
+function getEnemyDamageMap(@enemy){
+	var myCellToIgnore = getCell();
+	var informations = _LEEKS[enemy];
+	var infoItems = informations['items'];
+	
+	//Calcul de l'index max des armes ennemies :
+	var maxIndex = count(informations['items']) -1;
+	
+	var finalDmgMap = [];
+	for(var i = 0; i <= 612; i++) finalDmgMap[i] = 0;
+	
+	var eTp = informations['tp'];
+	//On va parcourir chaque item de l'ennemi en question
+	for(var index = 0; index < maxIndex; index++){
+		var item = infoItems[index]['item'];
+		var isWeapon = isWeapon(item);
+		debug('Item : '+ ((isWeapon) ? getWeaponName(item) : getChipName(item)));
+		//Si cet ennemi n'a pas assez de TP pour lancer son item ou qu'il est en CD
+		//On passe directement a l'item suivant
+		if(	(isWeapon && eTp < getWeaponCost(item)) ||
+			(!isWeapon && (	
+				eTp < getChipCost(item) ||
+				getCooldown(item, enemy) > 0)
+			)
+		)
+			continue;
+		
+		debug('est traité');
+		var map = getDmgMap(enemy, item);
+		if(map != null && !isEmpty(map)){
+			for(var cell : var danger in map){
+				finalDmgMap[cell] += danger;
+				//Si c'est une arme ou une puce sans CD
+				if(isWeapon || (!isWeapon && getChipCooldown(item) == 0))
+					eTp = floor(eTp / getWeaponCost(item));
+				//Si c'est une puce a CD
+				else
+					eTp -= getChipCost(item);
+			}
+		}
+	}
+	finalDmgMap = arrayFilter(finalDmgMap, function(key, value){
+		if(isEmptyCell(key) || key == myCellToIgnore) return true;
+		return false;
+	});
+	_LEEKS[enemy]['finalMap'] = finalDmgMap;
+}
+
+function getFinalDamageMapByLeek(){
+	var myCellToIgnore = getCell();
+	
+	//Calcul de l'index max des armes ennemies :
+	var maxIndex = 0;
+	for(var i in _LEEKS){
+		if(count(i['items']) > maxIndex)
+			maxIndex = count(i['items']);
+	}
+	maxIndex--;
+	
+	var finalDmgMap = [];
+	for(var i = 0; i <= 612; i++) finalDmgMap[i] = 0;
+	
+	//parcourt de chaque ennemi dans le tableau
+	for(var enemy: var informations in _LEEKS){
+		if(!isAlive(enemy))continue;
+		if(informations['finalMap'] != null && !isEmpty(informations['finalMap'])){
+			for(var cell : var danger in informations['finalMap']){
+				if(danger > finalDmgMap[cell])
+					finalDmgMap[cell] = danger;
+			}
+		}
+	}
+	finalDmgMap = arrayFilter(finalDmgMap, function(key, value){
+		if(isEmptyCell(key) || key == myCellToIgnore) return true;
+		return false;
+	});
+	
+	return finalDmgMap;
+}
