@@ -613,13 +613,7 @@ function getEnemyDamageMap(@enemy){
 function getFinalDamageMapByLeek(){
 	var myCellToIgnore = getCell();
 	
-	//Calcul de l'index max des armes ennemies :
-	var maxIndex = 0;
-	for(var i in _LEEKS){
-		if(count(i['items']) > maxIndex)
-			maxIndex = count(i['items']);
-	}
-	maxIndex--;
+	//Rosh : Suppression du maxIndex, inutile ici.
 	
 	var finalDmgMap = [];
 	for(var i = 0; i <= 612; i++) finalDmgMap[i] = 0;
@@ -640,4 +634,68 @@ function getFinalDamageMapByLeek(){
 	});
 	
 	return finalDmgMap;
+}
+
+/**
+ * Retourne la cellule la plus safe dans le tableau de maps_danger avec l'origine, les PM et le mode donné
+ *
+ * @param int from Cellule de départ
+ * @param int mp Points de mouvement disponibles
+ * @param string mode Mode de choix
+ *	(Options possibles : "front", "balanced", "retreat")
+ *
+ * @return int La cellule la plus adéquat
+ */
+function getBestSafeCell(from, mp, mode){
+	//Variables pour le danger acceptable
+	var frontDanger = 20, balancedDanger = 10, retreatDanger = 0;
+
+	//On détermine le seuil de danger acceptable selon le mode
+	var max=0;
+	for(var v in maps_danger) if(v > max) max = v;
+	var acceptableDanger = 0;
+	if(mode == 'front'){
+		acceptableDanger = max * frontDanger / 100;
+	}
+	else if(mode == 'balanced'){
+		acceptableDanger = max * balancedDanger / 100;
+	}
+	else if(mode = 'retreat'){
+		acceptableDanger = max * retreatDanger / 100;
+	}
+	//Le mode par défaut sera 'Balanced', décision totalement arbitraire
+	else{
+		acceptableDanger = max * balancedDanger / 100;
+	}
+	
+	var adHocCell = null;
+	for(var cell: var danger in maps_danger){
+		if(getPathLength(from, cell) <= mp){
+			//Si on a actuellement aucune cellule OU que le danger sur cette cellule est bon, et qu'on est plus proche du centre
+			if(adHocCell == null){adHocCell = cell; continue;}
+			
+			if(danger <= acceptableDanger){
+				if(mode == 'front'){
+					if(getDistance(adHocCell, 306) > getDistance(cell, 306))
+						adHocCell = cell;
+				}
+				else if(mode == 'balanced'){
+					if(getDistance(adHocCell, 306) > getDistance(cell, 306))
+						adHocCell = cell;
+				}
+				else if(mode = 'retreat'){
+					if(getDistance(adHocCell, 306) < getDistance(cell, 306))
+						adHocCell = cell;
+				}
+				//Le mode par défaut sera 'Balanced', décision totalement arbitraire
+				else{
+					if(getDistance(adHocCell, 306) > getDistance(cell, 306))
+						adHocCell = cell;
+				}
+			}
+		}
+	}
+	
+	mark(adHocCell, getColor(255, 0, 255));
+	return adHocCell;
 }

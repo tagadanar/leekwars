@@ -30,4 +30,9 @@ bestMove = getBestMove();
 debug('bestMove : '+bestMove);
 pause();
 
+var CellToGoTo = getBestSafeCell(getCell(), getMP(), 'balanced');
+debug(CellToGoTo);
+pause();
+moveTowardCell(CellToGoTo);
+
 debug(getOperations());
