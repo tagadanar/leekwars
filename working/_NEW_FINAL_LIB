@@ -642,13 +642,13 @@ function getFinalDamageMapByLeek(){
  * @param int from Cellule de départ
  * @param int mp Points de mouvement disponibles
  * @param string mode Mode de choix
- *	(Options possibles : "front", "balanced", "retreat")
+ *	(Options possibles : "front", "balanced", "safe", "retreat")
  *
  * @return int La cellule la plus adéquat
  */
 function getBestSafeCell(from, mp, mode){
 	//Variables pour le danger acceptable
-	var frontDanger = 20, balancedDanger = 10, retreatDanger = 0;
+	var frontDanger = 20, balancedDanger = 10, safeDanger = 0, retreatDanger = 0;
 
 	//On détermine le seuil de danger acceptable selon le mode
 	var max=0;
@@ -659,6 +659,9 @@ function getBestSafeCell(from, mp, mode){
 	}
 	else if(mode == 'balanced'){
 		acceptableDanger = max * balancedDanger / 100;
+	}
+	else if(mode = 'safe'){
+		acceptableDanger = max * safeDanger / 100;
 	}
 	else if(mode = 'retreat'){
 		acceptableDanger = max * retreatDanger / 100;
@@ -680,6 +683,10 @@ function getBestSafeCell(from, mp, mode){
 						adHocCell = cell;
 				}
 				else if(mode == 'balanced'){
+					if(getDistance(adHocCell, 306) > getDistance(cell, 306))
+						adHocCell = cell;
+				}
+				else if(mode = 'safe'){
 					if(getDistance(adHocCell, 306) > getDistance(cell, 306))
 						adHocCell = cell;
 				}
