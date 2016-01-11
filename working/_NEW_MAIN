@@ -11,28 +11,28 @@ for(var enemy in getAliveEnemies()){
 }
 
 maps_danger = getFinalDamageMapByLeek();
-colorMap();
+//colorMap();
 
 debug('END : '+ getOperations());
-pause();
-
-//_LEEKS = [];
+//pause();
 
 // on recréé la map des actions
 startOp();
 setMapActions();
 stopOp("setMapActions");
 debug("nbActions:"+count(map_actions));
-pause();
+//pause();
 
 var bestMove;
 bestMove = getBestMove();
-debug('bestMove : '+bestMove);
-pause();
+playBestMove(bestMove);
 
+debug('bestMove : '+bestMove);
+//pause();
+/*
 var CellToGoTo = getBestSafeCell(getCell(), getMP(), 'balanced');
 debug(CellToGoTo);
 pause();
 moveTowardCell(CellToGoTo);
-
+*/
 debug(getOperations());

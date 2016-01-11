@@ -1,18 +1,31 @@
 include("_NEW_FINAL_LIB");
 // _________________________________________________________________________
 
- 
-global assoc_item_uniqueID = [];
+global assoc_item_uniqueID = []; 
 // debug de chaque tour on reclean ça
-for(var id in getWeapons()) assoc_item_uniqueID[id]=[];
-for(var id in getChips()) assoc_item_uniqueID[id]=[];
+for(var id in getWeapons()+getChips()) assoc_item_uniqueID[id]=[];
  
 global assoc_from_uniqueID = [];
 //debut de chaque tour on reclean ça
 for(var i=0; i<613; i++) if(_OBSTACLES!=null) assoc_from_uniqueID[i]=[];
+
+global assoc_cost_uniqueID = [];
+for(var i=1; i<10;i++) assoc_cost_uniqueID[i] = [];
+
+global assoc_uniqueID_cost = [];
+assoc_uniqueID_cost = [];
+
+global uniqueID_bestinitialfrom = [];
+uniqueID_bestinitialfrom=[];
+
+global assoc_uniqueID_from = [];
+assoc_uniqueID_from = [];
+
+global randUniqueID = [];
+randUniqueID = [];
  
 global _LEEKS_COEF;
-//debug de chaque tour
+//debut de chaque tour
 _LEEKS_COEF = [];
 for(var target in getAliveAllies()+getAliveEnemies()){
     var coef;
@@ -77,7 +90,7 @@ function getScoreOfAction(@action, @stackOfResult, @stackOfDeath){
     var myStr = _LEEKS[_SELF]["str"],
     myMgc = _LEEKS[_SELF]["mgc"],
     myWis = _LEEKS[_SELF]["wsd"],
-    item = action["id"],
+    item = action["item"],
     lifeMissing = _LEEKS[_SELF]["totallife"]-_LEEKS[_SELF]["life"],
     area = _ITEM_AREA[item],
     isAOE = area==AREA_CIRCLE_1||area==AREA_CIRCLE_2||area==AREA_CIRCLE_3,
@@ -112,7 +125,7 @@ function getScoreOfAction(@action, @stackOfResult, @stackOfDeath){
                 healValue = ((e[1]+e[2])/2)*(1+(myWis/100))*(dmgRatio/100);
             }
             else{
-    //debugE("unhandled:"+getWeaponName(action["id"])+getChipName(action["id"]));
+    //debugE("unhandled:"+getWeaponName(action["item"])+getChipName(action["item"]));
             }
         }
         //kill?
@@ -162,16 +175,30 @@ function getScoreOfAction(@action, @stackOfResult, @stackOfDeath){
 }
  
 function addActionToMAPS(@item, @from, @to, @targets){
-    if(reachableCells[from]==null)return; // filtering all action I can't reach
+	var dist = reachableCells[from];
+    if(dist==null)return; // filtering all action I can't reach
     var uniqueID = getUniqueID(targets, item, to);
     // création du tab si inexistant
-    if(map_actions[uniqueID]==null) map_actions[uniqueID]=[];
-    // ajout dans map_actions
-    push(map_actions[uniqueID], ["uniqueID":uniqueID, "from":from, "to":to, "id":item, "targets":targets]);
+    if(map_actions[uniqueID]==null){
+		map_actions[uniqueID]= ["uniqueID":uniqueID, "to":to, "item":item, "targets":targets];
+		push(randUniqueID, uniqueID);
+	}
     // ajout dans map item
     push(assoc_item_uniqueID[item], uniqueID);
     // ajout dans map from
-    push(assoc_from_uniqueID[from], uniqueID);
+    push(assoc_from_uniqueID[from], uniqueID);	
+	// ajout dans map cost
+	push(assoc_cost_uniqueID[_ITEM_COST[item]], uniqueID);
+	
+	if(assoc_uniqueID_cost[uniqueID]==null) assoc_uniqueID_cost[uniqueID]=_ITEM_COST[item];
+	
+	if(assoc_uniqueID_from[uniqueID]==null) assoc_uniqueID_from[uniqueID] = [];
+	push(assoc_uniqueID_from[uniqueID], from);
+	// replace/add dans la map uniqueid bestFrom
+	if(reachableCells[uniqueID_bestinitialfrom[uniqueID]] > dist)
+		uniqueID_bestinitialfrom[uniqueID]=from;
+		
+
 }
  
 // remplis des tableaux avec toutes les actions possibles pour mon leek, ranger avec différentes clés pour trier tout ça...
@@ -258,9 +285,13 @@ function setMapActions(){
         }
     }//end for chips
 }
- 
- 
-// cette fonction doit trouvé le "bestmove"
+
+global __SETWEAPON=0, __MOVETOWARDCELL=1, __USEITEMONCELL=2;
+
+global _MOVES, _BESTSCORE;
+_MOVES = [];
+_BESTSCORE = 0; // reinit à chaque recherche de bestmove.
+// cette fonction doit trouver le "bestmove"
 // j'ai pas encore décidé de tout ce que je vais faire ici, j'aimerais bien un algo génétique mais je suis emmerdé par la nécessité deconnaitre les conséquences du premier coup pour avoir le score réel du deuxième coup
 // du coup pour le moment jvais faire un test en choisissant les 2 ou 3 actions meilleurs actions par item/puces comme premier coup, puis recommencer jusqu'à épuisement des ressources, et voir ce que ça donne niveau opé et qualité de résultat..
 // y'a aussi le problème des MP, faudrait que j'ai un tableau assoc from:[actions..] mais jsais pas encore comment gérer le téléport... ptete que je le gère pas et que je m'en sers que dans des cas spéciaux genre finish et escape
@@ -270,35 +301,145 @@ function getBestMove(){
     var stackDeathMap = [];
     startOp();
     // pour chaque action, je calcule le score
-    for(var uniqueID:var actions in map_actions){
-        for(var action in actions){
-            var result = [], death = [];
-            scoreMap[uniqueID] = getScoreOfAction(action, result, death);
-            stackResultMap[uniqueID] = result;
-            stackDeathMap[uniqueID] = death;
-            break;
-        }
+    for(var uniqueID:var action in map_actions){
+			var result = [], death = [];
+			scoreMap[uniqueID] = getScoreOfAction(action, result, death);
+			stackResultMap[uniqueID] = result;
+			stackDeathMap[uniqueID] = death;
     }
     stopOp("calcul all actions !");
-    debugE(scoreMap);// dans scoreMap j'ai le score du premier move de chaque action possible.
-    var uselessAction = 0;
-    for(var uniq:var actions in map_actions){
-        for(var a in actions){
-            if(scoreMap[uniq]>0){
-                mark(a["from"], COLOR_BLUE);
-                mark(a["to"], COLOR_RED);
-                debug(""+(isWeapon(a["id"])?getWeaponName(a["id"]):getChipName(a["id"]))+" shoot on cell "+a["to"]+" from cell "+a['from']+" with score :" + scoreMap[uniq] + " for targets:" + a["targets"]);
-                pause();
-                mark(a["from"], COLOR_GREEN);
-                mark(a["to"], COLOR_GREEN);
-            }else{
-                debug(""+(isWeapon(a["id"])?getWeaponName(a["id"]):getChipName(a["id"]))+" shoot on cell "+a["to"]+" from cell "+a['from']+" with score :" + scoreMap[uniq] + " for targets:" + a["targets"]);
-                pause();
-                uselessAction++;
-               
-            }
-            break;
-        }
-    }
-    debugE("USELESSACTION: "+uselessAction);
+    //debugE(scoreMap);// dans scoreMap j'ai le score du premier move de chaque action possible.
+	// assoc_from_uniqueID[cell]:[array uniqueid]
+	// assoc_item_uniqueID[iditem]:[array uniqueid]
+	// uniqueID_bestinitialfrom
+	
+	// j'ai maintenant une estimation du cout:
+	var bestScoreByItem = [];
+	for(var item in getWeapons()+getChips()){
+		bestScoreByItem[item]=[];
+		bestScoreByItem[item] = arraySort(assoc_item_uniqueID[item], function(a, b){
+			if(scoreMap[a]<scoreMap[b]) return 1;
+			else if(scoreMap[a]>scoreMap[b]) return -1;
+			return 0;
+		});
+	}
+	
+	var idx = 0, curPlay = [], curScore = 0;
+	var bestScore = null, bestPlay = null;
+	while(getOperations()<19*1000*1000){
+		for(var item in getWeapons()+getChips()){
+		
+			if(count(bestScoreByItem[item]) > idx){
+				// état initial d'un move
+				var TP = getTP(), MP = getMP(), W = getWeapon();
+				// première action
+				var uniqueID = bestScoreByItem[item][idx];
+				var cost = _ITEM_COST[item], switch = false;
+				var action = @map_actions[uniqueID];
+				var fromCell = uniqueID_bestinitialfrom[uniqueID];
+				if(_ITEM_ISWEAP[item] && W!=item){
+					cost+=1;
+					switch=true;
+				}
+				TP-=cost;
+				MP-=reachableCells[fromCell];
+				if(TP<0 || MP<0) break; // j'ai plus de TP/MP, action impossible à play
+				else{
+					curScore += scoreMap[uniqueID];
+					if(switch) push(curPlay, ["action":__SETWEAPON, "param1":item]);
+					push(curPlay, ["action":__MOVETOWARDCELL, "param1":fromCell]);
+					push(curPlay, ["action":__USEITEMONCELL, "param1":item, "param2":action["to"]]);
+					
+					addMoarAction(fromCell, TP, MP, item, curPlay, curScore, stackResultMap[uniqueID], stackDeathMap[uniqueID]);
+					
+					if(bestScore==null || bestScore<curScore){
+						bestScore=curScore;
+						bestPlay=curPlay;
+					}
+				}
+				
+			}
+		}
+		idx++;
+	}
+	debugW("BEST SCORE:"+bestScore);
+	return @bestPlay;
+}
+
+function addMoarAction(@cell, @tp, @mp, @w, @curPlay, @curScore, @stackResultMap, @stackDeathMap){
+	var reachable = getReachableCells([cell:0], mp, []);
+	
+	var map_doableActions = [];
+	var assoc_uniqueId_cellfrom = [];
+	var closestCell, tmpDist, dist, cost, a, item;
+	for(var id in randUniqueID){
+		//check tp
+		cost = assoc_uniqueID_cost[id];
+		a = map_actions[id];
+		item = a["item"];
+		if(_ITEM_ISWEAP[item] && item!=w) cost+=1;
+		if(tp<=cost) continue;
+		//check mp
+		closestCell=null;
+		dist=10000;
+		for(var cellFrom in assoc_uniqueID_from[id]){
+			tmpDist = reachable[cellFrom];
+			if(tmpDist!=null && dist>tmpDist){
+				closestCell=cellFrom;
+				dist=tmpDist;
+			}
+		}
+		if(closestCell!=null){
+			//DOABLE §§
+			assoc_uniqueId_cellfrom[id]=closestCell;
+			map_doableActions[id]=@a;
+		}
+		
+	}
+	
+	var max = count(map_doableActions);
+	if(max=0){
+		// find safest cell
+		var finalCell = getBestSafeCell(cell, mp, "safe");
+		push(curPlay, ["action":__MOVETOWARDCELL, "param1":finalCell]);
+		curScore-= maps_danger[finalCell];
+		if(maps_danger[finalCell]>getLife()) curScore -= 1000;
+		return;
+	}else{
+		// rand action
+		var action = map_doableActions[randInt(0, max)];
+		item = action["item"];
+		var uniqueID = action["uniqueID"];
+		cost = assoc_uniqueID_cost[uniqueID];
+		var fromCell = assoc_uniqueId_cellfrom[uniqueID];
+		var switch = false;
+		if(_ITEM_ISWEAP[item] && item!=w){
+			switch=true;
+			cost+=1;
+		}
+		tp-=cost;
+		mp-=reachable[fromCell];
+		var tmpScore = getScoreOfAction(action, stackResultMap, stackDeathMap);
+		curScore += tmpScore;
+		 
+		if(switch) push(curPlay, ["action":__SETWEAPON, "param1":item]);
+		push(curPlay, ["action":__MOVETOWARDCELL, "param1":fromCell]);
+		push(curPlay, ["action":__USEITEMONCELL, "param1":item, "param2":action["to"]]);
+					
+		addMoarAction(fromCell, tp, mp, item, curPlay, curScore, stackResultMap, stackDeathMap);
+	}	
+}
+
+function playBestMove(@bestMove){
+	for(var action in bestMove){
+		var a = action["action"];
+		var p1 = action["param1"];
+		var p2 = action["param2"];
+		if(a==__SETWEAPON) setWeapon(p1);
+		else if(a==__MOVETOWARDCELL) moveTowardCell(p1);
+		else if(a==__USEITEMONCELL){
+			if(_ITEM_ISWEAP[p1]) useWeaponOnCell(p2);
+			else useChipOnCell(p1, p2);
+		}
+	}
 }
