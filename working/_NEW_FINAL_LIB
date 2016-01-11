@@ -706,3 +706,120 @@ function getBestSafeCell(from, mp, mode){
 	mark(adHocCell, getColor(255, 0, 255));
 	return adHocCell;
 }
+
+/**
+ * Retourne un score en degats pour l'utilisation d'une libé sur un poireau donné
+ *
+ * @param int leek le poireau en question
+ */
+function getLiberationScore(leek){
+	var strengthBoost = 0,
+	agilityBoost = 0,
+	absShields = 0,
+	relShields = 0,
+	heals = 0,
+	poisons = 0,
+	tpBoosts = 0,
+	mpBoosts = 0;
+	
+	//Test avec boost de :
+	// 400 force, 200 agi, 3TP/MP
+	//Shields : 150 abs, 45 rel
+	//Poisons : 300
+	// ==> (400*0.7) + (200*0.7) + (3*40) + (3*40) + (150*0.6) + (45*0.8) - (300*1)
+	var strCoef = 0.25;
+	var agiCoef = 0.15;
+	var absShieldCoef = 0.6;
+	var relShieldCoef = 0.8;
+	var healsCoef = 0.5;
+	var poisonsCoef = 1;
+	var tpCoef = 30;
+	var mpCoef = 28;
+	
+	//On parcours les effets de l'ennemi
+	for(var effect in getEffects(leek)){
+		var bonus = 0;
+		var type = effect[0];
+		var duration = effect[3] < 2 ? 1 : effect[3] - 1;
+		if(type == EFFECT_HEAL){
+			bonus = effect[1] * duration;
+			if(getCooldown(effect[5], effect[2]) > 1){
+				bonus *= 1.4;
+			}
+			heals += bonus;
+		}
+		else if(type == EFFECT_ABSOLUTE_SHIELD){
+			bonus = effect[1] * duration;
+			if(getCooldown(effect[5], effect[2]) > 1){
+				bonus *= 1.4;
+			}
+			absShields += bonus;
+		}
+		else if(type == EFFECT_RELATIVE_SHIELD){
+			bonus = effect[1] * duration;
+			if(getCooldown(effect[5], effect[2]) > 1){
+				bonus *= 1.4;
+			}
+			relShields += bonus;
+		}
+		else if(type == EFFECT_BUFF_STRENGTH){
+			bonus = effect[1] * duration;
+			if(getCooldown(effect[5], effect[2]) > 1){
+				bonus *= 1.4;
+			}
+			strengthBoost += bonus;
+		}
+		else if(type == EFFECT_BUFF_AGILITY){
+			bonus = effect[1] * duration;
+			if(getCooldown(effect[5], effect[2]) > 1){
+				bonus *= 1.1;
+			}
+			agilityBoost += bonus;
+		}
+		else if(type == EFFECT_BUFF_MP){
+			bonus = effect[1] * duration;
+			if(getCooldown(effect[5], effect[2]) > 1){
+				bonus *= 1.4;
+			}
+			mpBoosts += bonus;
+		}
+		else if(type == EFFECT_BUFF_TP){
+			bonus = effect[1] * duration;
+			if(getCooldown(effect[5], effect[2]) > 1){
+				bonus *= 1.4;
+			}
+			tpBoosts += bonus;
+		}
+		else if(type == EFFECT_POISON){
+			bonus = effect[1] * duration;
+			if(getCooldown(effect[5], effect[2]) > 1){
+				bonus *= 1.4;
+			}
+			poisons += bonus;
+		}
+	}
+	
+	debug('StrBoost : '+ strengthBoost +' -- StrScore : '+(strengthBoost * strCoef));
+	debug('agiBoost : '+ agilityBoost +' -- AgiScore : '+(agilityBoost * agiCoef));
+	debug('healsBoost : '+ heals +' -- HealsScore : '+(heals * healsCoef));
+	debug('absShields : '+ absShields +' -- absShieldsScore : '+(absShields * absShieldCoef));
+	debug('relShields : '+ relShields +' -- relShieldsScore : '+(relShields * relShieldCoef));
+	debug('mpBoosts : '+ mpBoosts +' -- mpScore : '+(mpBoosts * mpCoef));
+	debug('tpBoosts : '+ tpBoosts +' -- tpScore : '+(tpBoosts * tpCoef));
+	debug('poisons : '+ poisons +' -- poisonsScore : '+(poisons * poisonsCoef));
+	
+	//Calcul du score total :
+	var totalScore = 0;
+	totalScore += (strengthBoost * strCoef);
+	totalScore += (agilityBoost * agiCoef);
+	totalScore += (absShields * absShieldCoef);
+	totalScore += (relShields * relShieldCoef);
+	totalScore += (heals * healsCoef);
+	totalScore += (mpBoosts * mpCoef);
+	totalScore += (tpBoosts * tpCoef);
+	totalScore -= (poisons * poisonsCoef);
+
+	debug('LiberationScore : '+ totalScore);
+	
+	return totalScore;
+}
