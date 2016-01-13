@@ -28,6 +28,7 @@ global _ITEM_NEEDLOS = [];
 global _ITEM_COST = [];
 global _ITEM_AREA = [];
 global _ITEM_EFFECTS = [];
+global _ITEM_HAVECD = [];
 
 
 
