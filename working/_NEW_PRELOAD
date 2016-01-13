@@ -13,6 +13,7 @@ if(getTurn()==1){
 	for(var i=0;i<150;i++){ // reminder: idmax à 110 @janvier2016
 		if(isWeapon(i)){
 			_ITEM_ISWEAP[i]=true;
+			_ITEM_HAVECD[i]=false;
 			if(i==WEAPON_GAZOR) _ITEM_MINRANGE[i]=4; // on se tire pas dessus !
 			else _ITEM_MINRANGE[i]=getWeaponMinRange(i);
 			_ITEM_MAXRANGE[i]=getWeaponMaxRange(i);
@@ -23,6 +24,7 @@ if(getTurn()==1){
 			_ITEM_EFFECTS[i]=getWeaponEffects(i);
 		}else if(isChip(i)){
 			_ITEM_ISWEAP[i]=false;
+			_ITEM_HAVECD[i]= getChipCooldown(i)!=0;
 			if(i==CHIP_PLAGUE) _ITEM_MINRANGE[i]=4; // on se tire pas dessus !
 			else if(i==CHIP_TOXIN) _ITEM_MINRANGE[i]=2;
 			else if(i==CHIP_SOPORIFIC) _ITEM_MINRANGE[i]=3;
