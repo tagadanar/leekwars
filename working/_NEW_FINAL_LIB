@@ -562,7 +562,8 @@ function getDmgMap(@enemy, @weaponOrChip){
  *
  * //@return array Tableau de type [cell:danger]
  */
-function getEnemyDamageMap(@enemy){
+function getEnemyDamageMap(@enemy, maxOpe){
+	var startOperations = getOperations();
 	var myCellToIgnore = getCell();
 	var informations = _LEEKS[enemy];
 	var infoItems = informations['items'];
@@ -573,43 +574,50 @@ function getEnemyDamageMap(@enemy){
 	var finalDmgMap = [];
 	for(var i = 0; i <= 612; i++) finalDmgMap[i] = 0;
 	
-	var eTp = informations['tp'];
-	//On va parcourir chaque item de l'ennemi en question
 	for(var index = 0; index < maxIndex; index++){
 		var item = infoItems[index]['item'];
 		var isWeapon = isWeapon(item);
-		debug('Item : '+ ((isWeapon) ? getWeaponName(item) : getChipName(item)));
-		//Si cet ennemi n'a pas assez de TP pour lancer son item ou qu'il est en CD
+		//Si cet item est en CD
 		//On passe directement a l'item suivant
-		if(	(isWeapon && eTp < getWeaponCost(item)) ||
-			(!isWeapon && (	
-				eTp < getChipCost(item) ||
-				getCooldown(item, enemy) > 0)
-			)
-		)
+		if(!isWeapon &&	getCooldown(item, enemy) > 0)
 			continue;
 		
-		debug('est traité');
-		var map = getDmgMap(enemy, item);
+		infoItems[index]['map'] = getDmgMap(enemy, item);
+	}
+	
+	//Pour chaque case de la map
+	for(var itemInfo in infoItems){
+		if(getOperations() - startOperations > maxOpe)continue;
+		var map = itemInfo['map'];
 		if(map != null && !isEmpty(map)){
-			for(var cell : var danger in map){
-				finalDmgMap[cell] += danger;
-				//Si c'est une arme ou une puce sans CD
-				if(isWeapon || (!isWeapon && getChipCooldown(item) == 0))
-					eTp = floor(eTp / getWeaponCost(item));
-				//Si c'est une puce a CD
-				else
-					eTp -= getChipCost(item);
+			for(var i = 0; i <= 612; i++){
+				var eTp = informations['tp'];
+				var danger = map[i];
+				if(danger > 0){
+					var item = itemInfo['item'];
+					var isWeapon = isWeapon(item);
+					var itemCost = isWeapon ? getWeaponCost(item) : getChipCost(item);
+					if(itemCost <= eTp){
+						finalDmgMap[i] += danger;
+						//Si c'est une arme ou une puce sans CD
+						if(isWeapon || (!isWeapon && getChipCooldown(item) == 0))
+							eTp = floor(eTp / itemCost);
+						//Si c'est une puce a CD
+						else
+							eTp -= itemCost;
+					}
+				}
 			}
 		}
 	}
+	
+	
 	finalDmgMap = arrayFilter(finalDmgMap, function(key, value){
 		if(isEmptyCell(key) || key == myCellToIgnore) return true;
 		return false;
 	});
 	_LEEKS[enemy]['finalMap'] = finalDmgMap;
 }
-
 function getFinalDamageMapByLeek(){
 	var myCellToIgnore = getCell();
 	
