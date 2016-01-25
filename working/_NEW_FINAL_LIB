@@ -661,8 +661,6 @@ function getFinalDamageMapByLeek(){
 /**
  * Retourne la cellule la plus safe dans le tableau de maps_danger avec l'origine, les PM et le mode donné
  *
- * @param int from Cellule de départ
- * @param int mp Points de mouvement disponibles
  * @param string mode Mode de choix
  *	(Options possibles : "front", "balanced", "safe", "retreat")
  *
@@ -694,7 +692,7 @@ function getBestSafeCell(mode){
 	}
 	
 	var adHocCell = null;
-	for(var key: var cell in reachableCells){
+	for(var cell: var dist in reachableCells){
 		var danger = maps_danger[cell];
 		//Si on a actuellement aucune cellule OU que le danger sur cette cellule est bon, et qu'on est plus proche du centre
 		if(adHocCell == null){adHocCell = cell; continue;}
