@@ -1,0 +1,77 @@
+include('auto');
+
+// init turn 1
+if(getTurn()==1){
+	// TODO version avec lineOfSight(cell, cell)==false pour un osbtacle
+	for(var obs in getObstacles()){
+		_OBSTACLES[obs] = true;
+	}
+	for(var i=0;i<613;i++){
+		_areaCells1[i] = prepareCellArea(i, AREA_CIRCLE_1);
+		_areaCells2[i] = prepareCellArea(i, AREA_CIRCLE_2);
+		_areaCells3[i] = prepareCellArea(i, AREA_CIRCLE_3);
+	}
+	for(var i=0;i<150;i++){ // reminder: idmax à 110 @janvier2016
+		if(isWeapon(i)){
+			_ITEM_ISWEAP[i]=true;
+			_ITEM_HAVECD[i]=false;
+			if(i==WEAPON_GAZOR) _ITEM_MINRANGE[i]=4; // on se tire pas dessus !
+			else _ITEM_MINRANGE[i]=getWeaponMinRange(i);
+			_ITEM_MAXRANGE[i]=getWeaponMaxRange(i);
+			_ITEM_INLINE[i]=isInlineWeapon(i);
+			_ITEM_NEEDLOS[i]=weaponNeedLos(i);
+			_ITEM_COST[i]=getWeaponCost(i);
+			_ITEM_AREA[i]=getWeaponArea(i);
+			_ITEM_EFFECTS[i]=getWeaponEffects(i);
+		}else if(isChip(i)){
+			_ITEM_ISWEAP[i]=false;
+			_ITEM_HAVECD[i]= getChipCooldown(i)!=0;
+			if(i==CHIP_PLAGUE) _ITEM_MINRANGE[i]=4; // on se tire pas dessus !
+			else if(i==CHIP_TOXIN) _ITEM_MINRANGE[i]=2;
+			else if(i==CHIP_SOPORIFIC) _ITEM_MINRANGE[i]=3;
+			else if(i==CHIP_BALL_AND_CHAIN) _ITEM_MINRANGE[i]=3;
+			else _ITEM_MINRANGE[i]=getChipMinRange(i);
+			_ITEM_MAXRANGE[i]=getChipMaxRange(i);
+			_ITEM_INLINE[i]=isInlineChip(i);
+			_ITEM_NEEDLOS[i]=chipNeedLos(i);
+			_ITEM_COST[i]=getChipCost(i);
+			_ITEM_AREA[i]=getChipArea(i);
+			_ITEM_EFFECTS[i]=getChipEffects(i);
+		}
+	}
+}
+//init every turn
+_LEEKS_CELL=[];
+for(var leek in getAliveAllies()+getAliveEnemies()){
+	if(_SELF!=leek) _LEEKS_CELL[getCell(leek)] = leek;
+}
+// a uncomment si t'utilise getCellToUseWeapChipOnCell pour avoir la plus proche en terme de path
+_SELF_FULLMAP_PATH_DIST=[];
+_SELF_FULLMAP_PATH_DIST=getReachableCells([getCell():0], 100, []);
+
+// init de l'état des leeks
+_LEEKS=[];
+for(var leek in getAliveAllies()+getAliveEnemies()){
+	var lvl = getLevel()
+	,isLvl5 = lvl>=5
+	,isLvl10 = lvl>=10
+	,isLvl38 = lvl>=38;
+	var leekInfo = [
+		"totallife": getTotalLife(leek)
+		,"life": getLife(leek)
+		,"psnlife": getLife(leek)//TODO -psnDmgTurn+vaccinTurn
+		,"str": isLvl5 ? getStrength(leek) : 50
+		,"mgc": isLvl5 ? getMagic(leek) : 0
+		,"wsd": isLvl5 ? getWisdom(leek) : 0
+		,"rst": isLvl5 ? getResistance(leek) : 0
+		,"agi": isLvl5 ? getAgility(leek) : 0
+		,"snc": isLvl5 ? getScience(leek) : 0
+		,"tp": isLvl10 ? getTP(leek) : 10
+		,"mp": isLvl10 ? getMP(leek) : 3
+		,"relShield": isLvl38 ? getRelativeShield(leek) : getRelativeByLaunchedEffects(leek)
+		,"absShield": isLvl38 ? getAbsoluteShield(leek) : getAbsoluteByLaunchedEffects(leek)
+		,"dmgReturn": isLvl5 ? getDamageReturn(leek) : 0
+		,'finalMap': null
+	];
+	_LEEKS[leek] = @leekInfo;
+}
