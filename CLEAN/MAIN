@@ -1,0 +1,37 @@
+include('auto');
+stopOpk("loading lib");
+var enemy = getNearestEnemy();
+var eWeapChip = WEAPON_PISTOL;
+
+// charge les maps de chaque arme pour chaque adv dans l'ordre de la plus dangereuse à la moins dangereuse jusqu'à épuisement des opérations
+startOp();
+loadMapsDanger(10*1000*1000);
+stopOpk("loading individual item danger map");
+
+// affiche l'une après l'autre les maps de l'adv avec le nom en débug
+for(var item:var i in map_leek_weap_danger[enemy]){
+	debug(getWeaponName(item)+getChipName(item));
+	map_danger=i;
+	colorMap();
+	pause();
+}
+
+// génère la map complête de chaque adv à partir des maps d'armes.
+startOp();
+finalizeMapsDanger();
+stopOpk("finalize maps");
+
+// affiche l'une après l'autre les maps de chaque adv
+for(var e:var map in map_leek_danger){
+	debug(getName(e));
+	map_danger=map;
+	colorMap();
+	pause();
+}
+
+// retourne une map complête en ignorant les leeks passer en args
+startOp();
+map_danger = getMapDanger([]);
+stopOpk("getMapDanger()");
+colorMap();
+pause();
