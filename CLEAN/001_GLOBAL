@@ -1,0 +1,185 @@
+include('auto');
+///////////////////////////////////////////
+// Fichier de déclaration des globales
+///////////////////////////////////////////
+
+// ========================
+// INFOS LEEKS
+// ========================
+
+// ID du joueur leek.
+global _SELF = getLeek();
+
+// Contient les informations sur les leeks, refresh à tous les tours en début de tour.
+// _LEEKS[id]=[
+//	"totallife": getTotalLife(leek)
+//	,"life": getLife(leek)
+//	,"psnlife": getLife(leek)//TODO -psnDmgTurn+vaccinTurn
+//	,"str": isLvl5 ? getStrength(leek) : 50
+//	,"mgc": isLvl5 ? getMagic(leek) : 0
+//	,"wsd": isLvl5 ? getWisdom(leek) : 0
+//	,"rst": isLvl5 ? getResistance(leek) : 0
+//	,"agi": isLvl5 ? getAgility(leek) : 0
+//	,"snc": isLvl5 ? getScience(leek) : 0
+//	,"tp": isLvl10 ? getTP(leek) : 10
+//	,"mp": isLvl10 ? getMP(leek) : 3
+//	,"relShield": isLvl38 ? getRelativeShield(leek) : getRelativeByLaunchedEffects(leek)
+//	,"absShield": isLvl38 ? getAbsoluteShield(leek) : getAbsoluteByLaunchedEffects(leek)
+//	,"dmgReturn": isLvl5 ? getDamageReturn(leek) : 0
+//	,"items": getOrderedWeapChipScore() (n'est refresh qu'à l'appel de loadMapsDanger)
+//	,'finalMap': null
+//	];
+global _LEEKS = [];
+
+
+
+// ========================
+// INFOS MAP
+// ========================
+
+global reachableCells; //[cell:mp]
+global map_danger; // [cell:dmg]
+global map_leek_danger; // [leek: map_danger]; 
+global map_leek_weap_danger; // [leek: [weap: [map_danger]]]
+global map_actions; // ["id":w, "from":fromCell, "to":toCell, "targets":targets]
+
+// Contient les id des cells obstacle en clé, test cell libre avec _OBSTACLES[cell]==null
+// init tour 1.
+global _OBSTACLES = [];
+
+// Contient les id des cells des leeks, sauf le leek qui joue.
+// refresh au debug de chaque tour.
+global _LEEKS_CELL;
+
+// not used, utile pour getCellToUseWeapChipOnCell, pour avoir la plus proche en path
+global _SELF_FULLMAP_PATH_DIST;
+
+// contient les AREA_CIRCLE_X de chaque cell non obstacle dans un array [cell1, cell2...]
+// init tour 1.
+global _areaCells1 = [];
+global _areaCells2 = [];
+global _areaCells3 = [];
+
+// ========================
+// INFOS STUFF
+// ========================
+
+// infos sur les armes/puces préstocker pour perf & cas spéciaux.
+// init tour 1, les noms sont explicites.
+global _ITEM_ISWEAP = [];
+global _ITEM_MINRANGE = [];
+global _ITEM_MAXRANGE = [];
+global _ITEM_INLINE = [];
+global _ITEM_NEEDLOS = [];
+global _ITEM_COST = [];
+global _ITEM_AREA = [];
+global _ITEM_EFFECTS = [];
+global _ITEM_HAVECD = [];
+
+// ========================
+// DEBUG
+// ========================
+global __debug_operation = 0;
+
+
+// ========================
+// AUTRES
+// ========================
+
+// Constante pour différencier les bulbes.
+global ENTITY_LEEK_ = 0;
+global ENTITY_PUNY_BULB = 1;
+global ENTITY_ROCKY_BULB = 2;
+global ENTITY_ICED_BULB = 3;
+global ENTITY_HEALER_BULB = 4;
+global ENTITY_METALLIC_BULB = 5;
+global ENTITY_FIRE_BULB = 6;
+global ENTITY_LIGHTNING_BULB = 7;
+
+// retourne si la puce à un effet positif pour la cible ou non.
+// les cas spéciaux sont les summons (+resu) & les déplacements qui sont gérer autrement.
+global _CHIP_ISPOSITIV = [
+    CHIP_ACCELERATION:true,
+    CHIP_ADRENALINE:true,
+    CHIP_ANTIDOTE:true,
+    CHIP_ARMOR:true,
+    CHIP_ARMORING:true,
+    CHIP_BALL_AND_CHAIN:false,
+    CHIP_BANDAGE:true,
+    CHIP_BARK:true,
+    CHIP_BURNING:false,
+    CHIP_CARAPACE:true,
+    CHIP_COLLAR:true,
+    CHIP_CURE:true,
+    CHIP_DEVIL_STRIKE:false,
+    CHIP_DOPING:true,
+    CHIP_DRIP:true,
+    CHIP_FEROCITY:true,
+    CHIP_FERTILIZER:true,
+    CHIP_FIRE_BULB:true,//specialCHIP
+    CHIP_FLAME:false,
+    CHIP_FORTRESS:true,
+    CHIP_FRACTURE:false,
+    CHIP_HEALER_BULB:true,//specialCHIP
+    CHIP_HELMET:true,
+    CHIP_ICE:false,
+    CHIP_ICEBERG:false,
+    CHIP_ICED_BULB:true,//specialCHIP
+    CHIP_INVERSION:true,//specialCHIP
+    CHIP_LEATHER_BOOTS:true,
+    CHIP_LIBERATION:false,//chip chelou, gérer comme offensive pour le moment..
+    CHIP_LIGHTNING:false,
+    CHIP_LIGHTNING_BULB:true,//specialCHIP
+    CHIP_LOAM:true,
+    CHIP_METALLIC_BULB:true,//specialCHIP
+    CHIP_METEORITE:false,
+    CHIP_MIRROR:true,
+    CHIP_MOTIVATION:true,
+    CHIP_PEBBLE:false,
+    CHIP_PLAGUE:false,
+    CHIP_PROTEIN:true,
+    CHIP_PUNY_BULB:true,//specialCHIP
+    CHIP_RAGE:true,
+    CHIP_RAMPART:true,
+    CHIP_REFLEXES:true,
+    CHIP_REGENERATION:true,
+    CHIP_REMISSION:true,
+    CHIP_RESURRECTION:true,//specialCHIP
+    CHIP_ROCK:false,
+    CHIP_ROCKFALL:false,
+    CHIP_ROCKY_BULB:true,//specialCHIP
+    CHIP_SEVEN_LEAGUE_BOOTS:true,
+    CHIP_SHIELD:true,
+    CHIP_SHOCK:false,
+    CHIP_SLOW_DOWN:false,
+    CHIP_SOLIDIFICATION:true,
+    CHIP_SOPORIFIC:false,
+    CHIP_SPARK:false,
+    CHIP_STALACTITE:false,
+    CHIP_STEROID:true,
+    CHIP_STRETCHING:true,
+    CHIP_TELEPORTATION:true,//specialCHIP
+    CHIP_THORN:true,
+    CHIP_TOXIN:false,
+    CHIP_TRANQUILIZER:false,
+    CHIP_VACCINE:true,
+    CHIP_VENOM:false,
+    CHIP_WALL:true,
+    CHIP_WARM_UP:true,
+    CHIP_WHIP:true,
+    CHIP_WINGED_BOOTS:true
+];
+
+// contient en clés les chips qui ne sont pas traité par l'algo générique de génération des actions disponibles.
+global _CHIP_ISSPECIAL = [
+    CHIP_RESURRECTION: true, // considéré comme du summoning.
+    CHIP_PUNY_BULB: true, // summoning
+    CHIP_ROCKY_BULB: true, // summoning
+    CHIP_ICED_BULB: true, // summoning
+    CHIP_HEALER_BULB: true, // summoning
+    CHIP_METALLIC_BULB: true, // summoning
+    CHIP_FIRE_BULB: true, // summoning
+    CHIP_LIGHTNING_BULB: true, // summoning
+    CHIP_TELEPORTATION: true, // déplacement complexe, aucune idée
+    CHIP_INVERSION:true // déplacement complexe, pareil...
+];
