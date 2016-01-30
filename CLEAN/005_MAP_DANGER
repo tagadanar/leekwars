@@ -1,0 +1,238 @@
+include('auto');
+
+// retourne les dégâts en 1 coup d'une arme sur moi même
+function getWeapChipDmg(@weapOrChip, @eMgc, @eStr, @eWsd, @eTp, @dmgPercentage){
+	var info = @_LEEKS[_SELF];
+    var selfAbsShield = @info["absShield"];
+    var selfRelShield = @info["relShield"];
+	var ratio = dmgPercentage/100;
+    var dmg = 0;
+
+	// FIXME return score en fonction de mes effets.
+	if(weapOrChip==CHIP_LIBERATION) return (100*(1+(eStr/100))/8*(eTp-5));
+	var effects = @_ITEM_EFFECTS[weapOrChip];
+    for(var e in effects){
+		var type = e[0];
+        if(type == EFFECT_DAMAGE){
+            var tmp = e[2]*(1+(eStr/100));
+            tmp = (tmp *ratio *(1-(selfRelShield/100))) -selfAbsShield;
+            dmg+= tmp;
+        }
+        else if(type == EFFECT_POISON){
+            dmg += e[2]*(1+(eMgc/100)) *ratio *(e[3]-1); // 1tour de moins que le max.
+            // soit 100%, 67%, 33% sur 3 tours vu les effects de heal/libération.
+        }
+        else if(type == EFFECT_HEAL){
+            dmg -= e[2] *(1+(eWsd/100)) *ratio;
+        }
+        // si un jour on veut prendre en compte les entraves ou autre truc chelou, c'est ici qu'on rajoute un "score de dmg" par MP/TP/FORCE/MAGIE entravé
+    }
+    // vérif qu'on est pas en négatif
+    if(dmg < 0) dmg = 0;
+    return dmg;
+}
+
+/**
+ * Retourne null ou un tableau [cell:damage] pour un ennemi donné à une arme/puce donnée
+ *
+ * @param int enemy ID de l'ennemi ciblé
+ * @param int weaponOrChip ID de l'arme ou de la puce à tester
+ * 
+ */
+function getDmgMap(@enemy, @weaponOrChip){
+    // ANALYSE DU CONTEXTE
+	var eStats = @_LEEKS[enemy];
+    var eMgc = @eStats['mgc'];
+    var eStr = @eStats['str'];
+    var eWsd = @eStats['wsd'];
+    var eMp = @eStats['mp'];
+    var eTp = @eStats['tp'];
+    var eCell = getCell(enemy);
+    var damage = getWeapChipDmg(weaponOrChip, eMgc, eStr, eWsd, eTp, 100);
+    // inutile de faire la map de dégât si la puce/arme n'en fait pas.
+    if(damage==0) return null;
+    
+    var area = _ITEM_AREA[weaponOrChip],
+	maxscope = _ITEM_MAXRANGE[weaponOrChip],
+	minscope = _ITEM_MINRANGE[weaponOrChip],
+	inline = _ITEM_INLINE[weaponOrChip],
+	needlos = _ITEM_NEEDLOS[weaponOrChip];
+   
+    // ignoring me cuz i move, him cuz he wont be block by himself & all that play before
+    var leekToIgnore = [getLeek(), enemy] + getListOfLeekWhoPlayBefore(enemy);
+    var cellToIgnore = [];
+    for(var l in leekToIgnore) push(cellToIgnore, getCell(l));
+   
+    var ignored;
+    // TODO : il faut aussi ignorer les leeks adv qui joue avant l'adv, mais méga flemme de le faire bien là...
+    if(area == AREA_LASER_LINE) ignored = getAliveAllies()+getAllEnemyBulb();
+    else ignored = @leekToIgnore;
+ 
+    // his move
+    var moveCells = getReachableCells([eCell:0], eMp, cellToIgnore);
+    // the first map.
+    var map = [];
+    for(var i=0;i<613;i++){
+        if(_OBSTACLES[i] != null)continue; // si c'est un obstacle on fait pas la cell
+        map[i]= 0;
+		//Si la cellule est trop loin du move max de l'adv + range
+		if(getCellDistance(i, eCell) > (eMp + maxscope))continue;
+		// sinon on regarde si il peut la toucher.
+        for(var mc:var nbmp in moveCells){
+            var dist = getCellDistance(i, mc);
+            if(dist <= maxscope
+            && dist >= minscope
+            && (!needlos || lineOfSight(i, mc, ignored))
+            && (!inline || isOnSameLine(i, mc))){
+                map[i] = damage;
+                break;
+            }
+        }//end movecellz
+    }//end mapcells
+    if(area==AREA_CIRCLE_1 || area==AREA_CIRCLE_2 || area==AREA_CIRCLE_3){
+		for(var distance = 1; distance<area-2; distance++){
+			var percentageDmg = (100 - ((50 / area) * distance));
+			var dmg = getWeapChipDmg(weaponOrChip, eMgc, eStr, eWsd, eTp, percentageDmg);
+			for(var c:var value in map){
+				if(value>0)
+					for(var cell in @_areaCells1[c])
+						if(map[cell]==0) map[cell]=dmg;
+			}
+		}
+	}
+    return @map;
+}
+
+// retourne les items de l'adv ordonnés par danger.
+function getOrderedWeapChipScore(@enemy, eStr, eMgc, eWsd){
+    var info = @_LEEKS[enemy],
+	selfRelShield = info["relShield"],
+    selfAbsShield = info["absShield"];
+   	
+    var lvl = getLevel(), dmg, cost, effects, allChipWeap = [], stuff;
+	if(lvl >= 57) stuff = getWeapons(enemy)+getChips(enemy);
+	else{
+		var eLvl = getLevel(enemy);
+		if(eLvl<7) stuff = [WEAPON_PISTOL];
+		else if(eLvl<17) stuff = [WEAPON_PISTOL, CHIP_SPARK];
+		else if(eLvl<27) stuff = [WEAPON_PISTOL, CHIP_SPARK, WEAPON_SHOTGUN];
+		else if(eLvl<30) stuff = [WEAPON_MAGNUM, CHIP_SPARK, WEAPON_SHOTGUN];
+		else if(eLvl<40) stuff = [WEAPON_MAGNUM, CHIP_SPARK, WEAPON_BROADSWORD];
+		else if(eLvl<55) stuff = [WEAPON_MAGNUM, CHIP_SPARK, WEAPON_LASER, WEAPON_BROADSWORD];
+		else if(eLvl<77) stuff = [WEAPON_GRENADE_LAUNCHER, CHIP_SPARK, WEAPON_LASER, WEAPON_AXE, CHIP_STALACTITE];
+		else stuff = [WEAPON_GRENADE_LAUNCHER, CHIP_SPARK, WEAPON_LASER, WEAPON_AXE, CHIP_STALACTITE, CHIP_ROCKFALL];
+		var w = getWeapon(enemy);
+		if(w!=null && ! inArray(stuff, w)) push(stuff, w); 
+	}
+    for(var item in stuff){
+        if(item == CHIP_LIBERATION) continue; // todo score par rapport à mon shield.
+		if(isSpecialChip(item))continue;
+		if(_ITEM_HAVECD[item] && lvl>=36) if(getCooldown(item, enemy)!=0) continue;
+		
+        dmg=0;
+		effects = _ITEM_EFFECTS[item];
+		cost = _ITEM_COST[item];
+       
+        if(effects[0][0] == EFFECT_DAMAGE || effects[0][0] == EFFECT_POISON){
+            for(var e in effects){
+                if(e[0] == EFFECT_DAMAGE ){
+                    var tmp = ((e[1]+e[2])/2)*(1+(eStr/100));
+                    tmp = (tmp*(1-(selfRelShield/100)))-selfAbsShield;
+                    dmg+= tmp;
+                }
+                else if(e[0] == EFFECT_POISON){
+                    dmg += ((e[1]+e[2])/2)*(1+(eMgc/100)) *e[3];
+                }
+                else if(e[0] == EFFECT_HEAL){
+                    dmg -= ((e[1]+e[2])/2)*(1+(eWsd/100));
+                }
+                // ici add les effets d'entrave en score pts->dmg
+            }
+            allChipWeap[item] = dmg/cost;
+        }
+    }
+	
+	allChipWeap = arraySort(allChipWeap, function(a,b){	
+		if(a<b) return 1;
+		else if(a>b) return -1;
+		return 0;
+	});
+    return @allChipWeap;
+}
+
+// load les maps armes par armes pour chaque adv dans l'ordre de danger
+function loadMapsDanger(maxOp){
+	var startOperation = getOperations();
+	map_leek_weap_danger = [];//reset de la map
+	var maxIndex = [];
+	var theMax = 0;
+	for(var e in getAliveEnemies()){
+		map_leek_weap_danger[e] = [];//reset de la map
+		var info = _LEEKS[e];
+		var weapChips = getOrderedWeapChipScore(e,info["str"],info["mgc"],info["wsd"]);
+		_LEEKS[e]['items'] = []; //reset du stuff
+		for(var weapChip : var dmg in weapChips){
+			push(_LEEKS[e]['items'], [
+				'item' : weapChip,
+				'damage' : dmg
+			]);
+		}
+		maxIndex[e] = count(_LEEKS[e]['items']);
+		if(theMax<maxIndex[e]) theMax = maxIndex[e];
+	}
+	
+	for(var index = 0; index < theMax; index++){
+		for(var e in getAliveEnemies()){
+			if(index<maxIndex[e]){
+				var item = _LEEKS[e]['items'][index]["item"];
+				// [leek: [weap: [map_danger]]]
+				map_leek_weap_danger[e][item] = getDmgMap(e, item);
+			}
+		}
+		if(getOperations()-startOperation>maxOp){
+			debugW('breaking loadMapsDanger at index: '+index);
+			break;
+		}
+	}
+}
+
+function finalizeMapsDanger(){
+	map_leek_danger = []; // reset
+	for(var e in getAliveEnemies()){
+		var cumulateMap = []; // reset
+		var maxTP = @_LEEKS[e]["tp"];
+		var items = @_LEEKS[e]["items"];
+		for(var c= 0; c <= 612; c++){
+			if(_OBSTACLES[c]!=null) continue;
+			cumulateMap[c]=0;
+			var TP = maxTP;
+			var compensateImprecision = 0;
+			for(var i in items){
+				var item = i["item"];
+				var cost = _ITEM_COST[item];
+				var damage = map_leek_weap_danger[e][item][c];
+				if(damage >0){
+					while(cost<=TP){
+						cumulateMap[c]+=damage;
+						TP-=cost;
+						if(_ITEM_HAVECD[item]) break;
+					}
+				}
+			}
+			if(TP<0) debugE("TP NOK §§§: " + TP);
+		}
+		map_leek_danger[e] = @cumulateMap;
+	}
+}
+
+// à besoin de loadMapsDanger(maxOp) && finalizeMapsDanger() pour renvoyer un vrai score.
+function getMapDanger(ignoreLeeks){
+	var finalMap = [];
+	for(var leek:var map in map_leek_danger){
+		if(inArray(ignoreLeeks, leek)) continue;
+		for(var cell:var dmg in map){
+			finalMap[cell]+=dmg;
+		}
+	}
+	return @finalMap;
+}
