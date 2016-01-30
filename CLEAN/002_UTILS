@@ -1,0 +1,139 @@
+include('auto');
+///////////////////////////////////////////
+// Fichier de fonction internes
+///////////////////////////////////////////
+
+// ========================
+// Fonctions pour l'init exclusivement
+// ========================
+
+// return un id unique pour une weap/chip & un array d'idleek peu importe l'ordre.
+// ainsi que la case cible pour les armes à aoe (mettre null sinon pour les lazer !)
+function getUniqueID(@array, @w, @to){
+	sort(array);
+	return @(w+string(array)+to);
+}
+
+// return reachable cell as an array of [cell:dist]
+// cells must be in form : [cell:dist]
+// TODO probablement des optis à faire pour les ignoreCells
+function getReachableCells(@cells, mp, @ignoreCells){
+	var stack = cells;
+	var tmp = cells;
+	var next = [];
+	while(mp--){
+		for(var currentWorkingCell : var dist in tmp){
+			for(var c in @_areaCells1[currentWorkingCell]){
+				if(stack[c] == null && (isEmptyCell(c) || inArray(ignoreCells, c))){
+					stack[c] = dist+1;
+					next[c] = dist+1;
+				}
+			}
+		}
+		tmp = @next;
+		next = [];
+	}
+	return @stack;
+}
+
+// return an array of cell according to AREA_CIRCLE_X, ordered from closest to farest.
+function prepareCellArea(@c, @area){
+    if(_OBSTACLES[c]!=null) return null; // c'est un obstacle, pas besoin de préparer
+    var x = getCellX(c), y = getCellY(c), result = [];
+    // AREA_CIRCLE_1
+    var cell = getCellFromXY(x, y-1);
+    if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+    cell = getCellFromXY(x, y+1);
+    if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+    cell = getCellFromXY(x-1, y);
+    if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+    cell = getCellFromXY(x+1, y);
+    if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+    // AREA_CIRCLE_2
+    if(area > AREA_CIRCLE_1){
+        cell = getCellFromXY(x, y-2);
+        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+        cell = getCellFromXY(x, y+2);
+        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+        cell = getCellFromXY(x-2, y);
+        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+        cell = getCellFromXY(x+2, y);
+        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+        cell = getCellFromXY(x-1, y-1);
+        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+        cell = getCellFromXY(x+1, y+1);
+        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+        cell = getCellFromXY(x-1, y+1);
+        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+        cell = getCellFromXY(x+1, y-1);
+        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+    }
+    // AREA_CIRCLE_3
+    if(area > AREA_CIRCLE_2){
+        cell = getCellFromXY(x, y-3);
+        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+        cell = getCellFromXY(x, y+3);
+        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+        cell = getCellFromXY(x-3, y);
+        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+        cell = getCellFromXY(x+3, y);
+        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+        cell = getCellFromXY(x-2, y-1);
+        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+        cell = getCellFromXY(x+2, y+1);
+        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+        cell = getCellFromXY(x-2, y+1);
+        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+        cell = getCellFromXY(x+2, y-1);
+        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+        cell = getCellFromXY(x-1, y-2);
+        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+        cell = getCellFromXY(x+1, y+2);
+        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+        cell = getCellFromXY(x-1, y+2);
+        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+        cell = getCellFromXY(x+1, y-2);
+        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+    }
+    return @result;
+}
+
+function getRelativeByLaunchedEffects(@leek){
+	var launchedEffects = getLaunchedEffects(leek);
+	var rel = 0;
+	for(var effect in launchedEffects){
+		if(effect[0] == EFFECT_RELATIVE_SHIELD && effect[6] == leek) rel += effect[1];
+	}
+	return @rel;
+}
+
+function getAbsoluteByLaunchedEffects(@leek){
+	var launchedEffects = getLaunchedEffects(leek);
+	var abs = 0;
+	for(var effect in launchedEffects){
+		if(effect[0] == EFFECT_ABSOLUTE_SHIELD && effect[6] == leek) abs += effect[1];
+	}
+	return @abs;
+}
+
+//////////////////////////
+// DEBUG
+//////////////////////////
+
+function startOp(){
+	__debug_operation = getOperations();
+}
+function stopOp(title){
+	debug(title + ": " + (getOperations()-__debug_operation-7));	
+}
+function stopOpk(title){
+	debug(title + ": " + round((getOperations()-__debug_operation)/1000) + "k");
+}
+
+function colorMap(){
+	var max=getLife();
+	for(var cell: var dmg in map_danger){
+		if(dmg>=max) mark(cell);
+		else mark(cell, getColor(dmg/max*255, 255-(dmg/max*255), 0));
+	}
+}
