@@ -1,38 +1,16 @@
 include('_NEW_WORKINPROGRESS');
 
-// représentation schematique d'un tour une fois l'ia fini
- 
-debugW("MON ID:"+_SELF);
-// on réfresh toutes les données de toutes les globals qui doivent être refresh à tous les tours
-reachableCells = getReachableCells([getCell():0], getMP(), []);
 updateEnnemiesWithMessage();
+//var maxOpe = 8000000 / getAliveEnemiesCount();
 for(var enemy in getAliveEnemies()){
-	getEnemyDamageMap(enemy);
+	debug('Enemi N°'+enemy);
+	getEnemyDamageMap(enemy, isSummon(enemy) ? 1000000 : 6000000);
 }
 
 maps_danger = getFinalDamageMapByLeek();
-//colorMap();
-
-debug('END : '+ getOperations());
-//pause();
-
-// on recréé la map des actions
-startOp();
-setMapActions();
-stopOp("setMapActions");
-debug("nbActions:"+count(map_actions));
-//pause();
-
-var bestMove;
-bestMove = getBestMove();
-playBestMove(bestMove);
-
-debug('bestMove : '+bestMove);
-//pause();
-/*
-var CellToGoTo = getBestSafeCell(getCell(), getMP(), 'balanced');
-debug(CellToGoTo);
-pause();
-moveTowardCell(CellToGoTo);
-*/
-debug(getOperations());
+var max=0;
+for(var v in maps_danger) if(v > max) max = v;
+for(var cell: var score in maps_danger){
+	if(max==0) mark(cell, COLOR_GREEN);
+	else mark(cell, getColor(score/max*255, 255-(score/max*255), 0));
+}
