@@ -118,7 +118,7 @@ function getOrderedWeapChipScore(@enemy, eStr, eMgc, eWsd){
 		var eLvl = getLevel(enemy);
 		if(eLvl<7) stuff = [WEAPON_PISTOL];
 		else if(eLvl<17) stuff = [WEAPON_PISTOL, CHIP_SPARK];
-		else if(eLvl<27) stuff = [WEAPON_PISTOL, CHIP_SPARK, WEAPON_SHOTGUN, WEAPON_GRENADE_LAUNCHER];
+		else if(eLvl<27) stuff = [WEAPON_PISTOL, CHIP_SPARK, WEAPON_SHOTGUN];
 		else if(eLvl<30) stuff = [WEAPON_MAGNUM, CHIP_SPARK, WEAPON_SHOTGUN];
 		else if(eLvl<40) stuff = [WEAPON_MAGNUM, CHIP_SPARK, WEAPON_BROADSWORD];
 		else if(eLvl<55) stuff = [WEAPON_MAGNUM, CHIP_SPARK, WEAPON_LASER, WEAPON_BROADSWORD];
