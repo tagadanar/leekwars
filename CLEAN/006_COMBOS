@@ -1,3 +1,345 @@
 include('auto');
+ 
+global _LEEKS_COEF;
 
-// TODO...
+//debut de chaque tour après avoir init la map de danger
+function updateCoef(){
+	_LEEKS_COEF = [];
+	for(var target in getAliveAllies()+getAliveEnemies()){
+		var infos = _LEEKS[target];
+		var eType = getEntityType(target);
+		var coef;
+		if(isAlly(target)){
+			if(eType==ENTITY_LEEK_){
+				coef = -1;
+				if(infos["life"]<infos["totallife"]*0.5) coef = -2;//urgentheal
+			}else if(eType==ENTITY_HEALER_BULB) coef = -1;
+			else if(eType==ENTITY_METALLIC_BULB) coef = -0.5;
+			else if(eType==ENTITY_PUNY_BULB) coef = -0.1;
+			else coef = -0.8;
+		}else{
+			if(eType==ENTITY_LEEK_) coef = 1;
+			else if(eType==ENTITY_HEALER_BULB) coef = 1;
+			else if(eType==ENTITY_METALLIC_BULB) coef = 0.5;
+			else if(eType==ENTITY_PUNY_BULB) coef = 0.1;
+			else coef = 0.8;
+			if(isSummon(target)) coef = 0.5;
+			else coef = 1;
+			
+		}
+		_LEEKS_COEF[target]=coef;
+	}
+}
+ 
+function getVirtualState(@leek, @stackOfResult){
+    var state = _LEEKS[leek];
+	if(stackOfResult[leek]==null) return @state;
+    state["life"]-=stackOfResult[leek]["dmg"];
+    state["life"]+=stackOfResult[leek]["heal"];
+    if(state["totallife"]<state["life"])state["life"]=state["totallife"];
+    state["psnlife"]=state["life"]-0/*TODO psnDmgTurn*/-stackOfResult[leek]["psn"];
+    return @state;
+}
+
+function getScoreOfAction(@action, @stackOfResult, @stackOfDeath){
+    var myStr = _LEEKS[_SELF]["str"],
+    myMgc = _LEEKS[_SELF]["mgc"],
+    myWis = _LEEKS[_SELF]["wsd"],
+    item = action["item"],
+    lifeMissing = _LEEKS[_SELF]["totallife"]-_LEEKS[_SELF]["life"],
+    area = _ITEM_AREA[item],
+    isAOE = area==AREA_CIRCLE_1||area==AREA_CIRCLE_2||area==AREA_CIRCLE_3,
+    effects = @_ITEM_EFFECTS[item],
+    score = 0,
+	isSelf = action["self"];
+ 
+    for(var target in action["targets"]){
+        if(target==_SELF && isSelf==null) continue; // ignore self, je ne suis pas sur la case ici !
+        if(stackOfDeath[target]!=null) continue; // si la cible est déjà morte, next !
+        var virtualTargetState = getVirtualState(target, stackOfResult);
+        var dmgRatio = isAOE? getDamagePercentage(getCell(target), action["to"], area) : 100;
+       
+        var coef = _LEEKS_COEF[target];
+       
+        var minDmgValue=0, avgDmgValue=0, turnPsn=0, avgPsn=0, healValue=0, lifeSteal=0;
+        for(var e in effects){
+            if(e[0] == EFFECT_DAMAGE){
+                // TODO check if liberate before: dont apply reduc.
+                minDmgValue += ( e[1]*(1+(myStr/100))
+                    *(1-(virtualTargetState["relShield"]/100))
+                    *(dmgRatio/100)) - virtualTargetState["absShield"];
+                avgDmgValue += (((e[1]+e[2])/2)*(1+(myStr/100))
+                    *(1-(virtualTargetState["relShield"]/100))
+                    *(dmgRatio/100)) - virtualTargetState["absShield"];
+            }
+            else if(e[0] == EFFECT_POISON){
+                turnPsn += e[1]*(1+(myMgc/100))*(dmgRatio/100);
+                avgPsn += ((e[1]+e[2])/2)*(1+(myMgc/100))*(dmgRatio/100) *(e[3]-1);
+				// 1tour de moins que le max.
+                // soit 100%, 67%, 33% sur 3 tours vu les effects de heal/libération.
+            }
+            else if(e[0] == EFFECT_HEAL){
+                healValue = ((e[1]+e[2])/2)*(1+(myWis/100))*(dmgRatio/100);
+            }
+            else{
+    //debugE("unhandled:"+getWeaponName(action["item"])+getChipName(action["item"]));
+            }
+        }
+        //kill?
+        // ici maybe check if damage pas < à 0 !
+        if(virtualTargetState["life"]<=minDmgValue){
+            minDmgValue=virtualTargetState["life"];
+            stackOfDeath[target]=target;
+            score+=(minDmgValue+500)*coef;
+            //lifesteal
+            lifeSteal+=minDmgValue*myWis/1000;
+            if(lifeSteal>0){
+                if(lifeSteal>lifeMissing)lifeSteal=lifeMissing;
+                lifeMissing-=lifeSteal;
+                score+=lifeSteal;
+                stackOfResult[_SELF]["heal"]+=lifeSteal;
+            }
+            //lifestealend
+        }else if(virtualTargetState["psnlife"]-minDmgValue <= turnPsn){
+            stackOfDeath[target]=target;
+            score+=(turnPsn+250)*coef;
+        }else{
+            if(stackOfResult[target]==null)stackOfResult[target]=[];
+            if(avgDmgValue>0){
+                stackOfResult[target]["dmg"]+=minDmgValue; // sauvegarde du min
+                score +=avgDmgValue*coef; // score de l'avg
+                //lifesteal
+                lifeSteal+=avgDmgValue*myWis/1000;
+                if(lifeSteal>0){
+                    if(lifeSteal>lifeMissing)lifeSteal=lifeMissing;
+                    lifeMissing-=lifeSteal;
+                    score+=lifeSteal;
+                    stackOfResult[_SELF]["heal"]+=lifeSteal;
+                }
+                //lifestealend
+            }
+            if(avgPsn>0){
+                stackOfResult[target]["psn"]+=turnPsn;
+                score +=avgPsn*coef;
+            }
+            if(healValue){
+                stackOfResult[target]["heal"]+=healValue;
+                score -=healValue*coef;
+            }
+        }
+    }
+    return @score;
+}
+
+global self_action_array = [];
+global assoc_weap_from = [];
+global assoc_from_item_actions = [];
+function addSelfActionToMAPS(item){
+	if(self_action_array[item]==null) self_action_array[item] = item;
+}
+
+function addActionToMAPS(@item, @from, @to, @targets){
+	var dist = reachableCells[from];
+    if(dist==null)return; // filtering all action I can't reach
+	
+	if(assoc_weap_from[item]==null) assoc_weap_from[item] = [];
+	push(assoc_weap_from[item], from);
+	
+	if(assoc_from_item_actions[from]==null) assoc_from_item_actions[from] = [];
+	if(assoc_from_item_actions[from][item]==null) assoc_from_item_actions[from][item] = [];
+	
+	var action = ["item":item, "from":from, "to":to, "targets":targets];
+	push(assoc_from_item_actions[from][item], action);
+}
+ 
+// remplis des tableaux avec toutes les actions possibles pour mon leek, ranger avec différentes clés pour trier tout ça...
+// c'est encore en construction, je ne me suis pas arrêté définitivement sur le modèle, j'expériemente pas mal là, je commence l'implémentation de l'algo de sac à dos, jvais surement refactor :)
+function setMapActions(){
+	updateCoef();
+	self_action_array = []; // clear
+	assoc_weap_from = []; // clear
+	assoc_from_item_actions = [];//clear
+    var self = getLeek(), interest;
+    for(var w in getWeapons()){
+        var weaponArea = _ITEM_AREA[w];    
+        if(weaponArea == AREA_POINT){ // normal cible unique.
+            for(var target in getAliveEnemies()){ // pas d'ally susceptible d'être une cible.
+                var toCell = getCell(target);
+                var targets = [target];
+                for(var from in _getCellsToUseWeapChipOnCell(w, toCell)){
+                    addActionToMAPS(w, from, toCell, targets);
+                }
+            }
+        }else if(weaponArea == AREA_LASER_LINE){ // cas d'un lazer
+			var minrange = _ITEM_MINRANGE[w];
+	        var maxrange = _ITEM_MAXRANGE[w];
+            for(var fromCell = 0; fromCell < 613; fromCell++){
+                if(_OBSTACLES[fromCell]==null){
+                    for(var toCell in getLazerTargetsCell(fromCell, minrange)){
+                        var targets = getLazerTargetsFromCell(fromCell, toCell, minrange, maxrange);
+                        if(count(targets)>0){// ici du coup je rend le b_lazer useless
+                            interest=0; // du fait de la simplification du test
+                            for(var t in targets) interest+=_LEEKS_COEF[t];
+                            if(interest>0) addActionToMAPS(w, fromCell, toCell, targets);
+                        }
+                    }
+                }
+            }
+        }else{// cas des aoe AREA_CIRCLE_X (1, 2, 3)
+        // TODO maybe opti en faisant qu'une fois les calcs par area pour weapon & chip
+            for(var i = 0; i < 613; i++){
+                if(_OBSTACLES[i]==null){
+                    var targets = getWeaponTargets(w, i);
+                    if(count(targets)>0){
+                        interest=0;
+                        for(var t in targets)
+                            interest+=_LEEKS_COEF[t]*getDamagePercentage(i, getCell(t), weaponArea)/100;
+                        if(interest>0) for(var from in _getCellsToUseWeapChipOnCell(w, i)){
+                            addActionToMAPS(w, from, i, targets);
+                        }
+                    }
+                }
+            }
+        }
+    }// end for weapons
+    for(var c in getChips()){
+        if((getLevel()>=36 && getCooldown(c)!=0) || isSpecialChip(c)) continue;
+        // pour le moment on gère pas les special chip
+        var chipArea = _ITEM_AREA[c];
+        // cannot be lazer_line
+        if(chipArea==AREA_POINT){
+            var targets = isPositivChip(c) ? getAliveAllies() : getAliveEnemies();
+            for(var target in targets){
+                if(target==_SELF) addSelfActionToMAPS(c);
+                var toCell = getCell(target);
+                for(var from in _getCellsToUseWeapChipOnCell(c, toCell)){
+                    addActionToMAPS(c, from, toCell, [target]);
+                }
+            }
+        }else if(chipArea==AREA_LASER_LINE){
+            debugE("CHIP LAZERLINE ?!?");
+        }else{// cas des aoe AREA_CIRCLE_X (1, 2, 3)
+        // TODO maybe opti en faisant qu'une fois les calcs par area pour weapon & chip
+            var isPositiv = isPositivChip(c);
+            for(var i = 0; i < 613; i++){
+                if(_OBSTACLES[i]==null){
+                    var targets = getChipTargets(c, i);
+                    if(count(targets)>0){
+                        interest=0;
+                        for(var t in targets){
+                            if(isPositiv)interest -= _LEEKS_COEF[t]* getDamagePercentage(i, getCell(t), chipArea)/100;
+                            else interest += _LEEKS_COEF[t]* getDamagePercentage(i, getCell(t), chipArea)/100;
+                        }
+                        if(interest>0) for(var from in _getCellsToUseWeapChipOnCell(c, i)){
+                            addActionToMAPS(c, from, i, targets);
+                        }
+                    }
+                }
+            }
+        }
+    }//end for chips
+}
+
+function findBestMove(combo){
+	var _BESTMOVE=null;
+	var selfCell = getCell();
+	var selfMP = getMP();
+	var selfLife = getLife();
+	var ignored = [selfCell];
+	
+	var fromArray = [];
+	// find cells where every part of combo can be done.
+	for(var c=0; c<=612; c++){
+		if(_OBSTACLES[c]!=null) continue;
+		var ok = true;
+		for(var item in combo){
+			if(assoc_from_item_actions[c][item]==null
+			&& self_action_array[item]==null){
+				ok = false;
+				break;
+			}
+		}
+		if(ok) push(fromArray, c);
+	}
+
+	for(var aCell in fromArray){
+		var mpMove1 = reachableCells[aCell];
+		var mpLeft = selfMP - mpMove1;
+		if(mpMove1 != null && mpLeft >= 0){
+			var score = 0, tmpScore = 0, best = [], total;
+			var stack = [], dead = [];
+			for(var item in combo){
+				var actions = @assoc_from_item_actions[aCell][item];
+				var aScore = 0, aBest, aStack, aDead;
+				if(actions!=null){
+					for(var action in actions){
+						var tmpstack=stack, tmpdead=dead;
+						tmpScore=getScoreOfAction(action, tmpstack, tmpdead);
+						if(aBest == null || score < tmpScore){
+							aScore = tmpScore;
+							aBest = action;
+							aStack = tmpstack;
+							aDead = tmpdead;
+						}
+					}
+				}
+				if(self_action_array[item]!=null){
+					var tmpstack=stack, tmpdead=dead;
+					//creation d'une action self sur cette case.
+					var action = ["item":item, 
+					"from":aCell, "to":aCell,
+					"targets":[_SELF], "self":true];
+
+					tmpScore=getScoreOfAction(action, tmpstack, tmpdead);
+					if(aBest == null || score < tmpScore){
+						aScore = tmpScore;
+						aBest = action;
+						aStack = tmpstack;
+						aDead = tmpdead;
+					}
+				}
+				if(aBest != null && aScore>0){
+					aBest["score"] = aScore; // pour le debug
+					push(best, aBest);
+					stack = aStack;
+					dead = aDead;
+					score += aScore;
+				}else{
+					//l'action n'a pas été push car inutile, les TP restant sont libre pour lancer un buff
+					//mayeb faire autrement, je laisse le commentaire ici.
+				}
+			}
+			var reachable = getReachableCells([aCell:0], mpLeft, ignored);
+			for(var sCell:var mpused in reachable){
+				var danger = map_danger[sCell];
+				if(danger>=selfLife) danger += 1000;
+				var finalScore = score - danger;
+				//if(count(dead)==0) score -= map_danger[sCell];
+				//else score -= getMapDanger(dead)[sCell];
+				if(_BESTMOVE==null || _BESTMOVE["score"]<finalScore) _BESTMOVE = [
+					"score":finalScore,
+					"actions":best,
+					"aCell":aCell,
+					"sCell":sCell,
+					"stack":stack,//pour le debuging
+					"dead":dead//pour le debuging
+				];
+			}
+		}
+	}
+	return @_BESTMOVE;
+}
+
+function playBestMove(bestMove){
+
+	moveTowardCell(bestMove["aCell"]);
+	for(var action in bestMove["actions"]){
+		debug("SCORE: "+action["score"]);
+		var item = action["item"], to = action["to"];
+		if(_ITEM_ISWEAP[item]) useWeaponOnCell(to);
+		else useChipOnCell(item, to);
+	}
+	moveTowardCell(bestMove["sCell"]);
+}
+
+
