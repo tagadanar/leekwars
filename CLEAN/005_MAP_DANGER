@@ -90,14 +90,17 @@ function getDmgMap(@enemy, @weaponOrChip){
         }//end movecellz
     }//end mapcells
     if(area==AREA_CIRCLE_1 || area==AREA_CIRCLE_2 || area==AREA_CIRCLE_3){
-		for(var distance = 1; distance<area-2; distance++){
+		for(var distance = 1; distance<=area-2; distance++){
 			var percentageDmg = (100 - ((50 / area) * distance));
 			var dmg = getWeapChipDmg(weaponOrChip, eMgc, eStr, eWsd, eTp, percentageDmg);
+			if(dmg ==0) break;
+			var circle = [];
 			for(var c:var value in map){
 				if(value>0)
 					for(var cell in @_areaCells1[c])
-						if(map[cell]==0) map[cell]=dmg;
+						if(map[cell]==0) push(circle, cell);
 			}
+			for(var cell in circle) map[cell] = dmg;
 		}
 	}
     return @map;
@@ -115,7 +118,7 @@ function getOrderedWeapChipScore(@enemy, eStr, eMgc, eWsd){
 		var eLvl = getLevel(enemy);
 		if(eLvl<7) stuff = [WEAPON_PISTOL];
 		else if(eLvl<17) stuff = [WEAPON_PISTOL, CHIP_SPARK];
-		else if(eLvl<27) stuff = [WEAPON_PISTOL, CHIP_SPARK, WEAPON_SHOTGUN];
+		else if(eLvl<27) stuff = [WEAPON_PISTOL, CHIP_SPARK, WEAPON_SHOTGUN, WEAPON_GRENADE_LAUNCHER];
 		else if(eLvl<30) stuff = [WEAPON_MAGNUM, CHIP_SPARK, WEAPON_SHOTGUN];
 		else if(eLvl<40) stuff = [WEAPON_MAGNUM, CHIP_SPARK, WEAPON_BROADSWORD];
 		else if(eLvl<55) stuff = [WEAPON_MAGNUM, CHIP_SPARK, WEAPON_LASER, WEAPON_BROADSWORD];
