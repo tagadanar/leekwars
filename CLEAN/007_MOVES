@@ -1,29 +1,15 @@
 include('auto');
 
 /**
- * Retourne un tableau de la forme [cell:danger]
- *
- * @return array [cell:danger]
- */
-function getDangerOfCell(){
-	var dangerOfCell = [];
-	for(var cell : var dist in reachableCells){
-		dangerOfCell[cell] = map_danger[cell];
-	}
-	
-	return @dangerOfCell;
-}
-
-/**
  * Retourne la cellule la plus sure parmis les cellules accessibles
  *
  * @return int Cellule la plus sure
  */
 function getSafestCell(){
-	var dangerOfCells = getDangerOfCell();
 	var minDanger = 1000000;
 	var safestCell = getCell();
-	for(var cell: var danger in dangerOfCells){
+	for(var cell: var dist in reachableCells){
+		var danger = @map_danger[cell];
 		if(danger < minDanger){
 			minDanger = danger;
 			safestCell = cell;
