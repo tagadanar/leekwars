@@ -11,24 +11,6 @@ include('auto');
 global _SELF = getLeek();
 
 // Contient les informations sur les leeks, refresh à tous les tours en début de tour.
-// _LEEKS[id]=[
-//	"totallife": getTotalLife(leek)
-//	,"life": getLife(leek)
-//	,"psnlife": getLife(leek)//TODO -psnDmgTurn+vaccinTurn
-//	,"str": isLvl5 ? getStrength(leek) : 50
-//	,"mgc": isLvl5 ? getMagic(leek) : 0
-//	,"wsd": isLvl5 ? getWisdom(leek) : 0
-//	,"rst": isLvl5 ? getResistance(leek) : 0
-//	,"agi": isLvl5 ? getAgility(leek) : 0
-//	,"snc": isLvl5 ? getScience(leek) : 0
-//	,"tp": isLvl10 ? getTP(leek) : 10
-//	,"mp": isLvl10 ? getMP(leek) : 3
-//	,"relShield": isLvl38 ? getRelativeShield(leek) : getRelativeByLaunchedEffects(leek)
-//	,"absShield": isLvl38 ? getAbsoluteShield(leek) : getAbsoluteByLaunchedEffects(leek)
-//	,"dmgReturn": isLvl5 ? getDamageReturn(leek) : 0
-//	,"items": getOrderedWeapChipScore() (n'est refresh qu'à l'appel de loadMapsDanger)
-//	,'finalMap': null
-//	];
 global _LEEKS = [];
 
 
@@ -182,4 +164,183 @@ global _CHIP_ISSPECIAL = [
     CHIP_LIGHTNING_BULB: true, // summoning
     CHIP_TELEPORTATION: true, // déplacement complexe, aucune idée
     CHIP_INVERSION:true // déplacement complexe, pareil...
+];
+
+// contient l'association entre l'id d'une puce/arme et sa constante sous forme de string
+global _ITEMID_TOSTRING = [
+    CHIP_ACCELERATION:"CHIP_ACCELERATION",
+    CHIP_ADRENALINE:"CHIP_ADRENALINE",
+    CHIP_ANTIDOTE:"CHIP_ANTIDOTE",
+    CHIP_ARMOR:"CHIP_ARMOR",
+    CHIP_ARMORING:"CHIP_ARMORING",
+    CHIP_BALL_AND_CHAIN:"CHIP_BALL_AND_CHAIN",
+    CHIP_BANDAGE:"CHIP_BANDAGE",
+    CHIP_BARK:"CHIP_BARK",
+    CHIP_BURNING:"CHIP_BURNING",
+    CHIP_CARAPACE:"CHIP_CARAPACE",
+    CHIP_COLLAR:"CHIP_COLLAR",
+    CHIP_CURE:"CHIP_CURE",
+    CHIP_DEVIL_STRIKE:"CHIP_DEVIL_STRIKE",
+    CHIP_DOPING:"CHIP_DOPING",
+    CHIP_DRIP:"CHIP_DRIP",
+    CHIP_FEROCITY:"CHIP_FEROCITY",
+    CHIP_FERTILIZER:"CHIP_FERTILIZER",
+    CHIP_FIRE_BULB:"CHIP_FIRE_BULB",
+    CHIP_FLAME:"CHIP_FLAME",
+    CHIP_FORTRESS:"CHIP_FORTRESS",
+    CHIP_FRACTURE:"CHIP_FRACTURE",
+    CHIP_HEALER_BULB:"CHIP_HEALER_BULB",
+    CHIP_HELMET:"CHIP_HELMET",
+    CHIP_ICE:"CHIP_ICE",
+    CHIP_ICEBERG:"CHIP_ICEBERG",
+    CHIP_ICED_BULB:"CHIP_ICED_BULB",
+    CHIP_INVERSION:"CHIP_INVERSION",
+    CHIP_LEATHER_BOOTS:"CHIP_LEATHER_BOOTS",
+    CHIP_LIBERATION:"CHIP_LIBERATION",
+    CHIP_LIGHTNING:"CHIP_LIGHTNING",
+    CHIP_LIGHTNING_BULB:"CHIP_LIGHTNING_BULB",
+    CHIP_LOAM:"CHIP_LOAM",
+    CHIP_METALLIC_BULB:"CHIP_METALLIC_BULB",
+    CHIP_METEORITE:"CHIP_METEORITE",
+    CHIP_MIRROR:"CHIP_MIRROR",
+    CHIP_MOTIVATION:"CHIP_MOTIVATION",
+    CHIP_PEBBLE:"CHIP_PEBBLE",
+    CHIP_PLAGUE:"CHIP_PLAGUE",
+    CHIP_PROTEIN:"CHIP_PROTEIN",
+    CHIP_PUNY_BULB:"CHIP_PUNY_BULB",
+    CHIP_RAGE:"CHIP_RAGE",
+    CHIP_RAMPART:"CHIP_RAMPART",
+    CHIP_REFLEXES:"CHIP_REFLEXES",
+    CHIP_REGENERATION:"CHIP_REGENERATION",
+    CHIP_REMISSION:"CHIP_REMISSION",
+    CHIP_RESURRECTION:"CHIP_RESURRECTION",
+    CHIP_ROCK:"CHIP_ROCK",
+    CHIP_ROCKFALL:"CHIP_ROCKFALL",
+    CHIP_ROCKY_BULB:"CHIP_ROCKY_BULB",
+    CHIP_SEVEN_LEAGUE_BOOTS:"CHIP_SEVEN_LEAGUE_BOOTS",
+    CHIP_SHIELD:"CHIP_SHIELD",
+    CHIP_SHOCK:"CHIP_SHOCK",
+    CHIP_SLOW_DOWN:"CHIP_SLOW_DOWN",
+    CHIP_SOLIDIFICATION:"CHIP_SOLIDIFICATION",
+    CHIP_SOPORIFIC:"CHIP_SOPORIFIC",
+    CHIP_SPARK:"CHIP_SPARK",
+    CHIP_STALACTITE:"CHIP_STALACTITE",
+    CHIP_STEROID:"CHIP_STEROID",
+    CHIP_STRETCHING:"CHIP_STRETCHING",
+    CHIP_TELEPORTATION:"CHIP_TELEPORTATION",
+    CHIP_THORN:"CHIP_THORN",
+    CHIP_TOXIN:"CHIP_TOXIN",
+    CHIP_TRANQUILIZER:"CHIP_TRANQUILIZER",
+    CHIP_VACCINE:"CHIP_VACCINE",
+    CHIP_VENOM:"CHIP_VENOM",
+    CHIP_WALL:"CHIP_WALL",
+    CHIP_WARM_UP:"CHIP_WARM_UP",
+    CHIP_WHIP:"CHIP_WHIP",
+    CHIP_WINGED_BOOTS:"CHIP_WINGED_BOOTS",
+	WEAPON_AXE:"WEAPON_AXE",
+	WEAPON_B_LASER:"WEAPON_B_LASER",
+	WEAPON_BROADSWORD:"WEAPON_BROADSWORD",
+	WEAPON_DESTROYER:"WEAPON_DESTROYER",
+	WEAPON_DOUBLE_GUN:"WEAPON_DOUBLE_GUN",
+	WEAPON_ELECTRISOR:"WEAPON_ELECTRISOR",
+	WEAPON_FLAME_THROWER:"WEAPON_FLAME_THROWER",
+	WEAPON_GAZOR:"WEAPON_GAZOR",
+	WEAPON_GRENADE_LAUNCHER:"WEAPON_GRENADE_LAUNCHER",
+	WEAPON_KATANA:"WEAPON_KATANA",
+	WEAPON_LASER:"WEAPON_LASER",
+	WEAPON_MACHINE_GUN:"WEAPON_MACHINE_GUN",
+	WEAPON_MAGNUM:"WEAPON_MAGNUM",
+	WEAPON_M_LASER:"WEAPON_M_LASER",
+	WEAPON_PISTOL:"WEAPON_PISTOL",
+	WEAPON_SHOTGUN:"WEAPON_SHOTGUN"
+];
+
+
+global _ITEM_PRIORITY = [
+	CHIP_LIBERATION:0,//TOUJOURS lancer en premier.
+    CHIP_REFLEXES:1,// puis les boosts agi qui donne des crits à tout le reste de l'action
+	CHIP_STRETCHING:2,// dans cet ordre si on fait les 2, merci loutre pour tes intégrales !
+	CHIP_WARM_UP:3,// crit des autres, pas important d'être au début mais bon...
+    CHIP_RAGE:4,// puis TP
+	CHIP_MOTIVATION:4,
+	CHIP_WHIP:5,
+    CHIP_ADRENALINE:5,
+	CHIP_SEVEN_LEAGUE_BOOTS:6,//puis MP
+	CHIP_ACCELERATION:6,
+	CHIP_WINGED_BOOTS:7
+	CHIP_LEATHER_BOOTS:7,
+	CHIP_DOPING:8,//puis force (avant de taper donc.)
+	CHIP_PROTEIN:9,
+	CHIP_FEROCITY:10,
+	CHIP_STEROID:10,
+	CHIP_SOLIDIFICATION:11,// puis resist avant les armures
+	CHIP_BARK:12,
+	CHIP_COLLAR:13,// puis sagesse avant les heal (mm si pour le moment y'a pas d'autoheal..)
+	CHIP_CARAPACE:14,// puis les armures après les heal avant les spell genre devilstrike
+    CHIP_FORTRESS:14,
+    CHIP_ARMOR:14,
+	CHIP_RAMPART:14,
+	CHIP_SHIELD:14,
+	CHIP_WALL:14,
+	CHIP_HELMET:14,
+	CHIP_DEVIL_STRIKE:15,// puis les dégâts et autodégât avec devilstrike
+	CHIP_BURNING:16,
+	CHIP_METEORITE:16,
+	CHIP_ICEBERG:16,
+	CHIP_ROCKFALL:16,
+	CHIP_LIGHTNING:16,
+	CHIP_STALACTITE:16,
+    CHIP_FLAME:16,
+	CHIP_ROCK:16,
+	CHIP_ICE:16,
+	CHIP_SPARK:16,
+    CHIP_PEBBLE:16,
+	CHIP_SHOCK:16,
+	WEAPON_AXE:17,// les weapon pareil, après les armures, le avant les heal dépends souvent
+	WEAPON_B_LASER:17,// de la situation ducoup c'est chiant...
+	WEAPON_BROADSWORD:17,
+	WEAPON_DESTROYER:17,
+	WEAPON_DOUBLE_GUN:17,
+	WEAPON_ELECTRISOR:17,
+	WEAPON_FLAME_THROWER:17,
+	WEAPON_GAZOR:17,
+	WEAPON_GRENADE_LAUNCHER:17,
+	WEAPON_KATANA:17,
+	WEAPON_LASER:17,
+	WEAPON_MACHINE_GUN:17,
+	WEAPON_MAGNUM:17,
+	WEAPON_M_LASER:17,
+	WEAPON_PISTOL:17,
+	WEAPON_SHOTGUN:17,
+	CHIP_SOPORIFIC:18,// puis entrave & poison AVANT antidote & heal.
+    CHIP_BALL_AND_CHAIN:18,
+	CHIP_TRANQUILIZER:18,
+	CHIP_SLOW_DOWN:18,
+	CHIP_FRACTURE:18,
+    CHIP_PLAGUE:18,
+    CHIP_TOXIN:18,
+	CHIP_VENOM:18,
+    CHIP_FERTILIZER:19,// puis heal après poison et dégât (j'avoue qu'en cas de blessure le heal pourrait être interessant avant de devilstrike... jsais pas comment gérer ça.)
+	CHIP_REMISSION:19,
+	CHIP_LOAM:19,
+	CHIP_ARMORING:19,
+	CHIP_REGENERATION:19,
+	CHIP_VACCINE:19,
+	CHIP_DRIP:19,
+    CHIP_CURE:19,
+    CHIP_BANDAGE:19,
+	CHIP_MIRROR:20,// puis renvoie de dégât (faut bien les mettres qqpart...)
+	CHIP_THORN:20,
+    CHIP_ANTIDOTE:21,// puis antidote, toujours après avoir utiliser les poisons !
+	// et le reste...
+    CHIP_LIGHTNING_BULB:22,//specialCHIP    
+    CHIP_FIRE_BULB:22,//specialCHIP
+	CHIP_METALLIC_BULB:22,//specialCHIP
+    CHIP_HEALER_BULB:22,//specialCHIP
+    CHIP_ICED_BULB:22,//specialCHIP
+	CHIP_ROCKY_BULB:22,//specialCHIP
+	CHIP_PUNY_BULB:22,//specialCHIP
+    CHIP_INVERSION:22,//specialCHIP
+	CHIP_TELEPORTATION:22,//specialCHIP
+    CHIP_RESURRECTION:22//specialCHIP
 ];
