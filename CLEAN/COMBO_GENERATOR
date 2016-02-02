@@ -1,0 +1,109 @@
+include('auto');
+// INSTRUCTION: lancer un combat de test avec ce leek pour récupérer la liste des combos disponibles en dur à mettre dans l'ia sous la forme :
+// var combos = [idWeap:[[combo1], [combo2]..], idWeap:[...]]
+// idWeap représente l'arme en main.
+// si pas d'arme en main, prendre la clé "EMPTY" sous forme de string.
+
+global combos, knownCombos, combo_mincost, EMPTY=-1;
+var inHands = getWeapons();
+var stuff = getWeapons()+getChips();
+var maxTP = getTP();
+if(getTurn()==1){
+	var result = [];
+	startOp();
+	for(var w in inHands){
+		result[w]= tools2Combo(stuff, maxTP, w);
+	}
+	result[EMPTY] = tools2Combo(stuff, maxTP, null);
+	stopOpk("Génération des combos");
+	outPutComboVar(result);
+}
+
+function outPutComboVar(comboZ){
+	
+	//generation de la string
+	var finalString = "\nvar combos = [\n";
+	var virg = "";
+	for(var startItem:var combobo in comboZ){
+		var itemName = startItem==EMPTY ? "'EMPTY'" : _ITEMID_TOSTRING[startItem];
+		finalString+= virg + itemName +": [\n";
+		var virgule= "";
+		for(var combo in combobo){
+
+		// FIXME ça a pas l'air de marcher...
+			//sort combo to place some stuff before (like liberation first)
+			var cmb/*hahaha..*/= arraySort(combo, function(a, b){
+				if(_ITEM_PRIORITY[a] < _ITEM_PRIORITY[b]) return 1;
+				else if(_ITEM_PRIORITY[a] > _ITEM_PRIORITY[b]) return -1;
+				return 0;
+			});
+
+
+			// TODO mettre en clé le produit de nb premier pour check le cd comme ça dans l'ia
+			// une fois qu'on gèrera les combos comme ça.
+			finalString+= "\t" + virgule + "[";
+			var virgule2= "";
+			for(var item in cmb){
+				finalString+= virgule2 + _ITEMID_TOSTRING[item];
+				if(virgule2=="") virgule2= ", ";
+			}
+			finalString+= "]\n";
+			if(virgule=="") virgule = ",";
+		}
+		finalString+="]";
+		if(virg=="") virg = ",";
+	}
+	finalString+="];";
+	//output
+	debug(finalString);
+}
+
+function tools2Combo(@tools,@tp,@activeWeapon){
+	combos = [];
+	knownCombos = [];
+	combo_mincost=50;
+	for(var t in tools){
+		if(_ITEM_COST[t]<combo_mincost) combo_mincost = _ITEM_COST[t];
+	}
+	addMoreItem([], tools, tp, activeWeapon);
+	return combos;
+}
+function addMoreItem(@combo, @tools, @tpleft, @activeWeapon){
+	// je n'ai plus assez de TP pour faire la moindre action
+	// ou je n'ai plus d'item à ajouter
+	if(isEmpty(tools) || combo_mincost>tpleft){
+		if(count(combo)>0){ // si la combo n'est pas vide, alors c'est une combo.
+			sort(combo); // je la rend unique peu importe l'ordre
+			var id = string(combo);
+			// j'aurais directement fait combos[id]=combo mais faut passer les tests :P
+			if(knownCombos[id]==null){
+				knownCombos[id]=true;
+				push(combos, combo);
+			}
+		}
+	}else{
+		var toolsSet = tools, switch, cost;
+		// copie tools>toolsSet pour ne pas casser la boucle en retirant des trucs.
+		for(var item in tools){
+			switch = _ITEM_ISWEAP[item] && item!=activeWeapon ? 1 : 0;
+			cost = _ITEM_COST[item]+switch;
+			if(tpleft>=cost){ // je peux l'utiliser ?
+				// copie pour ne pas impacter les autres branches.
+				var currentCombo = combo, 
+				currentWeapon = activeWeapon, 
+				currentTp = tpleft - cost,//retrait de TP
+				currentTools = toolsSet;// copie nécessaire pour ne remove la puce avec CD que dans les sous-branches. à voir pour limiter les copies
+				if(switch){
+					removeElement(currentTools, currentWeapon); // on ne reswitch pas vers une arme déjà utiliser, gachi de TP, ça fait des combos incomplêtes..
+					currentWeapon = item; // switch d'arme
+				}
+				else if(_ITEM_HAVECD[item]) removeElement(currentTools, item); // puce en CD
+				push(currentCombo, item); // ajout de l'item dans la combo
+				addMoreItem(currentCombo, currentTools, currentTp, currentWeapon);
+			}else{ // on ne pourra plus utiliser cet item.
+				removeElement(toolsSet, item);
+				if(count(toolsSet)==0) addMoreItem(combo, toolsSet, tpleft, activeWeapon);
+			}
+		}
+	}
+}
