@@ -30,7 +30,8 @@ function updateCoef(){
 		_LEEKS_COEF[target]=coef;
 	}
 }
- 
+                 
+// TODO liberate remove reduc.
 function getVirtualState(@leek, @stackOfResult){
     var state = _LEEKS[leek];
 	if(stackOfResult[leek]==null) return @state;
@@ -45,6 +46,10 @@ function getScoreOfAction(@action, @stackOfResult, @stackOfDeath){
     var myStr = _LEEKS[_SELF]["str"],
     myMgc = _LEEKS[_SELF]["mgc"],
     myWis = _LEEKS[_SELF]["wsd"],
+	myRst = _LEEKS[_SELF]["rst"],
+	mySnc = _LEEKS[_SELF]["snc"],
+	myAbsShield = _LEEKS[_SELF]["absShield"],
+	myRelShield = _LEEKS[_SELF]["relShield"],
     item = action["item"],
     lifeMissing = _LEEKS[_SELF]["totallife"]-_LEEKS[_SELF]["life"],
     area = _ITEM_AREA[item],
@@ -61,32 +66,68 @@ function getScoreOfAction(@action, @stackOfResult, @stackOfDeath){
        
         var coef = _LEEKS_COEF[target];
        
-        var minDmgValue=0, avgDmgValue=0, turnPsn=0, avgPsn=0, healValue=0, lifeSteal=0;
+        var minDmgValue=0, avgDmgValue=0, turnPsn=0, avgPsn=0, healValue=0, shieldValue=0, boostValue=0, lifeSteal=0;
         for(var e in effects){
-            if(e[0] == EFFECT_DAMAGE){
-                // TODO check if liberate before: dont apply reduc.
-                minDmgValue += ( e[1]*(1+(myStr/100))
+			var type = e[0];
+			var min = e[1];
+			var max = e[2];
+			var duration = e[3];
+            if(type == EFFECT_DAMAGE){
+                minDmgValue += ( min*(1+(myStr/100))
                     *(1-(virtualTargetState["relShield"]/100))
                     *(dmgRatio/100)) - virtualTargetState["absShield"];
-                avgDmgValue += (((e[1]+e[2])/2)*(1+(myStr/100))
+                avgDmgValue += (((min+max)/2)*(1+(myStr/100))
                     *(1-(virtualTargetState["relShield"]/100))
                     *(dmgRatio/100)) - virtualTargetState["absShield"];
             }
-            else if(e[0] == EFFECT_POISON){
-                turnPsn += e[1]*(1+(myMgc/100))*(dmgRatio/100);
-                avgPsn += ((e[1]+e[2])/2)*(1+(myMgc/100))*(dmgRatio/100) *(e[3]-1);
+            else if(type == EFFECT_POISON){
+                turnPsn += min*(1+(myMgc/100))*(dmgRatio/100);
+                avgPsn += ((min+max)/2)*(1+(myMgc/100))*(dmgRatio/100) *(duration-1);
 				// 1tour de moins que le max.
                 // soit 100%, 67%, 33% sur 3 tours vu les effects de heal/libération.
             }
-            else if(e[0] == EFFECT_HEAL){
-                healValue = ((e[1]+e[2])/2)*(1+(myWis/100))*(dmgRatio/100);
+            else if(type == EFFECT_HEAL){
+                healValue = ((min+max)/2)*(1+(myWis/100))*(dmgRatio/100);
             }
+			else if(type == EFFECT_BOOST_MAX_LIFE){
+				healValue = ((min+max)/2)*(1+(myWis/100))*(dmgRatio/100);
+				// TODO gérer autrement en donnant double valeur aux points et sans passer par healValue qui est capé au maxhp dela cible.
+			}
+			else if(type == EFFECT_ABSOLUTE_SHIELD){
+				shieldValue = ((min+max)/2)*(1+(myRst/100))*(dmgRatio/100)*duration;
+			}
+			else if(type == EFFECT_RELATIVE_SHIELD){
+				shieldValue = ((min+max)/2)*(1+(myRst/100))*(dmgRatio/100)*duration*5;
+				//*5 pour que 30% d'armure soit == à 150 armor abs environ
+				// je pense que ce *5 est discutable, selon les dégâts potentiels de l'adversaire, ptete faire un calcul en début de tour du "potentiel agressif" de la team en face en terme de force/science/magie pour orienter les choix ?
+			}	
+			else if(type == EFFECT_BUFF_STRENGTH
+			|| type == EFFECT_BUFF_AGILITY
+			|| type == EFFECT_BUFF_WISDOM
+			|| type == EFFECT_BUFF_RESISTANCE){
+				boostValue = ((min+max)/2)*(1+(mySnc/100))*(dmgRatio/100)*duration;
+				// un seul test pour la simplcité pour le moment.
+			}
+			else if(type == EFFECT_BUFF_MP
+			|| type == EFFECT_BUFF_TP){
+				// un seul pour la simplicité pour le moment
+				boostValue = ((min+max)/2)*(1+(mySnc/100))*(dmgRatio/100)*duration*50;
+				// la valeur 50 est évidemment complètement arbitraire. TODO mieux.
+			}
             else{
+			//TODO:
+			/*EFFECT_KILL
+EFFECT_SHACKLE_MAGIC
+EFFECT_SHACKLE_MP
+EFFECT_SHACKLE_STRENGTH
+EFFECT_SHACKLE_TP
+*/	
     //debugE("unhandled:"+getWeaponName(action["item"])+getChipName(action["item"]));
             }
         }
         //kill?
         // ici maybe check if damage pas < à 0 !
+		//TODO dans le kill et le normal, faire les revoies de dégâts !
         if(virtualTargetState["life"]<=minDmgValue){
             minDmgValue=virtualTargetState["life"];
             stackOfDeath[target]=target;
@@ -105,12 +146,12 @@ function getScoreOfAction(@action, @stackOfResult, @stackOfDeath){
             score+=(turnPsn+250)*coef;
         }else{
             if(stackOfResult[target]==null)stackOfResult[target]=[];
-            if(avgDmgValue>0){
+            if(avgDmgValue){
                 stackOfResult[target]["dmg"]+=minDmgValue; // sauvegarde du min
                 score +=avgDmgValue*coef; // score de l'avg
                 //lifesteal
                 lifeSteal+=avgDmgValue*myWis/1000;
-                if(lifeSteal>0){
+                if(lifeSteal){
                     if(lifeSteal>lifeMissing)lifeSteal=lifeMissing;
                     lifeMissing-=lifeSteal;
                     score+=lifeSteal;
@@ -118,7 +159,7 @@ function getScoreOfAction(@action, @stackOfResult, @stackOfDeath){
                 }
                 //lifestealend
             }
-            if(avgPsn>0){
+            if(avgPsn){
                 stackOfResult[target]["psn"]+=turnPsn;
                 score +=avgPsn*coef;
             }
@@ -126,6 +167,15 @@ function getScoreOfAction(@action, @stackOfResult, @stackOfDeath){
                 stackOfResult[target]["heal"]+=healValue;
                 score -=healValue*coef;
             }
+			if(shieldValue){
+				//TODO gestion de l'armure dans la stack, pour des moves de folies en mode shield puis blazerheal.
+				//stackOfResult[target]["resist"]+=shieldValue;
+				score +=shieldValue*coef;
+			}
+			if(boostValue){
+				//TODO gestion des stats dans la stack, pareillement qu'au dessus pour des kills de forains en mode boostkill pour le pv manquant.
+				score += boostValue*coef;
+			}
         }
     }
     return @score;
@@ -134,9 +184,6 @@ function getScoreOfAction(@action, @stackOfResult, @stackOfDeath){
 global self_action_array = [];
 global assoc_weap_from = [];
 global assoc_from_item_actions = [];
-function addSelfActionToMAPS(item){
-	if(self_action_array[item]==null) self_action_array[item] = item;
-}
 
 function addActionToMAPS(@item, @from, @to, @targets){
 	var dist = reachableCells[from];
@@ -210,11 +257,15 @@ function setMapActions(){
         if(chipArea==AREA_POINT){
             var targets = isPositivChip(c) ? getAliveAllies() : getAliveEnemies();
             for(var target in targets){
-                if(target==_SELF) addSelfActionToMAPS(c);
-                var toCell = getCell(target);
-                for(var from in _getCellsToUseWeapChipOnCell(c, toCell)){
-                    addActionToMAPS(c, from, toCell, [target]);
-                }
+				// self_actions !
+                if(target==_SELF && _ITEM_MINRANGE[c]==0 && self_action_array[c]==null){
+					self_action_array[c] = c;
+				}
+					// others.
+				var toCell = getCell(target);
+				for(var from in _getCellsToUseWeapChipOnCell(c, toCell)){
+					addActionToMAPS(c, from, toCell, [target]);
+				}
             }
         }else if(chipArea==AREA_LASER_LINE){
             debugE("CHIP LAZERLINE ?!?");
@@ -268,7 +319,9 @@ function findBestMove(combo){
 		if(mpMove1 != null && mpLeft >= 0){
 			var score = 0, tmpScore = 0, best = [], total;
 			var stack = [], dead = [];
+			// calcul du score de la meilleure combo depuis cette case.
 			for(var item in combo){
+				// meilleure score pour chaque item
 				var actions = @assoc_from_item_actions[aCell][item];
 				var aScore = 0, aBest, aStack, aDead;
 				if(actions!=null){
@@ -282,14 +335,13 @@ function findBestMove(combo){
 							aDead = tmpdead;
 						}
 					}
-				}
+				}//si actions est null, alors self_action ne peut pas être null.
 				if(self_action_array[item]!=null){
 					var tmpstack=stack, tmpdead=dead;
 					//creation d'une action self sur cette case.
 					var action = ["item":item, 
 					"from":aCell, "to":aCell,
 					"targets":[_SELF], "self":true];
-
 					tmpScore=getScoreOfAction(action, tmpstack, tmpdead);
 					if(aBest == null || score < tmpScore){
 						aScore = tmpScore;
@@ -309,6 +361,7 @@ function findBestMove(combo){
 					//mayeb faire autrement, je laisse le commentaire ici.
 				}
 			}
+			// à partir du score de la meilleure combo depuis aCell, recherche de la meilleure case safe.
 			var reachable = getReachableCells([aCell:0], mpLeft, ignored);
 			for(var sCell:var mpused in reachable){
 				var danger = map_danger[sCell];
@@ -331,15 +384,15 @@ function findBestMove(combo){
 }
 
 function playBestMove(bestMove){
-
 	moveTowardCell(bestMove["aCell"]);
 	for(var action in bestMove["actions"]){
 		debug("SCORE: "+action["score"]);
 		var item = action["item"], to = action["to"];
-		if(_ITEM_ISWEAP[item]) useWeaponOnCell(to);
+		if(_ITEM_ISWEAP[item]){
+			if(getWeapon()!=item) setWeapon(item);
+			useWeaponOnCell(to);
+		} 
 		else useChipOnCell(item, to);
 	}
 	moveTowardCell(bestMove["sCell"]);
 }
-
-
