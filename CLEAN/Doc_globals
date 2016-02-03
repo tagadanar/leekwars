@@ -93,6 +93,9 @@ _CHIP_ISPOSITIV         ==> True si la puce est un boost/heal, false sinon      
 
 _CHIP_ISSPECIAL         ==> Est spéciale une puce d'invo, de TP, resu, ...      [specialChip:true]
 
+_ITEMID_TOSTRING	==> Association entre l'item et sa constante string	[itemId:itemName]
+_ITEM_PRIORITY		==> Priorité d'utilisation des items dans un combo	[itemId:priority]
+
 
 
 Ajout Roshyo pour les sumonners :
