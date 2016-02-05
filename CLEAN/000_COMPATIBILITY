@@ -1,0 +1,28 @@
+global _LVL = getLevel();
+
+// redefine getCooldown for low lvl
+global __getCooldownFunc = getCooldown;
+global __useChipOnCellFunc = useChipOnCell;
+global _CD = [];
+getCooldown = function (chip) {
+	if(_LVL < 36) return _CD[chip]==null ? 0 : _CD[chip];
+	else return __getCooldownFunc(chip);
+};
+useChipOnCell = function (chip, cell){
+	if(_LVL < 36){
+		var cd = getChipCooldown(chip);
+		if(cd>0){
+			var res = __useChipOnCellFunc(chip, cell);
+			if(res>0 && cd>0){
+				_CD[chip]=cd;
+			}
+			return res;
+		}
+	}
+	return __useChipOnCellFunc(chip, cell);
+};
+// reduc de 1 à chaque debut de tour
+for(var chip : var cd in _CD) {
+	if(cd>0) cd--;
+	_CD[chip] = cd;
+}
