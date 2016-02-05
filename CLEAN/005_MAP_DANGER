@@ -117,17 +117,10 @@ function getOrderedWeapChipScore(@enemy, eStr, eMgc, eWsd){
     var lvl = getLevel(), dmg, cost, effects, allChipWeap = [], stuff;
 	if(lvl >= 57) stuff = getWeapons(enemy)+getChips(enemy);
 	else{
-		var eLvl = getLevel(enemy);
-		if(eLvl<7) stuff = [WEAPON_PISTOL];
-		else if(eLvl<17) stuff = [WEAPON_PISTOL, CHIP_SPARK];
-		else if(eLvl<27) stuff = [WEAPON_PISTOL, CHIP_SPARK, WEAPON_SHOTGUN];
-		else if(eLvl<30) stuff = [WEAPON_MAGNUM, CHIP_SPARK, WEAPON_SHOTGUN];
-		else if(eLvl<40) stuff = [WEAPON_MAGNUM, CHIP_SPARK, WEAPON_BROADSWORD];
-		else if(eLvl<55) stuff = [WEAPON_MAGNUM, CHIP_SPARK, WEAPON_LASER, WEAPON_BROADSWORD];
-		else if(eLvl<77) stuff = [WEAPON_GRENADE_LAUNCHER, CHIP_SPARK, WEAPON_LASER, WEAPON_AXE, CHIP_STALACTITE];
-		else stuff = [WEAPON_GRENADE_LAUNCHER, CHIP_SPARK, WEAPON_LASER, WEAPON_AXE, CHIP_STALACTITE, CHIP_ROCKFALL];
-		var w = getWeapon(enemy);
-		if(w!=null && ! inArray(stuff, w)) push(stuff, w); 
+		stuff = getWeapons()+getChips();
+		//stuff = [];
+		//var w = getWeapon(enemy);
+		//if(w!=null && ! inArray(stuff, w)) push(stuff, w); 
 	}
     for(var item in stuff){
         if(item == CHIP_LIBERATION) continue; // todo score par rapport à mon shield.
