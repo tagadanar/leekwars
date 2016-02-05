@@ -53,24 +53,23 @@ _SELF_FULLMAP_PATH_DIST=getReachableCells([getCell():0], 100, []);
 _LEEKS=[];
 for(var leek in getAliveAllies()+getAliveEnemies()){
 	var lvl = getLevel()
-	,isLvl5 = lvl>=5
 	,isLvl10 = lvl>=10
 	,isLvl38 = lvl>=38;
 	var leekInfo = [
 		"totallife": getTotalLife(leek)
 		,"life": getLife(leek)
 		,"psnlife": getLife(leek)//TODO -psnDmgTurn+vaccinTurn
-		,"str": isLvl5 ? getStrength(leek) : 50
-		,"mgc": isLvl5 ? getMagic(leek) : 0
-		,"wsd": isLvl5 ? getWisdom(leek) : 0
-		,"rst": isLvl5 ? getResistance(leek) : 0
-		,"agi": isLvl5 ? getAgility(leek) : 0
-		,"snc": isLvl5 ? getScience(leek) : 0
+		,"str": getStrength(leek)
+		,"mgc": getMagic(leek)
+		,"wsd": getWisdom(leek)
+		,"rst": getResistance(leek)
+		,"agi": getAgility(leek)
+		,"snc": getScience(leek)
 		,"tp": isLvl10 ? getTP(leek) : 10
 		,"mp": isLvl10 ? getMP(leek) : 3
 		,"relShield": isLvl38 ? getRelativeShield(leek) : getRelativeByLaunchedEffects(leek)
 		,"absShield": isLvl38 ? getAbsoluteShield(leek) : getAbsoluteByLaunchedEffects(leek)
-		,"dmgReturn": isLvl5 ? getDamageReturn(leek) : 0
+		,"dmgReturn": getDamageReturn(leek)
 		,'finalMap': null
 	];
 	_LEEKS[leek] = @leekInfo;
