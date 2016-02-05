@@ -22,3 +22,19 @@ function getSafestCell(){
 	
 	return safestCell;
 }
+
+function getPathDistToClosestSafeCellFromCenter(){
+	var minDanger = 1000000, myCell = getCell();
+	var distFromMe = getReachableCells([myCell:0], 100, []);
+	var safestCell = getCell();
+	for(var cell: var danger in map_danger){
+		if(distFromMe[cell] == null) continue;
+		var tmpDanger = danger + getCellDistance(cell, 306) + distFromMe[cell];
+		if(tmpDanger < minDanger){
+			minDanger = tmpDanger;
+			safestCell = cell;
+		}
+	}
+	mark(safestCell, COLOR_BLUE);//todo delete
+	return @getReachableCells([safestCell:0], 100, [getCell()]);
+}
