@@ -6,6 +6,7 @@ include('auto');
 // retourne le type de l'entity
 function getEntityType(@entity){
 	if(!isSummon(entity)) return @ENTITY_LEEK_;
+	if(getLevel()<57) return @ENTITY_PUNY_BULB;
 	var chips = getChips(entity);
 	if(inArray(chips, CHIP_VACCINE)) return @ENTITY_HEALER_BULB;
 	if(inArray(chips, CHIP_ARMOR)) return @ENTITY_METALLIC_BULB;
@@ -210,3 +211,4 @@ function _getCellToUseWeapChipOnCell(@weapChip, @cell){
 	}
 	return @result;
 }
+
