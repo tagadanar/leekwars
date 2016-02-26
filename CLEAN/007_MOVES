@@ -35,6 +35,53 @@ function getPathDistToClosestSafeCellFromCenter(){
 			safestCell = cell;
 		}
 	}
-	mark(safestCell, COLOR_BLUE);//todo delete
+	//mark(safestCell, COLOR_BLUE);
 	return @getReachableCells([safestCell:0], 100, [getCell()]);
+}
+
+function getClosestReachableSafeCellToEnemy(){
+	// des dégâts inférieur à 10% de ma vie quand je suis full life sont acceptable.
+	var minDanger = 1000000, minDist = 99, 
+	eCell = getCell(getNearestEnemy()), selfCell = getCell(),
+	minRisk = getLife()==getTotalLife() ? getLife()*0.1 : 0, finalCell = null;
+	for(var cell:var dist in reachableCells){
+		var danger = map_danger[cell];
+		if(finalCell==null || (danger > minRisk && danger < minDanger)){
+			finalCell = cell;
+			minDanger = map_danger[cell];
+			minDist = getCellDistance(selfCell, cell);
+		}else if(danger <= minRisk || danger==minDanger){
+			var tmpDist = getCellDistance(selfCell, cell);
+			if(tmpDist<minDist){
+				finalCell = cell;
+				minDanger = map_danger[cell];
+				minDist = tmpDist;
+			}
+		}
+	}
+	mark(finalCell, COLOR_BLUE);
+	return @getReachableCells([finalCell:0], 100, [getCell()]);
+}
+
+function getStardardCell(dddddd){
+	var safestCell = getCell();
+	var enemyCell = getCell(getNearestEnemy());
+	var damage = 999999;
+	var distToTen = 99999;
+	for(var cell:var dist in reachableCells){
+		var cellDmg = map_danger[cell];
+		if(damage>cellDmg){
+			safestCell=cell;
+			damage=cellDmg;
+			distToTen = abs(dddddd-getCellDistance(safestCell, enemyCell));
+		}else if(damage==cellDmg){
+			var tmpdist = abs(dddddd-getCellDistance(cell, enemyCell));
+			if(tmpdist<distToTen){
+				safestCell=cell;
+				distToTen=tmpdist;
+			}
+		}
+	}
+	mark(safestCell, COLOR_BLUE);
+	return @safestCell;
 }
