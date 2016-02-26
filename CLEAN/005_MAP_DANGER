@@ -8,8 +8,15 @@ function getWeapChipDmg(@weapOrChip, @eMgc, @eStr, @eWsd, @eTp, @dmgPercentage){
 	var ratio = dmgPercentage/100;
     var dmg = 0;
 
-	// FIXME return score en fonction de mes effets.
-	if(weapOrChip==CHIP_LIBERATION) return (100*(1+(eStr/100))/8*(eTp-5));
+	if(weapOrChip==CHIP_LIBERATION){
+		var myEffects = @_LEEKS[_SELF]["effects"], score = 0;
+		for(var e in myEffects){
+			score += e;
+		}
+		score -= _LEEKS[_SELF]["psnTurn"];
+		debugW("score libé:"+score);
+		return score;
+	}
 	// FIXME truc chiant à gérer...
 	if(weapOrChip==CHIP_BURNING) return 0;
 	var effects = @_ITEM_EFFECTS[weapOrChip];
@@ -93,7 +100,7 @@ function getDmgMap(@enemy, @weaponOrChip){
     }//end mapcells
     if(area==AREA_CIRCLE_1 || area==AREA_CIRCLE_2 || area==AREA_CIRCLE_3){
 		for(var distance = 1; distance<=area-2; distance++){
-			var percentageDmg = (100 - ((50 / area) * distance));
+			var percentageDmg = (100 - ((50 / (area-2)) * distance));
 			var dmg = getWeapChipDmg(weaponOrChip, eMgc, eStr, eWsd, eTp, percentageDmg);
 			if(dmg ==0) break;
 			var circle = [];
@@ -114,8 +121,8 @@ function getOrderedWeapChipScore(@enemy, eStr, eMgc, eWsd){
 	selfRelShield = info["relShield"],
     selfAbsShield = info["absShield"];
    	
-    var lvl = getLevel(), dmg, cost, effects, allChipWeap = [], stuff;
-	if(lvl >= 57) stuff = getWeapons(enemy)+getChips(enemy);
+    var dmg, cost, effects, allChipWeap = [], stuff;
+	if(getLevel() >= 57) stuff = getWeapons(enemy)+getChips(enemy);
 	else{
 		stuff = getWeapons()+getChips();
 		//stuff = [];
@@ -123,9 +130,18 @@ function getOrderedWeapChipScore(@enemy, eStr, eMgc, eWsd){
 		//if(w!=null && ! inArray(stuff, w)) push(stuff, w); 
 	}
     for(var item in stuff){
-        if(item == CHIP_LIBERATION) continue; // todo score par rapport à mon shield.
+        if(item == CHIP_LIBERATION){
+			var myEffects = @_LEEKS[_SELF]["effects"], score = 0;
+			for(var e in myEffects){
+				score += e;
+			}
+			score -= _LEEKS[_SELF]["psnTurn"];
+			debugW("score libé:"+score);
+			allChipWeap[item] = score/_ITEM_COST[item];
+			continue;
+		}  // todo score par rapport à mon shield.
 		if(isSpecialChip(item))continue;
-		if(_ITEM_HAVECD[item] && lvl>=36) if(getCooldown(item, enemy)!=0) continue;
+		if(_ITEM_HAVECD[item] && getLevel()>=36 && getCooldown(item, enemy)!=0) continue;
 		
         dmg=0;
 		effects = _ITEM_EFFECTS[item];
@@ -226,11 +242,28 @@ function finalizeMapsDanger(){
 // à besoin de loadMapsDanger(maxOp) && finalizeMapsDanger() pour renvoyer un vrai score.
 function getMapDanger(ignoreLeeks){
 	var finalMap = [];
-	for(var leek:var map in map_leek_danger){
-		if(inArray(ignoreLeeks, leek)) continue;
-		for(var cell:var dmg in map){
+	for(var enemy in _ALIVE_ENEMIES){
+		if(inArray(ignoreLeeks, enemy)) continue;
+		for(var cell:var dmg in map_leek_danger[enemy]){
 			finalMap[cell]+=dmg;
 		}
 	}
 	return @finalMap;
+}
+
+// à besoin de loadMapsDanger(maxOp) && finalizeMapsDanger() pour renvoyer un vrai score.
+function getCellDanger(cell, ignoreLeeks){
+	var danger = 0;
+	for(var enemy in _ALIVE_ENEMIES){
+		if(inArray(ignoreLeeks, enemy)) continue;
+		danger += map_leek_danger[enemy][cell];
+	}
+	return @danger;
+}
+
+function setMaxDanger(){
+	_MAX_DANGER=1;
+	for(var dmg in map_danger){
+		if(_MAX_DANGER==null || _MAX_DANGER<dmg) _MAX_DANGER=dmg;
+	}
 }
