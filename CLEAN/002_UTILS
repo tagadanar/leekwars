@@ -132,8 +132,9 @@ function stopOpk(title){
 
 function colorMap(){
 	var max=getLife();
+	var white = getColor(255, 255, 255);
 	for(var cell: var dmg in map_danger){
-		if(dmg>=max) mark(cell);
+		if(dmg>=max) mark(cell, white);
 		else mark(cell, getColor(dmg/max*255, 255-(dmg/max*255), 0));
 	}
 }
