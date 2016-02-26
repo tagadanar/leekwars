@@ -41,24 +41,78 @@ if(getTurn()==1){
 	}
 }
 //init every turn
+// refresh alive allies/enemies
+_ALIVE_ALLIES = getAliveAllies();
+_ALIVE_ENEMIES = getAliveEnemies();
+
 _LEEKS_CELL=[];
-for(var leek in getAliveAllies()+getAliveEnemies()){
+for(var leek in _ALIVE_ALLIES+_ALIVE_ENEMIES){
 	if(_SELF!=leek) _LEEKS_CELL[getCell(leek)] = leek;
 }
+
+_SCN_STR_100 = false;
+_SCN_STR_200 = false;
+_SCN_STR_300 = false;
+for(var e in _ALIVE_ENEMIES){
+	if(getStrength(e)>=100) _SCN_STR_100 = true;
+	if(getStrength(e)>=200) _SCN_STR_200 = true;
+	if(getStrength(e)>=300) _SCN_STR_300 = true;
+}
+
 // a uncomment si t'utilise getCellToUseWeapChipOnCell pour avoir la plus proche en terme de path
 _SELF_FULLMAP_PATH_DIST=[];
 _SELF_FULLMAP_PATH_DIST=getReachableCells([getCell():0], 100, []);
 
 // init de l'état des leeks
 _LEEKS=[];
-for(var leek in getAliveAllies()+getAliveEnemies()){
-	var lvl = getLevel()
-	,isLvl10 = lvl>=10
-	,isLvl38 = lvl>=38;
+var lvl = getLevel(), isLvl10 = lvl>=10, isLvl38 = lvl>=38, isLvl61 = lvl>=61;
+for(var leek in _ALIVE_ALLIES+_ALIVE_ENEMIES){
+	var effects = [], psnDmgTurn = 0, psnDmgTotal = 0;
+	if(isLvl61){
+		for(var e in getEffects(leek)){
+			// [type, value, caster_id, turns, critical, item_id, target_id]
+			var type = e[0],
+			item = e[5],
+			value = e[1],
+			duration = e[3];
+			if(type==EFFECT_POISON){
+				psnDmgTurn += value;
+				psnDmgTotal += value*duration;
+			}else if(type==EFFECT_HEAL){
+				psnDmgTurn -= value;
+				psnDmgTotal -= value*duration;
+			}else{
+				effects[item] = value*duration;
+			}
+		}
+	}else{
+		for(var castor in _ALIVE_ALLIES+_ALIVE_ENEMIES){
+			for(var e in getLaunchedEffects(castor)){
+				if(e[6]==leek){
+					var type = e[0],
+					item = e[5],
+					value = e[1],
+					duration = e[3];
+					if(type==EFFECT_POISON){
+						psnDmgTurn += value;
+						psnDmgTotal += value*duration;
+					}else if(type==EFFECT_HEAL){
+						psnDmgTurn -= value;
+						psnDmgTotal -= value*duration;
+					}else{
+						effects[item] = value*duration;
+					}
+				}
+			}
+		}
+	}
 	var leekInfo = [
 		"totallife": getTotalLife(leek)
 		,"life": getLife(leek)
-		,"psnlife": getLife(leek)//TODO -psnDmgTurn+vaccinTurn
+		,"psnlife": getLife(leek)-psnDmgTurn
+		,"psnTurn": psnDmgTurn
+		,"psnTotal": psnDmgTotal
+		,"effects": @effects
 		,"str": getStrength(leek)
 		,"mgc": getMagic(leek)
 		,"wsd": getWisdom(leek)
