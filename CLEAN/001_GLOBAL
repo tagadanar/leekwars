@@ -12,8 +12,26 @@ global _SELF = getLeek();
 // Contient les informations sur les leeks, refresh à tous les tours en début de tour.
 global _LEEKS = [];
 
-global _LEEKS_COEF;
+// les infos utilisés pour la prise de décision
+global _COEF_DMG;
+global _COEF_HEAL;
+global _COEF_URGENT;
+global _COEF_ABSSHIELD;
+global _COEF_RELSHIELD;
+global _COEF_STR_BOOST;
+global _COEF_AGI_BOOST;
+global _COEF_WSD_BOOST;
+global _COEF_RST_BOOST;
+global _COEF_MP_BOOST;
+global _COEF_TP_BOOST;
+global _COEF_SHACKLE_TP;
+global _COEF_SHACKLE_MP;
+global _COEF_SHACKLE_STR;
+global _COEF_SHACKLE_MGC;
 
+// tableau getAliveEnemies/allies
+global _ALIVE_ALLIES;
+global _ALIVE_ENEMIES;
 
 // ========================
 // INFOS MAP
@@ -23,6 +41,12 @@ global reachableCells; //[cell:mp]
 global map_danger; // [cell:dmg]
 global map_leek_danger; // [leek: map_danger]; 
 global map_leek_weap_danger; // [leek: [weap: [map_danger]]]
+
+global _MAX_DANGER;
+global _SCN_STR_100;
+global _SCN_STR_200;
+global _SCN_STR_300;
+
 global map_actions; // ["id":w, "from":fromCell, "to":toCell, "targets":targets]
 // autre global de la map actions (used in findBestMove):
 global self_action_array = []; // [chip:chip]
@@ -281,7 +305,7 @@ global _ITEM_PRIORITY = [
 	CHIP_SOLIDIFICATION:11,// puis resist avant les armures
 	CHIP_BARK:12,
 	CHIP_COLLAR:13,// puis sagesse avant les heal (mm si pour le moment y'a pas d'autoheal..)
-	CHIP_CARAPACE:14,// puis les armures après les heal avant les spell genre devilstrike
+	CHIP_CARAPACE:14,// puis les armures avant les spell genre devilstrike
     CHIP_FORTRESS:14,
     CHIP_ARMOR:14,
 	CHIP_RAMPART:14,
