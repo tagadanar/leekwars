@@ -72,11 +72,8 @@ function getAllEnemyBulb(){
 // depending of number of if()
 // 1 op per if + 1 for calling func + 1 from I dunno ?
 // so use directly the array for final version of optimised func
-function getCellArea(@c, @area){
-	if(area == AREA_CIRCLE_1) return @_areaCells1[c];
-	if(area == AREA_CIRCLE_2) return @_areaCells2[c];
-	if(area == AREA_CIRCLE_3) return @_areaCells3[c];
-	return null;
+function getCellArea(@c){
+	return @_areaCells1[c];
 }
 
 // renvoie si la puce a un effet positif ou négatif sur la cible
