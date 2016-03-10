@@ -29,6 +29,12 @@ global _COEF_SHACKLE_MP;
 global _COEF_SHACKLE_STR;
 global _COEF_SHACKLE_MGC;
 
+global _SCORE_KILL_DMG = 100;
+global _SCORE_KILL_PSN = 50;
+global _SCORE_DEATH = 1000;
+global _RATIO_IGNORE_DANGER = 0.25;
+global _RATIO_DANGER = 1;
+
 // tableau getAliveEnemies/allies
 global _ALIVE_ALLIES;
 global _ALIVE_ENEMIES;
@@ -42,7 +48,6 @@ global map_danger; // [cell:dmg]
 global map_leek_danger; // [leek: map_danger]; 
 global map_leek_weap_danger; // [leek: [weap: [map_danger]]]
 
-global _MAX_DANGER;
 global _SCN_STR_100;
 global _SCN_STR_200;
 global _SCN_STR_300;
@@ -52,6 +57,9 @@ global map_actions; // ["id":w, "from":fromCell, "to":toCell, "targets":targets]
 global self_action_array = []; // [chip:chip]
 global assoc_weap_from = []; // [itemId:cellFrom]
 global assoc_from_item_actions = []; // [cellFrom:[itemId:[actions]]]
+
+// cache findBestMove
+global _CACHE_SCORE_SAFECELL;
 
 
 // Contient les id des cells obstacle en clé, test cell libre avec _OBSTACLES[cell]==null
@@ -68,8 +76,7 @@ global _SELF_FULLMAP_PATH_DIST;
 // contient les AREA_CIRCLE_X de chaque cell non obstacle dans un array [cell1, cell2...]
 // init tour 1.
 global _areaCells1 = [];
-global _areaCells2 = [];
-global _areaCells3 = [];
+global _areaCells1Obstacle = [];
 
 // ========================
 // INFOS STUFF
