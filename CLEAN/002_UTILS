@@ -11,7 +11,12 @@ include('auto');
 // ainsi que la case cible pour les armes à aoe (mettre null sinon pour les lazer !)
 function getUniqueID(@array, @w, @to){
 	sort(array);
-	return @(w+string(array)+to);
+	return @(""+w+array+to);
+}
+
+function getUniqueID_safeCell(@cell, @ids){
+	sort(ids);
+	return @(""+cell+ids);
 }
 
 // return reachable cell as an array of [cell:dist]
@@ -37,64 +42,19 @@ function getReachableCells(@cells, mp, @ignoreCells){
 }
 
 // return an array of cell according to AREA_CIRCLE_X, ordered from closest to farest.
-function prepareCellArea(@c, @area){
+function prepareCellArea(@c, @obstacle){
     if(_OBSTACLES[c]!=null) return null; // c'est un obstacle, pas besoin de préparer
     var x = getCellX(c), y = getCellY(c), result = [];
     // AREA_CIRCLE_1
     var cell = getCellFromXY(x, y-1);
-    if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+    if(cell!=null && (_OBSTACLES[cell]==null || obstacle)) push(result, cell);
     cell = getCellFromXY(x, y+1);
-    if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+    if(cell!=null && (_OBSTACLES[cell]==null || obstacle)) push(result, cell);
     cell = getCellFromXY(x-1, y);
-    if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
+    if(cell!=null && (_OBSTACLES[cell]==null || obstacle)) push(result, cell);
     cell = getCellFromXY(x+1, y);
-    if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
-    // AREA_CIRCLE_2
-    if(area > AREA_CIRCLE_1){
-        cell = getCellFromXY(x, y-2);
-        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
-        cell = getCellFromXY(x, y+2);
-        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
-        cell = getCellFromXY(x-2, y);
-        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
-        cell = getCellFromXY(x+2, y);
-        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
-        cell = getCellFromXY(x-1, y-1);
-        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
-        cell = getCellFromXY(x+1, y+1);
-        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
-        cell = getCellFromXY(x-1, y+1);
-        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
-        cell = getCellFromXY(x+1, y-1);
-        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
-    }
-    // AREA_CIRCLE_3
-    if(area > AREA_CIRCLE_2){
-        cell = getCellFromXY(x, y-3);
-        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
-        cell = getCellFromXY(x, y+3);
-        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
-        cell = getCellFromXY(x-3, y);
-        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
-        cell = getCellFromXY(x+3, y);
-        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
-        cell = getCellFromXY(x-2, y-1);
-        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
-        cell = getCellFromXY(x+2, y+1);
-        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
-        cell = getCellFromXY(x-2, y+1);
-        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
-        cell = getCellFromXY(x+2, y-1);
-        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
-        cell = getCellFromXY(x-1, y-2);
-        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
-        cell = getCellFromXY(x+1, y+2);
-        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
-        cell = getCellFromXY(x-1, y+2);
-        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
-        cell = getCellFromXY(x+1, y-2);
-        if(cell!=null && _OBSTACLES[cell]==null) push(result, cell);
-    }
+    if(cell!=null && (_OBSTACLES[cell]==null || obstacle)) push(result, cell);
+	
     return @result;
 }
 
