@@ -1,5 +1,22 @@
 include('auto');
 
+function sayCupidon(){
+	var stupidSay = [
+		"L'amour ça fait mal !"
+		,"Mon coeur saigne..."
+		,"Tu me fend le coeur."
+		,"J'ai le coeur fendu par toi."
+		,"Demain dès l'aube, à l'heure où blanchie la campagne, je partirai..."
+		,"Ne courrez pas, nous venons en paix ! pew pew pew !"
+		,"Et si l'homme est un chien c'est qu'il est plus fidèle, plus fidèle à des chattes qui se feront la belle !"
+		,"Quand dieu créa la mer rouge, il sala mal l'écume."
+		,"<3"
+		,"Négatif, je suis une mite en pull-over"
+		,"Vous allez vous aimer les uns les autres bordel de merde ?!"
+	];
+	say(stupidSay[randInt(0, count(stupidSay))]);
+}
+
 /**
  * Retourne la cellule la plus sure parmis les cellules accessibles
  *
