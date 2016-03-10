@@ -2,186 +2,36 @@
 include('auto');
 stopOpk("loading lib");
 
-function sayCupidon(){
-	var stupidSay = [
-		"L'amour ça fait mal !"
-		,"Mon coeur saigne..."
-		,"Tu me fend le coeur."
-		,"J'ai le coeur fendu par toi."
-		,"Demain dès l'aube, à l'heure où blanchie la campagne, je partirai..."
-		,"Ne courrez pas, nous venons en paix ! pew pew pew !"
-		,"Et si l'homme est un chien c'est qu'il est plus fidèle, plus fidèle à des chattes qui se feront la belle !"
-		,"Quand dieu créa la mer rouge, il sala mal l'écume."
-		,"<3"
-		,"Négatif, je suis une mite en pull-over"
-		,"Vous allez vous aimer les uns les autres bordel de merde ?!"
-	];
-	say(stupidSay[randInt(0, count(stupidSay))]);
-}
-
 // charge les maps de chaque arme pour chaque adv
-loadMapsDanger(10*1000*1000);
+loadMapsDanger(8*1000*1000);
 // génère la map complête de chaque adv à partir des maps d'armes.
 finalizeMapsDanger();
 // la map de tout le monde.
 map_danger = getMapDanger([]);
-setMaxDanger();
 colorMap();
-
 //mes déplacements
 reachableCells = getReachableCells([getCell():0], getMP(), []);
-
 // préparation de la map des actions possibles
 setMapActions();
 
 global _MAINWEAPON = WEAPON_GRENADE_LAUNCHER;
-// liste des combos à tester
-var combos = [
-WEAPON_AXE: [
-    [CHIP_SPARK, WEAPON_AXE, CHIP_BANDAGE]
-    ,[WEAPON_AXE, CHIP_CURE]
-    ,[CHIP_ROCKFALL, WEAPON_AXE]
-    ,[CHIP_LIGHTNING, WEAPON_AXE]
-    ,[CHIP_LIBERATION, WEAPON_AXE]
-    ,[WEAPON_GRENADE_LAUNCHER, CHIP_BANDAGE]
-    ,[WEAPON_GRENADE_LAUNCHER, CHIP_CURE]
-    ,[CHIP_SPARK, WEAPON_GRENADE_LAUNCHER]
-    ,[CHIP_LIGHTNING, WEAPON_GRENADE_LAUNCHER]
-    ,[CHIP_SPARK, CHIP_BANDAGE, CHIP_CURE]
-    ,[CHIP_ROCKFALL, CHIP_BANDAGE, CHIP_CURE]
-    ,[CHIP_LIGHTNING, CHIP_BANDAGE, CHIP_CURE]
-    ,[CHIP_LIBERATION, CHIP_BANDAGE, CHIP_CURE]
-    ,[CHIP_SPARK, CHIP_BANDAGE, CHIP_VACCINE]
-    ,[CHIP_SPARK, CHIP_SPARK, CHIP_SPARK, CHIP_BANDAGE]
-    ,[CHIP_SPARK, CHIP_STALACTITE, CHIP_BANDAGE]
-    ,[CHIP_SPARK, CHIP_ROCKFALL, CHIP_BANDAGE]
-    ,[CHIP_SPARK, CHIP_LIGHTNING, CHIP_BANDAGE]
-    ,[CHIP_LIBERATION, CHIP_SPARK, CHIP_BANDAGE]
-    ,[CHIP_ROCKFALL, CHIP_LIGHTNING, CHIP_BANDAGE]
-    ,[CHIP_LIGHTNING, CHIP_LIGHTNING, CHIP_BANDAGE]
-    ,[CHIP_LIBERATION, CHIP_LIGHTNING, CHIP_BANDAGE]
-    ,[CHIP_CURE, CHIP_VACCINE]
-    ,[CHIP_SPARK, CHIP_SPARK, CHIP_CURE]
-    ,[CHIP_SPARK, CHIP_LIGHTNING, CHIP_CURE]
-    ,[CHIP_STALACTITE, CHIP_CURE]
-    ,[CHIP_ROCKFALL, CHIP_VACCINE]
-    ,[CHIP_LIGHTNING, CHIP_VACCINE]
-    ,[CHIP_LIBERATION, CHIP_VACCINE]
-    ,[CHIP_SPARK, CHIP_SPARK, CHIP_ROCKFALL]
-    ,[CHIP_SPARK, CHIP_SPARK, CHIP_LIGHTNING]
-    ,[CHIP_LIBERATION, CHIP_SPARK, CHIP_SPARK]
-    ,[CHIP_SPARK, CHIP_LIGHTNING, CHIP_LIGHTNING]
-    ,[CHIP_STALACTITE, CHIP_ROCKFALL]
-    ,[CHIP_STALACTITE, CHIP_LIGHTNING]
-    ,[CHIP_LIBERATION, CHIP_STALACTITE]
-    ,[CHIP_LIBERATION, CHIP_ROCKFALL]
-],WEAPON_GRENADE_LAUNCHER: [
-    [WEAPON_AXE, CHIP_BANDAGE]
-    ,[WEAPON_AXE, CHIP_CURE]
-    ,[CHIP_SPARK, WEAPON_AXE]
-    ,[CHIP_LIGHTNING, WEAPON_AXE]
-    ,[CHIP_SPARK, WEAPON_GRENADE_LAUNCHER, CHIP_BANDAGE]
-    ,[WEAPON_GRENADE_LAUNCHER, CHIP_CURE]
-    ,[CHIP_ROCKFALL, WEAPON_GRENADE_LAUNCHER]
-    ,[CHIP_LIGHTNING, WEAPON_GRENADE_LAUNCHER]
-    ,[CHIP_LIBERATION, WEAPON_GRENADE_LAUNCHER]
-    ,[CHIP_SPARK, CHIP_BANDAGE, CHIP_CURE]
-    ,[CHIP_ROCKFALL, CHIP_BANDAGE, CHIP_CURE]
-    ,[CHIP_LIGHTNING, CHIP_BANDAGE, CHIP_CURE]
-    ,[CHIP_LIBERATION, CHIP_BANDAGE, CHIP_CURE]
-    ,[CHIP_SPARK, CHIP_BANDAGE, CHIP_VACCINE]
-    ,[CHIP_SPARK, CHIP_SPARK, CHIP_SPARK, CHIP_BANDAGE]
-    ,[CHIP_SPARK, CHIP_STALACTITE, CHIP_BANDAGE]
-    ,[CHIP_SPARK, CHIP_ROCKFALL, CHIP_BANDAGE]
-    ,[CHIP_SPARK, CHIP_LIGHTNING, CHIP_BANDAGE]
-    ,[CHIP_LIBERATION, CHIP_SPARK, CHIP_BANDAGE]
-    ,[CHIP_ROCKFALL, CHIP_LIGHTNING, CHIP_BANDAGE]
-    ,[CHIP_LIGHTNING, CHIP_LIGHTNING, CHIP_BANDAGE]
-    ,[CHIP_LIBERATION, CHIP_LIGHTNING, CHIP_BANDAGE]
-    ,[CHIP_CURE, CHIP_VACCINE]
-    ,[CHIP_SPARK, CHIP_SPARK, CHIP_CURE]
-    ,[CHIP_SPARK, CHIP_LIGHTNING, CHIP_CURE]
-    ,[CHIP_STALACTITE, CHIP_CURE]
-    ,[CHIP_ROCKFALL, CHIP_VACCINE]
-    ,[CHIP_LIGHTNING, CHIP_VACCINE]
-    ,[CHIP_LIBERATION, CHIP_VACCINE]
-    ,[CHIP_SPARK, CHIP_SPARK, CHIP_ROCKFALL]
-    ,[CHIP_SPARK, CHIP_SPARK, CHIP_LIGHTNING]
-    ,[CHIP_LIBERATION, CHIP_SPARK, CHIP_SPARK]
-    ,[CHIP_SPARK, CHIP_LIGHTNING, CHIP_LIGHTNING]
-    ,[CHIP_STALACTITE, CHIP_ROCKFALL]
-    ,[CHIP_STALACTITE, CHIP_LIGHTNING]
-    ,[CHIP_LIBERATION, CHIP_STALACTITE]
-    ,[CHIP_LIBERATION, CHIP_ROCKFALL]
-],'EMPTY': [
-    [WEAPON_AXE, CHIP_BANDAGE]
-    ,[WEAPON_AXE, CHIP_CURE]
-    ,[CHIP_SPARK, WEAPON_AXE]
-    ,[CHIP_LIGHTNING, WEAPON_AXE]
-    ,[WEAPON_GRENADE_LAUNCHER, CHIP_BANDAGE]
-    ,[WEAPON_GRENADE_LAUNCHER, CHIP_CURE]
-    ,[CHIP_SPARK, WEAPON_GRENADE_LAUNCHER]
-    ,[CHIP_LIGHTNING, WEAPON_GRENADE_LAUNCHER]
-    ,[CHIP_SPARK, CHIP_BANDAGE, CHIP_CURE]
-    ,[CHIP_ROCKFALL, CHIP_BANDAGE, CHIP_CURE]
-    ,[CHIP_LIGHTNING, CHIP_BANDAGE, CHIP_CURE]
-    ,[CHIP_LIBERATION, CHIP_BANDAGE, CHIP_CURE]
-    ,[CHIP_SPARK, CHIP_BANDAGE, CHIP_VACCINE]
-    ,[CHIP_SPARK, CHIP_SPARK, CHIP_SPARK, CHIP_BANDAGE]
-    ,[CHIP_SPARK, CHIP_STALACTITE, CHIP_BANDAGE]
-    ,[CHIP_SPARK, CHIP_ROCKFALL, CHIP_BANDAGE]
-    ,[CHIP_SPARK, CHIP_LIGHTNING, CHIP_BANDAGE]
-    ,[CHIP_LIBERATION, CHIP_SPARK, CHIP_BANDAGE]
-    ,[CHIP_ROCKFALL, CHIP_LIGHTNING, CHIP_BANDAGE]
-    ,[CHIP_LIGHTNING, CHIP_LIGHTNING, CHIP_BANDAGE]
-    ,[CHIP_LIBERATION, CHIP_LIGHTNING, CHIP_BANDAGE]
-    ,[CHIP_CURE, CHIP_VACCINE]
-    ,[CHIP_SPARK, CHIP_SPARK, CHIP_CURE]
-    ,[CHIP_SPARK, CHIP_LIGHTNING, CHIP_CURE]
-    ,[CHIP_STALACTITE, CHIP_CURE]
-    ,[CHIP_ROCKFALL, CHIP_VACCINE]
-    ,[CHIP_LIGHTNING, CHIP_VACCINE]
-    ,[CHIP_LIBERATION, CHIP_VACCINE]
-    ,[CHIP_SPARK, CHIP_SPARK, CHIP_ROCKFALL]
-    ,[CHIP_SPARK, CHIP_SPARK, CHIP_LIGHTNING]
-    ,[CHIP_LIBERATION, CHIP_SPARK, CHIP_SPARK]
-    ,[CHIP_SPARK, CHIP_LIGHTNING, CHIP_LIGHTNING]
-    ,[CHIP_STALACTITE, CHIP_ROCKFALL]
-    ,[CHIP_STALACTITE, CHIP_LIGHTNING]
-    ,[CHIP_LIBERATION, CHIP_STALACTITE]
-    ,[CHIP_LIBERATION, CHIP_ROCKFALL]
-]];
+// choix de la gravityCell
+var gravityArray = [];
+var ally = getFarthestAlly();
+if(ally != null && ally != -1) gravityArray[getCell(ally)] = 2; // on se tient à 2 de l'ally le plus loin
+else gravityArray[306] = 0;// ou proche du centre
+if(getTurn()<45) gravityArray[getCell(getNearestEnemy())] = 8; // on se tient à 10 de l'adv
+else gravityArray[getCell(getNearestEnemy())] = 4; // ou plus proche après le tour 45
 
-var best, score, comboz;
+// liste des combos à tester
+var combos = jsonDecode(getRegister(getTP()));
 // choix du set de combo en fonction de mon état
+var comboz;
 var weap = getWeapon();
 if(weap==null){
 	comboz = @combos["EMPTY"];
 }else{
-	comboz = @combos[weap];
-}
-
-
-var gravityCell = 306;
-if(getFightType()!=FIGHT_TYPE_SOLO){
-	for(var al in getAliveAllies()){
-		if(getName(al)=="Tay"){
-			gravityCell = getCell(al);
-			break;
-		}
-	}
-	if(gravityCell==306){
-		for(var al in getAliveAllies()){
-			if(getName(al)=="Psyche"){
-				gravityCell = getCell(al);
-				break;
-			}
-		}
-	}
-}else{//fight type solo
-	if(getCellDistance(getCell(), getCell(getNearestEnemy()))>10){
-		gravityCell = getCell(getNearestEnemy());
-	}
+	comboz = @combos[string(weap)];
 }
 // test de toutes les combos si j'ai bien les cd
 var finalCombos = [];
@@ -195,38 +45,11 @@ for(var name:var combo in comboz){
 	}
 	if(ok) push(finalCombos, combo);
 }
-// dist to enemy
-var distToEnemy = 10;
-if(getTurn()>50) distToEnemy=6;
-best = findBestMove(finalCombos, gravityCell, distToEnemy);
-debug("BEST: "+ best);
-if(best!=null){
-	for(var action in best["actions"]){
-		debug(_ITEMID_TOSTRING[action["item"]] + ": " + action);
-	}
-	playBestMove(best);
-}
-else {
-	debugW("MOVESAFE");
-	moveTowardCell(getStardardCell(10));
-}
 
-function launchForAllAlly(chip){
-	if(inArray(getChips(),chip)){
-		if(getLife()<getTotalLife()/2) useChip(chip, getLeek());
-		for(var a in getAliveAllies()) if(!isSummon(a) && a!=getLeek()) useChip(chip, a);
-		useChip(chip, getLeek());
-	}
-}
-function buff(){
-	launchForAllAlly(CHIP_SHIELD);
-	launchForAllAlly(CHIP_HELMET);
-	if(getLife()<getTotalLife())launchForAllAlly(CHIP_CURE);
-	if(getLife()<getTotalLife())launchForAllAlly(CHIP_BANDAGE);
-	if(inArray(getChips(), CHIP_SPARK)) while(useChip(CHIP_SPARK, getNearestEnemy())>0);
-	if(getWeapon()==null || (getWeapon()!=_MAINWEAPON && getCellDistance(getCell(), getCell(getNearestEnemy()))>getTotalMP()+1)) setWeapon(_MAINWEAPON);
-}
-buff();
+var best = findBestMove(finalCombos, gravityArray);
+debug("BEST: "+ best);
+playBestMove(best);
+if(getWeapon()==null) setWeapon(_MAINWEAPON);
 
 debug('TOTALOP:' + round(getOperations()/1000) +"k");
 
