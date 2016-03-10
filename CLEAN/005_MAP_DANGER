@@ -22,17 +22,18 @@ function getWeapChipDmg(@weapOrChip, @eMgc, @eStr, @eWsd, @eTp, @dmgPercentage){
 	var effects = @_ITEM_EFFECTS[weapOrChip];
     for(var e in effects){
 		var type = e[0];
+		var optiMoy = (e[1]+3*e[2])/4;
         if(type == EFFECT_DAMAGE){
-            var tmp = e[2]*(1+(eStr/100));
+            var tmp = optiMoy*(1+(eStr/100));
             tmp = (tmp *ratio *(1-(selfRelShield/100))) -selfAbsShield;
             dmg+= tmp;
         }
         else if(type == EFFECT_POISON){
-            dmg += e[2]*(1+(eMgc/100)) *ratio *(e[3]-1); // 1tour de moins que le max.
+            dmg += optiMoy*(1+(eMgc/100)) *ratio *(e[3]-1); // 1tour de moins que le max.
             // soit 100%, 67%, 33% sur 3 tours vu les effects de heal/libération.
         }
         else if(type == EFFECT_HEAL){
-            dmg -= e[2] *(1+(eWsd/100)) *ratio;
+            dmg -= optiMoy*(1+(eWsd/100)) *ratio;
         }
         // si un jour on veut prendre en compte les entraves ou autre truc chelou, c'est ici qu'on rajoute un "score de dmg" par MP/TP/FORCE/MAGIE entravé
     }
@@ -106,8 +107,8 @@ function getDmgMap(@enemy, @weaponOrChip){
 			var circle = [];
 			for(var c:var value in map){
 				if(value>0)
-					for(var cell in @_areaCells1[c])
-						if(map[cell]==0) push(circle, cell);
+					for(var cell in @_areaCells1Obstacle[c])
+						if(map[cell]==null || map[cell]==0) push(circle, cell);
 			}
 			for(var cell in circle) map[cell] = dmg;
 		}
@@ -204,7 +205,7 @@ function loadMapsDanger(maxOp){
 			}
 		}
 		if(getOperations()-startOperation>maxOp){
-			debugW('breaking loadMapsDanger at index: '+index);
+			debugE('breaking loadMapsDanger at index: '+index);
 			break;
 		}
 	}
@@ -220,7 +221,7 @@ function finalizeMapsDanger(){
 			if(_OBSTACLES[c]!=null) continue;
 			cumulateMap[c]=0;
 			var TP = maxTP;
-			var compensateImprecision = 0;
+			//var compensateImprecision = 0;
 			for(var i in items){
 				var item = i["item"];
 				var cost = _ITEM_COST[item];
@@ -259,11 +260,4 @@ function getCellDanger(cell, ignoreLeeks){
 		danger += map_leek_danger[enemy][cell];
 	}
 	return @danger;
-}
-
-function setMaxDanger(){
-	_MAX_DANGER=1;
-	for(var dmg in map_danger){
-		if(_MAX_DANGER==null || _MAX_DANGER<dmg) _MAX_DANGER=dmg;
-	}
 }
