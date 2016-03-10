@@ -7,9 +7,8 @@ if(getTurn()==1){
 		_OBSTACLES[obs] = true;
 	}
 	for(var i=0;i<613;i++){
-		_areaCells1[i] = prepareCellArea(i, AREA_CIRCLE_1);
-		_areaCells2[i] = prepareCellArea(i, AREA_CIRCLE_2);
-		_areaCells3[i] = prepareCellArea(i, AREA_CIRCLE_3);
+		_areaCells1[i] = prepareCellArea(i, false);
+		_areaCells1Obstacle[i] = prepareCellArea(i, true);
 	}
 	for(var i=0;i<150;i++){ // reminder: idmax à 110 @janvier2016
 		if(isWeapon(i)){
@@ -81,6 +80,7 @@ for(var leek in _ALIVE_ALLIES+_ALIVE_ENEMIES){
 			}else if(type==EFFECT_HEAL){
 				psnDmgTurn -= value;
 				psnDmgTotal -= value*duration;
+				effects[item] = value*duration;
 			}else{
 				effects[item] = value*duration;
 			}
