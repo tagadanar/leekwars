@@ -1,0 +1,93 @@
+// IA pour les lvl 7 à 26, le finish est en travaux car demandait la lib complête, qui n'est pas disponible si bas lvl...
+// l'ia joue spark et pistol, et magnum à partir du lvl 27
+// jme souviens plus du lvl minimum pour jouer avec ma lib complête...
+global turn = 0;
+global wait = 2; // attends 2 tours à 14 de range pour taper en premier avec spark.
+turn++;
+function sayCupidon(){
+	var stupidSay = [
+		"L'amour ça fait mal !"
+		,"L'amour ça fait mâle.. :)"
+		,"Mon coeur saigne..."
+		,"Tu me fend le coeur."
+		,"J'ai le coeur fendu par toi."
+		,"Demain dès l'aube, à l'heure où blanchie la campagne, je partirai..."
+		,"Ne courrez pas, nous venons en paix ! pew pew pew !"
+		,"Et si l'homme est un chien c'est qu'il est plus fidèle, plus fidèle à des chattes qui se feront la belle !"
+		,"Quand dieu créa la mer rouge, il sala mal l'écume."
+		,"<3"
+	];
+	say(stupidSay[randInt(0, count(stupidSay))]);
+}
+if(getLevel()>26 && getWeapon()==null) setWeapon(WEAPON_MAGNUM);
+else if(getWeapon() == null) setWeapon(WEAPON_PISTOL); // Attention : coûte 1 PT
+
+/*
+function testCanFinish(){
+	if(!inArray(getWeapons(), WEAPON_MAGNUM)) return false;
+	var reach = getReachableCells([getCell():0], getMP(), []);
+	var cell = getCellToUseWeapon(getNearestEnemy());
+	if(reach[cell]!=null){
+		var tmp = 28*(1+(getStrength()/100));
+        tmp = (tmp *(1-(0/100))) -_LEEKS[getNearestEnemy()]["absShield"];
+            
+		if(getLife(getNearestEnemy())<=tmp){
+			moveTowardCell(cell);
+			useWeapon(getNearestEnemy());
+			useWeapon(getNearestEnemy());
+		}
+	}
+}
+testCanFinish();
+*/
+function distentia(){
+	return getCellDistance(getCell(), getCell(getNearestEnemy()));
+}
+function launchForAllAlly(chip){
+	if(inArray(getChips(),chip)){
+		for(var a in getAliveAllies()) if(!isSummon(a) && a!=getLeek()) useChip(chip, a);
+		useChip(chip, getLeek());	
+	}
+}
+//preboost
+if(inArray(getChips(), CHIP_CURE) && getLife()<getTotalLife()-(43+43*getWisdom()/100)) 
+	useChip(CHIP_CURE, getLeek());
+if(inArray(getChips(), CHIP_SHIELD) && distentia()<17) useChip(CHIP_SHIELD, getLeek());
+if(inArray(getChips(), CHIP_HELMET) && distentia()<17) useChip(CHIP_HELMET, getLeek());
+
+//move
+if(turn<10){
+	if(distentia()>14 && wait == 0) wait++;
+	// avance jusqu'à 14 et attend un tour pour shooter en premier.
+	if(wait>0 && distentia() > 13){
+		while(distentia() > 14 && moveToward(getNearestEnemy(), 1)>0);
+	}else{
+		while(distentia()>10 && moveToward(getNearestEnemy(), 1)>0);
+		wait = 0;
+	} 
+	if(wait && distentia()==14){
+		debug("distentia: "+distentia());
+		debug("wait: "+wait);
+		wait--;
+		say("Come at me bro !");
+	}
+} else {
+	while(getMP() && (distentia() > 7 || !lineOfSight(getCell(), getCell(getNearestEnemy())))) moveToward(getNearestEnemy(), 1);
+}
+
+//boost
+if((getCellDistance(getCell(), getCell(getNearestEnemy()))>10 && getCellDistance(getCell(), getCell(getNearestEnemy())) < 16) || getFightType()!=FIGHT_TYPE_SOLO){
+	launchForAllAlly(CHIP_STRETCHING);
+	launchForAllAlly(CHIP_PROTEIN);
+}
+
+// attack
+while(useWeapon(getNearestEnemy())>0);
+while(useChip(CHIP_SPARK, getNearestEnemy())>0);
+
+//endturn
+if(inArray(getChips(), CHIP_BANDAGE) && getLife()<getTotalLife()) useChip(CHIP_BANDAGE, getLeek());
+
+if(!wait && distentia()!=14 && turn<32)moveAwayFrom(getNearestEnemy());
+if(turn>34)moveToward(getNearestEnemy());
+sayCupidon();
