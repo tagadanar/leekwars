@@ -9,13 +9,7 @@ function getWeapChipDmg(@weapOrChip, @eMgc, @eStr, @eWsd, @eTp, @dmgPercentage){
     var dmg = 0;
 
 	if(weapOrChip==CHIP_LIBERATION){
-		var myEffects = @_LEEKS[_SELF]["effects"], score = 0;
-		for(var e in myEffects){
-			score += e;
-		}
-		score -= _LEEKS[_SELF]["psnTurn"];
-		debugW("score libé:"+score);
-		return score;
+		return _LEEKS[_SELF]["scoreLibe"];
 	}
 	// FIXME truc chiant à gérer...
 	if(weapOrChip==CHIP_BURNING) return 0;
@@ -132,13 +126,7 @@ function getOrderedWeapChipScore(@enemy, eStr, eMgc, eWsd){
 	}
     for(var item in stuff){
         if(item == CHIP_LIBERATION){
-			var myEffects = @_LEEKS[_SELF]["effects"], score = 0;
-			for(var e in myEffects){
-				score += e;
-			}
-			score -= _LEEKS[_SELF]["psnTurn"];
-			debugW("score libé:"+score);
-			allChipWeap[item] = score/_ITEM_COST[item];
+			allChipWeap[item] = _LEEKS[_SELF]["scoreLibe"]/_ITEM_COST[item];
 			continue;
 		}  // todo score par rapport à mon shield.
 		if(isSpecialChip(item))continue;
@@ -175,13 +163,33 @@ function getOrderedWeapChipScore(@enemy, eStr, eMgc, eWsd){
     return @allChipWeap;
 }
 
+function ignoreMPLeek(){
+	var cumulateMP = 0;
+	for(var leek in _ALIVE_ENEMIES_LEEKS){
+		cumulateMP+= getMP(leek);
+	}
+	if(cumulateMP>_LIMIT_MASSMP_IGNORELEEK){
+		var farthest, dist;
+		for(var leek in _ALIVE_ENEMIES_LEEKS){
+			var tmpdist = getCellDistance(getCell(), getCell(leek));
+			if(dist==null || dist < tmpdist){
+				farthest = leek;
+				dist = tmpdist;
+			}
+		}
+		removeElement(_ALIVE_ENEMIES, farthest);
+		removeElement(_ALIVE_ENEMIES_LEEKS, farthest);
+	}
+}
+
 // load les maps armes par armes pour chaque adv dans l'ordre de danger
 function loadMapsDanger(maxOp){
+	ignoreMPLeek();
 	var startOperation = getOperations();
 	map_leek_weap_danger = [];//reset de la map
 	var maxIndex = [];
 	var theMax = 0;
-	for(var e in getAliveEnemies()){
+	for(var e in _ALIVE_ENEMIES){
 		map_leek_weap_danger[e] = [];//reset de la map
 		var info = _LEEKS[e];
 		var weapChips = getOrderedWeapChipScore(e,info["str"],info["mgc"],info["wsd"]);
@@ -197,7 +205,7 @@ function loadMapsDanger(maxOp){
 	}
 	
 	for(var index = 0; index < theMax; index++){
-		for(var e in getAliveEnemies()){
+		for(var e in _ALIVE_ENEMIES){
 			if(index<maxIndex[e]){
 				var item = _LEEKS[e]['items'][index]["item"];
 				// [leek: [weap: [map_danger]]]
@@ -205,36 +213,72 @@ function loadMapsDanger(maxOp){
 			}
 		}
 		if(getOperations()-startOperation>maxOp){
-			debugE('breaking loadMapsDanger at index: '+index);
+			debugE('Turn'+getTurn()+' breaking loadMapsDanger at index: '+index);
 			break;
 		}
 	}
+	finalizeMapsDanger();
 }
 
 function finalizeMapsDanger(){
 	map_leek_danger = []; // reset
-	for(var e in getAliveEnemies()){
+	var isSolo = getFightType()==FIGHT_TYPE_SOLO;
+	for(var e in _ALIVE_ENEMIES){
 		var cumulateMap = []; // reset
 		var maxTP = @_LEEKS[e]["tp"];
 		var items = @_LEEKS[e]["items"];
 		for(var c= 0; c <= 612; c++){
-			if(_OBSTACLES[c]!=null) continue;
-			cumulateMap[c]=0;
-			var TP = maxTP;
-			//var compensateImprecision = 0;
-			for(var i in items){
-				var item = i["item"];
-				var cost = _ITEM_COST[item];
-				var damage = map_leek_weap_danger[e][item][c];
-				if(damage >0){
+			if(isSolo){
+				if(_OBSTACLES[c]!=null) continue;
+				cumulateMap[c]=0;
+				var TP = maxTP;
+				var map_weap_danger = @map_leek_weap_danger[e];
+
+				var array = [];
+				for(var i in items){
+					var item = i["item"];
+					var cost = _ITEM_COST[item];
+					var damage = map_weap_danger[item][c];	
+					if(damage != null && damage >0){
+						push(array,["item":item,"cost":cost,"dmg":damage,"ratio": damage/cost]);
+					}
+				}
+				array = arraySort(array, function(a, b){
+					var ratioA = a["ratio"], ratioB = b["ratio"];
+					if(ratioA>ratioB) return 1;
+					else if(ratioA<ratioB) return -1;
+					return 0;
+				});
+				for(var action in array){
+					var item = action["item"],
+					cost = action["cost"],
+					damage = action["dmg"];
 					while(cost<=TP){
 						cumulateMap[c]+=damage;
 						TP-=cost;
 						if(_ITEM_HAVECD[item]) break;
 					}
 				}
+				if(TP<0) debugE("TP NOK §§§: " + TP);
+			}else{
+				if(_OBSTACLES[c]!=null) continue;
+				cumulateMap[c]=0;
+				var TP = maxTP;
+				//var compensateImprecision = 0;
+				for(var i in items){
+					var item = i["item"];
+					var cost = _ITEM_COST[item];
+					var damage = map_leek_weap_danger[e][item][c];
+					if(damage >0){
+						while(cost<=TP){
+							cumulateMap[c]+=damage;
+							TP-=cost;
+							if(_ITEM_HAVECD[item]) break;
+						}
+					}
+				}
+				if(TP<0) debugE("TP NOK §§§: " + TP);
 			}
-			if(TP<0) debugE("TP NOK §§§: " + TP);
 		}
 		map_leek_danger[e] = @cumulateMap;
 	}

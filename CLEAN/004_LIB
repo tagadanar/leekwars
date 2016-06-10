@@ -3,18 +3,110 @@ include('auto');
 // Ma lib
 ///////////////////////////////////////////
 
-// retourne le type de l'entity
-function getEntityType(@entity){
-	if(!isSummon(entity)) return @ENTITY_LEEK_;
-	if(getLevel()<57) return @ENTITY_PUNY_BULB;
-	var chips = getChips(entity);
-	if(inArray(chips, CHIP_VACCINE)) return @ENTITY_HEALER_BULB;
-	if(inArray(chips, CHIP_ARMOR)) return @ENTITY_METALLIC_BULB;
-	if(inArray(chips, CHIP_ROCKFALL)) return @ENTITY_ROCKY_BULB;
-	if(inArray(chips, CHIP_ICEBERG)) return @ENTITY_ICED_BULB;
-	if(inArray(chips, CHIP_METEORITE)) return @ENTITY_FIRE_BULB;
-	if(inArray(chips, CHIP_LIGHTNING)) return @ENTITY_LIGHTNING_BULB;
-	return @ENTITY_PUNY_BULB; 
+function sayCupidon(){
+	var stupidSay = [
+		"L'amour ça fait mal !"
+		,"Mon coeur saigne..."
+		,"Tu me fend le coeur."
+		,"J'ai le coeur fendu par toi."
+		,"Demain dès l'aube, à l'heure où blanchie la campagne, je partirai..."
+		,"Ne courrez pas, nous venons en paix ! pew pew pew !"
+		,"Et si l'homme est un chien c'est qu'il est plus fidèle, plus fidèle à des chattes qui se feront la belle !"
+		,"Quand dieu créa la mer rouge, il sala mal l'écume."
+		,"<3"
+		,"Négatif, je suis une mite en pull-over"
+		,"Vous allez vous aimer les uns les autres bordel de merde ?!"
+	];
+	say(stupidSay[randInt(0, count(stupidSay))]);
+}
+
+function getComboSet(@entity){
+	var eType = getEntityType(entity), TP = getTP(), combos = [];
+	if(eType==ENTITY_ROCKY_BULB){
+		if(TP>=12) push(combos, [CHIP_ROCKFALL, CHIP_ROCK, CHIP_PEBBLE]);
+		if(TP>=10) push(combos, [CHIP_ROCKFALL, CHIP_ROCK]);
+		if(TP>=8) push(combos, [CHIP_ROCKFALL, CHIP_HELMET]);
+		if(TP>=7) push(combos, [CHIP_ROCKFALL, CHIP_PEBBLE]);
+		if(TP>=8) push(combos, [CHIP_ROCK, CHIP_HELMET]);
+		if(TP>=5) push(combos, [CHIP_ROCKFALL]);
+		if(TP>=7) push(combos, [CHIP_ROCK, CHIP_PEBBLE]);
+		if(TP>=5) push(combos, [CHIP_ROCK]);
+		if(TP>=5) push(combos, [CHIP_HELMET, CHIP_PEBBLE]);
+		if(TP>=3) push(combos, [CHIP_HELMET]);
+		if(TP>=2) push(combos, [CHIP_PEBBLE]);
+	}else if(eType==ENTITY_ICED_BULB){
+		if(TP>=13) push(combos, [CHIP_ICEBERG, CHIP_STALACTITE]);
+		if(TP>=14) push(combos, [CHIP_REFLEXES, CHIP_ICEBERG]);
+		if(TP>=13) push(combos, [CHIP_REFLEXES, CHIP_STALACTITE]);
+		if(TP>=11) push(combos, [CHIP_ICEBERG, CHIP_ICE]);
+		if(TP>=10) push(combos, [CHIP_STALACTITE, CHIP_ICE]);
+		if(TP>=7) push(combos, [CHIP_ICEBERG]);
+		if(TP>=6) push(combos, [CHIP_STALACTITE]);
+		if(TP>=11) push(combos, [CHIP_REFLEXES, CHIP_ICE]);
+		if(TP>=12) push(combos, [CHIP_ICE, CHIP_ICE, CHIP_ICE]);
+		if(TP>=8) push(combos, [CHIP_ICE, CHIP_ICE]);
+		if(TP>=7) push(combos, [CHIP_REFLEXES]);
+		if(TP>=4) push(combos, [CHIP_ICE]);
+	}else if(eType==ENTITY_HEALER_BULB){
+		if(TP>=17) push(combos, [CHIP_CURE, CHIP_DRIP, CHIP_BANDAGE, CHIP_VACCINE]);
+		if(TP>=13) push(combos, [CHIP_DRIP, CHIP_BANDAGE, CHIP_VACCINE]);
+		if(TP>=12) push(combos, [CHIP_CURE, CHIP_BANDAGE, CHIP_VACCINE]);
+		if(TP>=11) push(combos, [CHIP_CURE, CHIP_DRIP, CHIP_BANDAGE]);
+		if(TP>=11) push(combos, [CHIP_DRIP, CHIP_VACCINE]);
+		if(TP>=10) push(combos, [CHIP_CURE, CHIP_VACCINE]);
+		if(TP>=9) push(combos, [CHIP_DRIP, CHIP_CURE]);
+		if(TP>=8) push(combos, [CHIP_BANDAGE, CHIP_VACCINE]);
+		if(TP>=7) push(combos, [CHIP_DRIP, CHIP_BANDAGE]);
+		if(TP>=6) push(combos, [CHIP_CURE, CHIP_BANDAGE]);
+		if(TP>=6) push(combos, [CHIP_VACCINE]);
+		if(TP>=5) push(combos, [CHIP_DRIP]);
+		if(TP>=4) push(combos, [CHIP_CURE]);
+		if(TP>=2) push(combos, [CHIP_BANDAGE]);
+	}else if(eType==ENTITY_METALLIC_BULB){
+		if(TP>=12) push(combos, [CHIP_ARMOR, CHIP_SEVEN_LEAGUE_BOOTS]);
+		if(TP>=10) push(combos, [CHIP_ARMOR, CHIP_SHIELD]);
+		if(TP>=10) push(combos, [CHIP_SEVEN_LEAGUE_BOOTS, CHIP_SHIELD]);
+		if(TP>=9) push(combos, [CHIP_SEVEN_LEAGUE_BOOTS, CHIP_WALL]);
+		if(TP>=9) push(combos, [CHIP_ARMOR, CHIP_WALL]);
+		if(TP>=7) push(combos, [CHIP_SHIELD, CHIP_WALL]);
+		if(TP>=6) push(combos, [CHIP_ARMOR]);
+		if(TP>=6) push(combos, [CHIP_SEVEN_LEAGUE_BOOTS]);
+		if(TP>=4) push(combos, [CHIP_SHIELD]);
+		if(TP>=3) push(combos, [CHIP_WALL]);
+	}else if(eType==ENTITY_FIRE_BULB){
+		if(TP>=14) push(combos, [CHIP_METEORITE, CHIP_DEVIL_STRIKE]);
+		if(TP>=12) push(combos, [CHIP_METEORITE, CHIP_FLAME]);
+		if(TP>=11) push(combos, [CHIP_METEORITE, CHIP_SPARK]);
+		if(TP>=10) push(combos, [CHIP_FLAME, CHIP_DEVIL_STRIKE]);
+		if(TP>=12) push(combos, [CHIP_FLAME, CHIP_FLAME, CHIP_FLAME]);
+		if(TP>=8) push(combos, [CHIP_METEORITE]);
+		if(TP>=9) push(combos, [CHIP_SPARK, CHIP_DEVIL_STRIKE]);
+		if(TP>=8) push(combos, [CHIP_FLAME, CHIP_FLAME]);
+		if(TP>=6) push(combos, [CHIP_DEVIL_STRIKE]);
+		if(TP>=12) push(combos, [CHIP_SPARK, CHIP_SPARK, CHIP_SPARK, CHIP_SPARK]);
+		if(TP>=9) push(combos, [CHIP_SPARK, CHIP_SPARK, CHIP_SPARK]);
+		if(TP>=6) push(combos, [CHIP_SPARK, CHIP_SPARK]);
+	}else if(eType==ENTITY_LIGHTNING_BULB){
+		if(TP>=16) push(combos, [CHIP_LIGHTNING, CHIP_LIGHTNING, CHIP_LIGHTNING, CHIP_LIGHTNING]);
+		if(TP>=14) push(combos, [CHIP_LIGHTNING, CHIP_LIGHTNING, CHIP_LIGHTNING, CHIP_SHOCK]);
+		if(TP>=12) push(combos, [CHIP_LIGHTNING, CHIP_LIGHTNING, CHIP_LIGHTNING]);
+		if(TP>=13) push(combos, [CHIP_DOPING, CHIP_LIGHTNING, CHIP_LIGHTNING]);
+		if(TP>=10) push(combos, [CHIP_LIGHTNING, CHIP_LIGHTNING, CHIP_SHOCK]);
+		if(TP>=11) push(combos, [CHIP_DOPING, CHIP_LIGHTNING]);
+		if(TP>=11) push(combos, [CHIP_DOPING, CHIP_FLASH]);
+		if(TP>=8) push(combos, [CHIP_LIGHTNING, CHIP_LIGHTNING]);
+		if(TP>=9)  push(combos, [CHIP_DOPING, CHIP_SHOCK]);
+		if(TP>=7)  push(combos, [CHIP_DOPING]);
+		if(TP>=12) push(combos, [CHIP_LIGHTNING, CHIP_LIGHTNING, CHIP_FLASH]);
+		if(TP>=10) push(combos, [CHIP_SHOCK, CHIP_SHOCK, CHIP_SHOCK, CHIP_SHOCK, CHIP_SHOCK]);
+		if(TP>=8) push(combos, [CHIP_SHOCK, CHIP_SHOCK, CHIP_SHOCK, CHIP_SHOCK]);
+		if(TP>=4) push(combos, [CHIP_LIGHTNING]);
+		if(TP>=4) push(combos, [CHIP_FLASH]);
+		if(TP>=6) push(combos, [CHIP_SHOCK, CHIP_SHOCK, CHIP_SHOCK]);
+		if(TP>=4) push(combos, [CHIP_SHOCK, CHIP_SHOCK]);
+		if(TP>=2) push(combos, [CHIP_SHOCK]);
+	}
+	return @combos;
 }
 
 /**
@@ -52,6 +144,45 @@ function getListOfLeekWhoPlayBefore(@leek){
 	}
 	return @leekWhoPlayBefore;
 }
+
+/**
+ * Retourne la liste de tous les poireaux/bulbes adverses qui vont jouer après l'entité donné et avant le lanceur de la fonction
+ *
+ * @param int leek ID de l'entité ciblée
+ *
+ * @return array Tableau des ID des entités adverses qui vont jouer après le caster et avant la cible (caster et cible exclus)
+ */
+function getListOfEnemyLeekWhoPlayAfter(@leek){
+	var leekWhoPlayBefore = [];
+	if(getLevel()<46) return @leekWhoPlayBefore;
+	var casterTurnOrder = getEntityTurnOrder();
+	var limitTurnOrder = getEntityTurnOrder(leek);
+	for(var entity in getAliveEnemies()){
+		var entityTurnOrder = getEntityTurnOrder(entity);
+		//Cas le plus simple, on récupère les entités entre le caster et la cible
+		if(casterTurnOrder < limitTurnOrder){
+			//si l'entité est entre le caster et la cible
+			if(casterTurnOrder < entityTurnOrder && entityTurnOrder < limitTurnOrder){
+				push(leekWhoPlayBefore, entity);
+			}
+		}
+		//Plus complexe, la cible joue avant le caster
+		else{
+			//On récupère déjà toutes les entités jouant après le caster, sans limite
+			if(casterTurnOrder < entityTurnOrder){
+				push(leekWhoPlayBefore, entity);
+			}
+			//Puis toutes celles jouant avant la cible
+			if(entityTurnOrder < limitTurnOrder){
+				push(leekWhoPlayBefore, entity);
+			}
+		}
+	}
+	var leekWhoWontPlayBefore = getAliveEnemies();
+	for(var en in leekWhoPlayBefore) removeElement(leekWhoWontPlayBefore, en);
+	return @leekWhoWontPlayBefore;
+}
+
 
 function getDamagePercentage(@cell1, @cell2, @area) {     
 	if (cell1 == cell2) return 100;
@@ -169,6 +300,31 @@ function _getCellsToUseWeapChipOnCell(@weapChip, @cell){
 			if(fromCell!=null 
 			&& _OBSTACLES[fromCell]==null 
 			&& _LEEKS_CELL[fromCell]==null){
+				var dist = getCellDistance(fromCell,cell);
+				if(dist >= minrange && dist <= maxrange
+				&& (!needlos || lineOfSight(fromCell, cell, leekToIgnore))
+				&& (!inline || isOnSameLine(fromCell,cell))){
+					push(result, fromCell);
+				}
+			}
+		}
+	}
+	return @result;
+}
+
+function bulb_getCellsToUseChipOnCell(@weapChip, @cell){
+	var leekToIgnore = [getLeek()],result = [],
+	x = getCellX(cell), y = getCellY(cell),
+	minrange = _ITEM_MINRANGE[weapChip],
+	maxrange = _ITEM_MAXRANGE[weapChip],
+	inline = _ITEM_INLINE[weapChip],
+	needlos = _ITEM_NEEDLOS[weapChip];
+	for(var x1 = x-maxrange; x1 <= x+maxrange; x1++){
+		for(var y1 = y-maxrange; y1 <= y+maxrange; y1++){
+			var fromCell = getCellFromXY(x1, y1);
+			if(fromCell!=null 
+			&& _OBSTACLES[fromCell]==null 
+			&& !isLeek(fromCell)){
 				var dist = getCellDistance(fromCell,cell);
 				if(dist >= minrange && dist <= maxrange
 				&& (!needlos || lineOfSight(fromCell, cell, leekToIgnore))

@@ -2,57 +2,44 @@
 include('auto');
 stopOpk("loading lib");
 
-// charge les maps de chaque arme pour chaque adv
-loadMapsDanger(8*1000*1000);
-// génère la map complête de chaque adv à partir des maps d'armes.
-finalizeMapsDanger();
-// la map de tout le monde.
-map_danger = getMapDanger([]);
-colorMap();
-//mes déplacements
-reachableCells = getReachableCells([getCell():0], getMP(), []);
-// préparation de la map des actions possibles
-setMapActions();
+if(getTurn()==1) _IS_SUMMONER = true;
 
-global _MAINWEAPON = WEAPON_GRENADE_LAUNCHER;
+startOp();
+loadMapsDanger(_OPERATION_MAP_DANGER);
+stopOpkW("map_danger");
+
+//map_danger = getMapDanger([]);
+//colorMap();
+
+reachableCells = getReachableCells([getCell():0], getMP(), []);
+updateCoef(null);
+startOp();
+setMapActions();
+stopOpkW("SETMAPACTION");
+
+global _MAINWEAPON = WEAPON_M_LASER;
 // choix de la gravityCell
 var gravityArray = [];
 var ally = getFarthestAlly();
-if(ally != null && ally != -1) gravityArray[getCell(ally)] = 2; // on se tient à 2 de l'ally le plus loin
+if(ally != null && ally != -1 && getTurn()<45) gravityArray[getCell(ally)] = 3; // on se tient à 2 de l'ally le plus loin
 else gravityArray[306] = 0;// ou proche du centre
-if(getTurn()<45) gravityArray[getCell(getNearestEnemy())] = 8; // on se tient à 10 de l'adv
-else gravityArray[getCell(getNearestEnemy())] = 4; // ou plus proche après le tour 45
+gravityArray[getCell(getNearestEnemy())] = 8; // on se tient à 15 de l'adv
 
 // liste des combos à tester
 var combos = jsonDecode(getRegister(getTP()));
 // choix du set de combo en fonction de mon état
 var comboz;
 var weap = getWeapon();
-if(weap==null){
-	comboz = @combos["EMPTY"];
-}else{
-	comboz = @combos[string(weap)];
-}
-// test de toutes les combos si j'ai bien les cd
-var finalCombos = [];
-for(var name:var combo in comboz){
-	var ok = true;
-	for(var item in combo){
-		if(_ITEM_HAVECD[item] && getCooldown(item)!=0){
-			ok=false;
-			break;
-		}
-	}
-	if(ok) push(finalCombos, combo);
-}
+if(weap==null) comboz = @combos["EMPTY"];
+else comboz = @combos[string(weap)];
 
-var best = findBestMove(finalCombos, gravityArray);
-debug("BEST: "+ best);
-playBestMove(best);
+playBestMove(findBestMove(comboz, gravityArray));
 if(getWeapon()==null) setWeapon(_MAINWEAPON);
 
-debug('TOTALOP:' + round(getOperations()/1000) +"k");
+debugW('TOTALOP:' + round(getOperations()/1000) +"k");
 
 sayCupidon();
+displayBench();
+
 // pour avoir le cout de la lib à chaque tour proprement.
 __debug_operation=0;

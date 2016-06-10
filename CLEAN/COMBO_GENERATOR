@@ -4,26 +4,63 @@ include('auto');
 // ATTENTION : problème dans le registre, vers 16/17TP, on dépasse les 5000 char, ça rentre pas dans le registre...
 // TODO trouver une solution...
 
-global combos, knownCombos, combo_mincost, EMPTY=-1;
+global combossssss, knownCombos, combo_mincost, EMPTY=-1;
 var inHands = getWeapons();
-var stuff = getWeapons()+getChips();
 var maxTP = getTP();
+global _STUFF = getWeapons()+getChips();
 global _COMBOS_TP = 0;
 
+var itemToRemoveOrdered = [CHIP_ARMORING, CHIP_ANTIDOTE, CHIP_PROTEIN, CHIP_FERTILIZER, CHIP_WINGED_BOOTS, CHIP_STEROID, CHIP_METALLIC_BULB, CHIP_HEALER_BULB, CHIP_SOPORIFIC, CHIP_BALL_AND_CHAIN, CHIP_VACCINE, CHIP_SHIELD, CHIP_RAMPART, CHIP_LIBERATION];
+
 startOp();
-while(_COMBOS_TP<=maxTP+7){
+while(_COMBOS_TP<=maxTP +4){
+	var strrr = getJsonEncodedCombos(inHands);
+	if(length(strrr)<=5000){
+		var val = setRegister(_COMBOS_TP, strrr);
+		if(val) debug("" + _COMBOS_TP + ": " + val + '('+length(strrr)+')');
+		else debugE("" + _COMBOS_TP + ": " + val + '('+length(strrr)+')');
+		_COMBOS_TP++;
+		if(getOperations()>= OPERATIONS_LIMIT*0.90) break;
+	}else{
+		//remove 1 item from stuff and try again.
+		var removed = false;
+		for(var item in itemToRemoveOrdered){
+			var found = search(_STUFF, item);
+			if(found!=null){
+				debugW("removing "+_ITEMID_TOSTRING[item]);
+				remove(_STUFF,found);
+				removed=true;
+				break;
+			}
+		}
+		if(removed==false){
+			debugE("CANNOT DO MORE TO REDUCE SIZE, EXITING AT "+_COMBOS_TP+"tp.");
+			break;
+		}
+	}
+};
+
+stopOpk("Génération des combos");
+//outPutComboVar(result);
+
+// retourne une string contenant tous les combos possible pour un montant de TP donnée.
+function getJsonEncodedCombos(inHands){
 	var result = [];
 	for(var w in inHands){
-		result[w]= tools2Combo(stuff, _COMBOS_TP, w);
+		result[w]= tools2Combo(_STUFF, _COMBOS_TP, w);
 	}
-	result["EMPTY"] = tools2Combo(stuff, _COMBOS_TP, null);
+	result["EMPTY"] = tools2Combo(_STUFF, _COMBOS_TP, null);
 	var final = [];//sort
 	for(var startItem:var combosSet in result){
 		var combozzz = [];
 		for(var combo in combosSet){
 			var cmb/*hahaha..*/= arraySort(combo, function(a, b){
-				if(_ITEM_PRIORITY[a] > _ITEM_PRIORITY[b]) return 1;
-				else if(_ITEM_PRIORITY[a] < _ITEM_PRIORITY[b]) return -1;
+				var itemPrioA = _ITEM_PRIORITY[a];
+				var itemPrioB = _ITEM_PRIORITY[b];
+				if(a==startItem) itemPrioA--;
+				if(b==startItem) itemPrioB--;
+				if(itemPrioA > itemPrioB) return 1;
+				else if(itemPrioA < itemPrioB) return -1;
 				return 0;
 			});
 			push(combozzz, cmb);
@@ -31,15 +68,10 @@ while(_COMBOS_TP<=maxTP+7){
 		final[startItem] = combozzz;
 	}
 	var strrr= jsonEncode(final);
-	var val = setRegister(_COMBOS_TP, strrr);
-	debug("" + _COMBOS_TP + ": " + val + '('+length(strrr)+')');
-	_COMBOS_TP++;
-	if(getOperations()>= OPERATIONS_LIMIT*0.90) break;
-};
+	return strrr;
+}
 
-stopOpk("Génération des combos");
-//outPutComboVar(result);
-
+// non utilisé pour le moment
 function outPutComboVar(comboZ){
 	//generation de la string
 	var finalString = "\nvar combos = [\n";
@@ -79,8 +111,8 @@ function outPutComboVar(comboZ){
 }
 
 function tools2Combo(@tools,@tp,@activeWeapon){
-	combos = [];
-	push(combos, []); // fix temporaire : ajout d'une combo vide au début !
+	combossssss = [];
+	push(combossssss, []); // fix temporaire : ajout d'une combo vide au début !
 	knownCombos = [];
 	combo_mincost=50;
 	for(var t in tools){
@@ -88,7 +120,7 @@ function tools2Combo(@tools,@tp,@activeWeapon){
 	}
 	addMoreItem([], tools, tp, activeWeapon);
 	
-	return combos;
+	return combossssss;
 }
 function addMoreItem(@combo, @tools, @tpleft, @activeWeapon){
 	// je n'ai plus assez de TP pour faire la moindre action
@@ -100,7 +132,7 @@ function addMoreItem(@combo, @tools, @tpleft, @activeWeapon){
 			// j'aurais directement fait combos[id]=combo mais faut passer les tests :P
 			if(knownCombos[id]==null){
 				knownCombos[id]=true;
-				push(combos, combo);
+				push(combossssss, combo);
 			}
 		}
 	}else{
