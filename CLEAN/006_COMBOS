@@ -26,6 +26,7 @@ function updateCoef(idbulb){
 		_COEF_SHACKLE_STR = [];
 		_COEF_SHACKLE_MGC = [];
 		_COEF_LIBERATE = [];
+		_COEF_RETURN_DMG = [];
 	}
 	for(var target in targets){
 		var infos = _LEEKS[target];
@@ -82,6 +83,7 @@ function updateCoef(idbulb){
 				_COEF_SHACKLE_STR[target] = -2;
 				_COEF_SHACKLE_MGC[target] = -2;
 				_COEF_LIBERATE[target] = -1;
+				_COEF_RETURN_DMG[target] = -3;
 			}
 			else {//bulb
 				count_ally+=0.4;
@@ -95,9 +97,9 @@ function updateCoef(idbulb){
 					_COEF_VACCIN[target] = -0.75;
 					if(lifeRatio<0.8 && lifeRatio>0.5) _COEF_VACCIN[target]+= -0.5;
 				}
-				_COEF_MAXHP_BOOST[target] = -1.75;
+				_COEF_MAXHP_BOOST[target] = -2;
 				if(getTotalLife(target)>800) _COEF_MAXHP_BOOST[target] += 0.5;
-				if(getTotalLife(target)>1000) _COEF_MAXHP_BOOST[target] += 0.5;
+				if(getTotalLife(target)>1300) _COEF_MAXHP_BOOST[target] += 0.5;
 				if(eType==ENTITY_METALLIC_BULB && getTotalLife(target)>1500) _COEF_MAXHP_BOOST[target] += 0.5;
 				_COEF_ABSSHIELD[target] = -1;
 				if(target==_SELF) _COEF_ABSSHIELD[target] = -0.1;
@@ -118,6 +120,7 @@ function updateCoef(idbulb){
 				_COEF_SHACKLE_STR[target] = -1;
 				_COEF_SHACKLE_MGC[target] = -1;
 				_COEF_LIBERATE[target] = -0.5;
+				_COEF_RETURN_DMG[target] = -2;
 			}
 		}else{//enemy
 			_COEF_HEAL[target] = 2;
@@ -131,6 +134,7 @@ function updateCoef(idbulb){
 			_COEF_AGI_BOOST[target] = 2;
 			_COEF_WSD_BOOST[target] = 2;
 			_COEF_RST_BOOST[target] = 2;
+			_COEF_RETURN_DMG[target] = 2;
 			if(eType==ENTITY_LEEK_){
 				somme_life_enemy+=infos["life"]; // SUM LIFE ENEMY
 				count_enemy++; // COUNT ENEMY LEEK
@@ -228,6 +232,7 @@ function getScoreOfAction(@action, @stackOfResult, @stackOfDeath){
     myWis = me["wsd"],
 	myRst = me["rst"],
 	mySnc = me["snc"],
+	myAgi = me["agi"],
 	myAbsShield = me["absShield"],
 	myRelShield = me["relShield"],
     item = action["item"],
@@ -272,7 +277,7 @@ function getScoreOfAction(@action, @stackOfResult, @stackOfDeath){
 		else targetCell = getCell(target);
         var dmgRatio = isAOE? getDamagePercentage(targetCell, to, area) : 100;
 
-        var minDmgValue=0, avgDmgValue=0, turnPsn=0, avgPsn=0, healValue=0, maxhpValue=0, absShieldValue=0, relShieldValue=0, boostStrValue=0, boostAgiValue=0, boostTPValue=0, boostMPValue=0, lifeSteal=0, shackleTPValue=0, shackleMPValue=0, shackleStrValue=0, shackleMgcValue=0, debuffValue=0, antidoteValue=0;
+        var minDmgValue=0, avgDmgValue=0, turnPsn=0, avgPsn=0, healValue=0, maxhpValue=0, absShieldValue=0, relShieldValue=0, boostStrValue=0, boostAgiValue=0, boostTPValue=0, boostMPValue=0, lifeSteal=0, shackleTPValue=0, shackleMPValue=0, shackleStrValue=0, shackleMgcValue=0, debuffValue=0, antidoteValue=0, returnDmgValue=0;
 		var duration;
         for(var e in effects){
 			var type = e[0];
@@ -351,8 +356,11 @@ function getScoreOfAction(@action, @stackOfResult, @stackOfDeath){
 					avgDmgValue = minDmgValue;
 				}
 			}
+			else if(type == EFFECT_DAMAGE_RETURN){
+				returnDmgValue=moy*(1+(myAgi/100))*(dmgRatio/100)*duration;
+			}
             else{
-    			debugE("unhandled:"+getWeaponName(action["item"])+getChipName(action["item"]));
+			debugE("unhandled:"+getWeaponName(action["item"])+getChipName(action["item"]));
             }
         }
         //kill?
@@ -492,6 +500,13 @@ function getScoreOfAction(@action, @stackOfResult, @stackOfDeath){
 			if(antidoteValue){
 				stackOfResult[target]["antidote"]=true;
 				score -= antidoteValue*_COEF_HEAL[target];
+			}
+			if(returnDmgValue){
+				var onEffect = _LEEKS[target]["effects"][item];
+				if(onEffect != null) score+=onEffect*4*_COEF_RETURN_DMG[target];
+				else stackOfResult[target]["relShield"]+=returnDmgValue;
+				score -=returnDmgValue*_SCORE_REL_SHIELD*_COEF_RETURN_DMG[target];
+				if(!_SCN_STR_200) score = 1;
 			}
         }
     }

@@ -23,8 +23,13 @@ function getWeapChipDmg(@weapOrChip, @eMgc, @eStr, @eWsd, @eTp, @dmgPercentage){
             dmg+= tmp;
         }
         else if(type == EFFECT_POISON){
-            dmg += optiMoy*(1+(eMgc/100)) *ratio *(e[3]-1); // 1tour de moins que le max.
-            // soit 100%, 67%, 33% sur 3 tours vu les effects de heal/libération.
+			var duration = e[3];
+			duration = duration == 0 ? 1 : // 0 => 1
+				(duration == 2 ? 1.75 : // 2 => 1.75
+				(duration == 3 ? 2.25 : // 3 => 2.25
+				(duration == 4 ? 2.5 : // 4 => 2.5
+				duration))); // 1 => 1
+            dmg += optiMoy*(1+(eMgc/100)) *ratio *duration;
         }
         else if(type == EFFECT_HEAL){
             dmg -= optiMoy*(1+(eWsd/100)) *ratio;

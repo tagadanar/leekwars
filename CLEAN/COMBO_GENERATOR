@@ -4,40 +4,53 @@ include('auto');
 // ATTENTION : problème dans le registre, vers 16/17TP, on dépasse les 5000 char, ça rentre pas dans le registre...
 // TODO trouver une solution...
 
+if(getTurn()==1){
+	for(var reg:var val in getRegisters()){
+		deleteRegister(reg);
+	}
+}
+
 global combossssss, knownCombos, combo_mincost, EMPTY=-1;
 var inHands = getWeapons();
 var maxTP = getTP();
 global _STUFF = getWeapons()+getChips();
 global _COMBOS_TP = 0;
 
-var itemToRemoveOrdered = [CHIP_ARMORING, CHIP_ANTIDOTE, CHIP_PROTEIN, CHIP_FERTILIZER, CHIP_WINGED_BOOTS, CHIP_STEROID, CHIP_METALLIC_BULB, CHIP_HEALER_BULB, CHIP_SOPORIFIC, CHIP_BALL_AND_CHAIN, CHIP_VACCINE, CHIP_SHIELD, CHIP_RAMPART, CHIP_LIBERATION];
+var itemToRemoveOrdered = [CHIP_ARMORING, CHIP_ANTIDOTE, CHIP_PROTEIN, CHIP_FERTILIZER, CHIP_WINGED_BOOTS, CHIP_STEROID, CHIP_METALLIC_BULB, CHIP_HEALER_BULB, CHIP_SOPORIFIC, CHIP_BALL_AND_CHAIN, CHIP_VACCINE, CHIP_WALL, CHIP_SHIELD, CHIP_RAMPART, CHIP_LIBERATION];
+
+
+function mySubString(str, start, len){
+	var final = "", i = start;
+	while(charAt(str, i)!=null && i < start+len){
+		final+=charAt(str, i);
+		i++;
+	}
+	return final;
+}
+
 
 startOp();
+var blocksize = 4000;
 while(_COMBOS_TP<=maxTP +4){
 	var strrr = getJsonEncodedCombos(inHands);
-	if(length(strrr)<=5000){
-		var val = setRegister(_COMBOS_TP, strrr);
-		if(val) debug("" + _COMBOS_TP + ": " + val + '('+length(strrr)+')');
-		else debugE("" + _COMBOS_TP + ": " + val + '('+length(strrr)+')');
-		_COMBOS_TP++;
-		if(getOperations()>= OPERATIONS_LIMIT*0.90) break;
-	}else{
-		//remove 1 item from stuff and try again.
-		var removed = false;
-		for(var item in itemToRemoveOrdered){
-			var found = search(_STUFF, item);
-			if(found!=null){
-				debugW("removing "+_ITEMID_TOSTRING[item]);
-				remove(_STUFF,found);
-				removed=true;
-				break;
-			}
-		}
-		if(removed==false){
-			debugE("CANNOT DO MORE TO REDUCE SIZE, EXITING AT "+_COMBOS_TP+"tp.");
-			break;
-		}
+	var len = length(strrr);
+	var cnt = 0;
+	var start=0;
+	while(start<len){
+		var cle = _COMBOS_TP+"-"+cnt;
+		var size=len-start;
+		if(size > blocksize) size = blocksize;
+		var substr = mySubString(strrr, start, size);
+		debug("len:"+length(substr)+" start:"+start+" size:"+size);
+		var val = setRegister(cle, substr);
+		if(val) debug(_COMBOS_TP+" OK"); 
+		else debugE(_COMBOS_TP+" "+length(substr));
+		cnt++;
+		start = cnt*blocksize;
 	}
+	
+	_COMBOS_TP++;
+	if(getOperations()>= OPERATIONS_LIMIT*0.90) break;
 };
 
 stopOpk("Génération des combos");

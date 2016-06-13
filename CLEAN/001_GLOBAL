@@ -45,6 +45,7 @@ global _COEF_SHACKLE_MP;
 global _COEF_SHACKLE_STR;
 global _COEF_SHACKLE_MGC;
 global _COEF_LIBERATE;
+global _COEF_RETURN_DMG;
 
 // tableau getAliveEnemies/allies
 global _ALIVE_ALLIES;
