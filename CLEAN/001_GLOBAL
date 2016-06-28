@@ -5,11 +5,11 @@
 global __DEBUG_ON = true;
 global _LIMIT_MASSMP_IGNORELEEK = 50;
 global _OPERATION_MAP_DANGER = 6000000;
-global _OPERATION_BULB = 1000000;
+global _OPERATION_BULB = 800000;
 
 global _SCORE_KILL_DMG = 500;
 global _SCORE_KILL_PSN = 100;
-global _SCORE_DEATH = 1500;
+global _SCORE_DEATH = 2000;
 global _RATIO_IGNORE_DANGER = 0.25;
 global _RATIO_DANGER = 1;
 
@@ -23,6 +23,7 @@ global _SCORE_REL_SHIELD = 3;
 // ID du joueur leek.
 global _SELF = getLeek();
 global _IS_SUMMONER = false;
+global _IS_TELEPORT = false;
 
 // Contient les informations sur les leeks, refresh à tous les tours en début de tour.
 global _LEEKS = [];
@@ -54,6 +55,7 @@ global _ALIVE_ALLIES_LEEKS;
 global _ALIVE_ALLIES_BULBS;
 global _ALIVE_ENEMIES_LEEKS;
 global _ALIVE_ENEMIES_BULBS;
+global _ALIVE_ENEMIES_DANGER;
 global _COUNT_PUNY;
 global _COUNT_ROCKY;
 global _COUNT_ICED;
@@ -75,6 +77,8 @@ global _SCN_STR_100;
 global _SCN_STR_200;
 global _SCN_STR_300;
 
+// pour baisser le coût de setMapActions();
+global atkCellsArea1 = [], atkCellsArea2 = [], atkCellsArea3 = [], defCellsArea1 = [], defCellsArea2 = [], defCellsArea3 = [];
 global map_actions; // ["id":w, "from":fromCell, "to":toCell, "targets":targets]
 // autre global de la map actions (used in findBestMove):
 global self_action_array = []; // [chip:chip]
@@ -84,10 +88,12 @@ global assoc_from_item_actions = []; // [cellFrom:[itemId:[actions]]]
 // cache
 global _CACHE_SCORE_SAFECELL;
 global _CACHE_SCORE_ACTION;
+global _CACHE_CELLS_NO_TELEPORT;
 
 // Contient les id des cells obstacle en clé, test cell libre avec _OBSTACLES[cell]==null
 // init tour 1.
 global _OBSTACLES = [];
+global _CELLS_NO_OBSTACLES = [];
 
 // Contient les id des cells des leeks, sauf le leek qui joue.
 // refresh au debug de chaque tour.
@@ -102,6 +108,7 @@ global _areaCells1 = [];
 global _areaCells1Obstacle = [];
 
 global _areaCells2 = [];
+global _areaCells3 = [];
 
 // ========================
 // INFOS STUFF
@@ -323,6 +330,7 @@ global _ITEMID_TOSTRING = [
     CHIP_FERTILIZER:"CHIP_FERTILIZER",
     CHIP_FIRE_BULB:"CHIP_FIRE_BULB",
     CHIP_FLAME:"CHIP_FLAME",
+	CHIP_FLASH:"CHIP_FLASH",
     CHIP_FORTRESS:"CHIP_FORTRESS",
     CHIP_FRACTURE:"CHIP_FRACTURE",
     CHIP_HEALER_BULB:"CHIP_HEALER_BULB",
@@ -373,7 +381,7 @@ global _ITEMID_TOSTRING = [
     CHIP_WARM_UP:"CHIP_WARM_UP",
     CHIP_WHIP:"CHIP_WHIP",
     CHIP_WINGED_BOOTS:"CHIP_WINGED_BOOTS",
-	WEAPON_AXE:"WEAPON_AXE",
+	WEAPON_AXE:"WEAPON_AXE", 
 	WEAPON_B_LASER:"WEAPON_B_LASER",
 	WEAPON_BROADSWORD:"WEAPON_BROADSWORD",
 	WEAPON_DESTROYER:"WEAPON_DESTROYER",

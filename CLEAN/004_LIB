@@ -5,10 +5,10 @@ include('auto');
 
 function sayCupidon(){
 	var stupidSay = [
-		"L'amour ça fait mal !"
-		,"Mon coeur saigne..."
-		,"Tu me fend le coeur."
-		,"J'ai le coeur fendu par toi."
+		"Si taga est sur le chat, dites lui de coder ma map de danger plutôt que de glander.."
+		,"hmm... avec téléport ça serait plus simple non ?"
+		,"Je suis perdu là, c'est où la bagarre ?"
+		,"Vous avez vu ? non ? moi non plus."
 		,"Demain dès l'aube, à l'heure où blanchie la campagne, je partirai..."
 		,"Ne courrez pas, nous venons en paix ! pew pew pew !"
 		,"Et si l'homme est un chien c'est qu'il est plus fidèle, plus fidèle à des chattes qui se feront la belle !"
@@ -232,11 +232,45 @@ function getLazerTargetsCell(@c, @minrange){
 	return @result;
 }
 
+// return an array of cell from witch you can shoot on c with lazer having min/max range
+function getLazerFromCellsToTargetCell(@c, @minrange, @maxrange){
+	var x = getCellX(c), y = getCellY(c), result = [];
+	var cell = getCellFromXY(x+minrange, y), inc = 1;
+	if(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && lineOfSight(c, cell)){
+		while(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && getCellDistance(c, cell)<=maxrange){
+			push(result, cell);
+			cell = getCellFromXY(x+minrange+inc++, y);
+		}
+	}
+	cell = getCellFromXY(x-minrange, y); inc = 1;
+	if(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && lineOfSight(c, cell)){
+		while(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && getCellDistance(c, cell)<=maxrange){
+			push(result, cell);
+			cell = getCellFromXY(x-minrange-inc++, y);
+		}
+	}
+	cell = getCellFromXY(x, y+minrange); inc = 1;
+	if(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && lineOfSight(c, cell)){
+		while(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && getCellDistance(c, cell)<=maxrange){
+			push(result, cell);
+			cell = getCellFromXY(x, y+minrange+inc++);
+		}
+	}
+	cell = getCellFromXY(x, y-minrange); inc = 1;
+	if(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && lineOfSight(c, cell)){
+		while(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && getCellDistance(c, cell)<=maxrange){
+			push(result, cell);
+			cell = getCellFromXY(x, y-minrange-inc++);
+		}
+	}
+	return @result;
+}
+
 // return lazerTargets array
 function getLazerTargetsFromCell(@from, @to, @minrange, @maxrange){
 	var xFrom = getCellX(from), yFrom = getCellY(from),
 		xTo = getCellX(to), yTo = getCellY(to), result = [],
-		inc = 0, maxInc = maxrange-minrange, tmpCell, tmpContent;
+		inc = 0, maxInc = maxrange-getCellDistance(from, to), tmpCell, tmpContent;
 	
 	if(xFrom==xTo){
 		if(yFrom<yTo){
@@ -365,3 +399,47 @@ function _getCellToUseWeapChipOnCell(@weapChip, @cell){
 	return @result;
 }
 
+function prepareSetMapActions(){
+	atkCellsArea1 = [];
+	atkCellsArea2 = [];
+	atkCellsArea3 = [];
+	defCellsArea1 = [];
+	defCellsArea2 = [];
+	defCellsArea3 = []; // raz
+	for(var e in _ALIVE_ENEMIES){
+		var cell = getCell(e);
+		atkCellsArea1[cell]=cell;
+		atkCellsArea2[cell]=cell;
+		atkCellsArea3[cell]=cell;
+		for(var c in _areaCells1[cell]){
+			atkCellsArea1[c]=c;
+			atkCellsArea2[c]=c;
+			atkCellsArea3[c]=c;
+		}
+		for(var c in _areaCells2[cell]){
+			atkCellsArea2[c]=c;
+			atkCellsArea3[c]=c;
+		}
+		for(var c in _areaCells3[cell]){
+			atkCellsArea3[c]=c;
+		}
+	}
+	for(var e in _ALIVE_ALLIES){
+		var cell = getCell(e);
+		defCellsArea1[cell]=cell;
+		defCellsArea2[cell]=cell;
+		defCellsArea3[cell]=cell;
+		for(var c in _areaCells1[cell]){
+			defCellsArea1[c]=c;
+			defCellsArea2[c]=c;
+			defCellsArea3[c]=c;
+		}
+		for(var c in _areaCells2[cell]){
+			defCellsArea2[c]=c;
+			defCellsArea3[c]=c;
+		}
+		for(var c in _areaCells3[cell]){
+			defCellsArea3[c]=c;
+		}
+	}
+}

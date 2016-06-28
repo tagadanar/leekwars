@@ -3,13 +3,13 @@ include('auto');
 // init turn 1
 if(getTurn()==1){
 	// TODO version avec lineOfSight(cell, cell)==false pour un osbtacle
-	for(var obs in getObstacles()){
-		_OBSTACLES[obs] = true;
-	}
 	for(var i=0;i<613;i++){
+		if(isObstacle(i)) _OBSTACLES[i]=true;
+		else _CELLS_NO_OBSTACLES[i] = i;
 		_areaCells1[i] = prepareCellArea(i, false);
 		_areaCells1Obstacle[i] = prepareCellArea(i, true);
 		_areaCells2[i] = prepareCellArea2(i, false);
+		_areaCells3[i] = prepareCellArea3(i, false);
 	}
 	for(var i=0;i<150;i++){ // reminder: idmax à 110 @janvier2016
 		if(isWeapon(i)){
@@ -41,7 +41,7 @@ if(getTurn()==1){
 	}
 }
 //init every turn
-refreshLeeksCellsAndAliveStatus(getLeek());
+refreshLeeksCellsAndAliveStatus();
 
 // a uncomment si t'utilise getCellToUseWeapChipOnCell pour avoir la plus proche en terme de path
 //_SELF_FULLMAP_PATH_DIST=[];

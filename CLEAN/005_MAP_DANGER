@@ -79,20 +79,54 @@ function getDmgMap(@enemy, @weaponOrChip){
  
     // his move
     var moveCells = getReachableCells([eCell:0], eMp, cellToIgnore);
+	var keys = [];
+	for(var cell:var dist in moveCells) push(keys, cell);
     // the first map.
     var map = [];
-    for(var i=0;i<613;i++){
+	
+	//cells to check for dmg.
+	var cells = [];
+	if(_IS_TELEPORT/* && getCooldown(CHIP_TELEPORTATION)==0*/){
+		cells = @_CELLS_NO_OBSTACLES;	
+	}else{
+		if(_CACHE_CELLS_NO_TELEPORT==null){
+			var ignoreCells = [];
+			for(var en in _ALIVE_ENEMIES){
+				push(ignoreCells, getCell(en));
+			}
+			var cellsToTest = getReachableCells([getCell():0], getMP(), ignoreCells);
+			for(var cell:var dist in cellsToTest){
+				cells[cell]=cell;
+			}
+			for(var ally in _ALIVE_ALLIES_LEEKS){
+				if(ally==_SELF) continue;
+				var cell = getCell(ally);
+				cells[cell]=cell;
+			}
+			for(var bulb in _ALIVE_ALLIES_BULBS){
+				if(getSummoner(bulb)==_SELF){
+					for(var cell:var dist in getReachableCells([getCell(bulb):0], getMP(bulb)+3, [getCell()])){
+						cells[cell]=cell;
+					}
+				}
+			}
+			_CACHE_CELLS_NO_TELEPORT = cells;
+		}
+		cells = @_CACHE_CELLS_NO_TELEPORT;
+	}
+    for(var i in cells){
         if(_OBSTACLES[i] != null)continue; // si c'est un obstacle on fait pas la cell
         map[i]= 0;
 		//Si la cellule est trop loin du move max de l'adv + range
 		if(getCellDistance(i, eCell) > (eMp + maxscope))continue;
 		// sinon on regarde si il peut la toucher.
-        for(var mc:var nbmp in moveCells){
+		for(var j = count(keys)-1; j>=0; j--){
+			var mc = keys[j];
             var dist = getCellDistance(i, mc);
             if(dist <= maxscope
             && dist >= minscope
-            && (!needlos || lineOfSight(i, mc, ignored))
-            && (!inline || isOnSameLine(i, mc))){
+            && (!inline || isOnSameLine(i, mc))
+            && (!needlos || lineOfSight(i, mc, ignored))){
                 map[i] = damage;
                 break;
             }
@@ -130,10 +164,13 @@ function getOrderedWeapChipScore(@enemy, eStr, eMgc, eWsd){
 		//if(w!=null && ! inArray(stuff, w)) push(stuff, w); 
 	}
     for(var item in stuff){
-        if(item == CHIP_LIBERATION){
+        if(item == CHIP_BURNING){
+			continue;
+		}
+		else if(item == CHIP_LIBERATION){
 			allChipWeap[item] = _LEEKS[_SELF]["scoreLibe"]/_ITEM_COST[item];
 			continue;
-		}  // todo score par rapport à mon shield.
+		}
 		if(isSpecialChip(item))continue;
 		if(_ITEM_HAVECD[item] && getLevel()>=36 && getCooldown(item, enemy)!=0) continue;
 		
@@ -170,54 +207,55 @@ function getOrderedWeapChipScore(@enemy, eStr, eMgc, eWsd){
 
 function ignoreMPLeek(){
 	var cumulateMP = 0;
-	for(var leek in _ALIVE_ENEMIES_LEEKS){
+	for(var leek in _ALIVE_ENEMIES_DANGER){
 		cumulateMP+= getMP(leek);
 	}
 	if(cumulateMP>_LIMIT_MASSMP_IGNORELEEK){
 		var farthest, dist;
-		for(var leek in _ALIVE_ENEMIES_LEEKS){
+		for(var leek in _ALIVE_ENEMIES_DANGER){
 			var tmpdist = getCellDistance(getCell(), getCell(leek));
 			if(dist==null || dist < tmpdist){
 				farthest = leek;
 				dist = tmpdist;
 			}
 		}
-		removeElement(_ALIVE_ENEMIES, farthest);
-		removeElement(_ALIVE_ENEMIES_LEEKS, farthest);
+		removeElement(_ALIVE_ENEMIES_DANGER, farthest);
 	}
 }
 
 // load les maps armes par armes pour chaque adv dans l'ordre de danger
 function loadMapsDanger(maxOp){
-	ignoreMPLeek();
+	//ignoreMPLeek();
 	var startOperation = getOperations();
 	map_leek_weap_danger = [];//reset de la map
 	var maxIndex = [];
 	var theMax = 0;
-	for(var e in _ALIVE_ENEMIES){
+	for(var e in _ALIVE_ENEMIES_DANGER){
 		map_leek_weap_danger[e] = [];//reset de la map
 		var info = _LEEKS[e];
 		var weapChips = getOrderedWeapChipScore(e,info["str"],info["mgc"],info["wsd"]);
 		_LEEKS[e]['items'] = []; //reset du stuff
 		for(var weapChip : var dmg in weapChips){
-			push(_LEEKS[e]['items'], [
-				'item' : weapChip,
-				'damage' : dmg
-			]);
+			if(dmg>0){
+				push(_LEEKS[e]['items'], [
+					'item' : weapChip,
+					'damage' : dmg
+				]);
+			}
 		}
 		maxIndex[e] = count(_LEEKS[e]['items']);
 		if(theMax<maxIndex[e]) theMax = maxIndex[e];
 	}
 	
 	for(var index = 0; index < theMax; index++){
-		for(var e in _ALIVE_ENEMIES){
+		for(var e in _ALIVE_ENEMIES_DANGER){
 			if(index<maxIndex[e]){
 				var item = _LEEKS[e]['items'][index]["item"];
-				// [leek: [weap: [map_danger]]]
+				//if(__DEBUG_ON) debug("danger: "+getName(e) + " |weap"+index+": " + getWeaponName(item)+getChipName(item)+" score: "+_LEEKS[e]['items'][index]["damage"]);
 				map_leek_weap_danger[e][item] = getDmgMap(e, item);
 			}
 		}
-		if(getOperations()-startOperation>maxOp){
+		if(index > 0 && getOperations()-startOperation>maxOp){
 			debugE('Turn'+getTurn()+' breaking loadMapsDanger at index: '+index);
 			break;
 		}
@@ -227,72 +265,41 @@ function loadMapsDanger(maxOp){
 
 function finalizeMapsDanger(){
 	map_leek_danger = []; // reset
-	var isSolo = getFightType()==FIGHT_TYPE_SOLO;
-	for(var e in _ALIVE_ENEMIES){
+	for(var e in _ALIVE_ENEMIES_DANGER){
 		var cumulateMap = []; // reset
 		var maxTP = @_LEEKS[e]["tp"];
 		var items = @_LEEKS[e]["items"];
-		for(var c= 0; c <= 612; c++){
-			if(isSolo){
-				if(_OBSTACLES[c]!=null) continue;
-				cumulateMap[c]=0;
-				var TP = maxTP;
-				var map_weap_danger = @map_leek_weap_danger[e];
-
-				var array = [];
-				for(var i in items){
-					var item = i["item"];
-					var cost = _ITEM_COST[item];
-					var damage = map_weap_danger[item][c];	
-					if(damage != null && damage >0){
-						push(array,["item":item,"cost":cost,"dmg":damage,"ratio": damage/cost]);
-					}
-				}
-				array = arraySort(array, function(a, b){
-					var ratioA = a["ratio"], ratioB = b["ratio"];
-					if(ratioA>ratioB) return 1;
-					else if(ratioA<ratioB) return -1;
-					return 0;
-				});
-				for(var action in array){
-					var item = action["item"],
-					cost = action["cost"],
-					damage = action["dmg"];
+		var cells = [];
+		if(_IS_TELEPORT && getCooldown(CHIP_TELEPORTATION)==0) cells = @_CELLS_NO_OBSTACLES;
+		else cells = @_CACHE_CELLS_NO_TELEPORT;
+		for(var c in cells){
+			if(_OBSTACLES[c]!=null) continue;
+			cumulateMap[c]=0;
+			var TP = maxTP;
+			
+			//var compensateImprecision = 0;
+			for(var i in items){
+				var item = i["item"];
+				var cost = _ITEM_COST[item];
+				var damage = map_leek_weap_danger[e][item][c];
+				if(damage >0){
 					while(cost<=TP){
 						cumulateMap[c]+=damage;
 						TP-=cost;
 						if(_ITEM_HAVECD[item]) break;
 					}
 				}
-				if(TP<0) debugE("TP NOK §§§: " + TP);
-			}else{
-				if(_OBSTACLES[c]!=null) continue;
-				cumulateMap[c]=0;
-				var TP = maxTP;
-				//var compensateImprecision = 0;
-				for(var i in items){
-					var item = i["item"];
-					var cost = _ITEM_COST[item];
-					var damage = map_leek_weap_danger[e][item][c];
-					if(damage >0){
-						while(cost<=TP){
-							cumulateMap[c]+=damage;
-							TP-=cost;
-							if(_ITEM_HAVECD[item]) break;
-						}
-					}
-				}
-				if(TP<0) debugE("TP NOK §§§: " + TP);
 			}
+			if(TP<0) debugE("TP NOK §§§: " + TP);
 		}
 		map_leek_danger[e] = @cumulateMap;
 	}
 }
 
-// à besoin de loadMapsDanger(maxOp) && finalizeMapsDanger() pour renvoyer un vrai score.
+// à besoin de loadMapsDanger(maxOp) pour renvoyer un vrai score.
 function getMapDanger(ignoreLeeks){
 	var finalMap = [];
-	for(var enemy in _ALIVE_ENEMIES){
+	for(var enemy in _ALIVE_ENEMIES_DANGER){
 		if(inArray(ignoreLeeks, enemy)) continue;
 		for(var cell:var dmg in map_leek_danger[enemy]){
 			finalMap[cell]+=dmg;
@@ -301,12 +308,18 @@ function getMapDanger(ignoreLeeks){
 	return @finalMap;
 }
 
-// à besoin de loadMapsDanger(maxOp) && finalizeMapsDanger() pour renvoyer un vrai score.
+// à besoin de loadMapsDanger(maxOp) pour renvoyer un vrai score.
 function getCellDanger(cell, ignoreLeeks){
 	var danger = 0;
-	for(var enemy in _ALIVE_ENEMIES){
+	for(var enemy in _ALIVE_ENEMIES_DANGER){
 		if(inArray(ignoreLeeks, enemy)) continue;
 		danger += map_leek_danger[enemy][cell];
 	}
+	/*if(__DEBUG_ON && isEmpty(ignoreLeeks)){
+		var color = COLOR_GREEN, life = getLife();
+		if(danger>life) color = COLOR_BLUE;
+		else color = getColor(255*danger/life, 255-(danger/life*255), 0);
+		mark(cell, color);
+	}*/
 	return @danger;
 }

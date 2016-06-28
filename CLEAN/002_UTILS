@@ -7,6 +7,16 @@ include('auto');
 // Fonctions pour l'init exclusivement
 // ========================
 
+// remplacement de substring qui est bugged
+function mySubString(@str, @start, @len){
+	var final = "", i = start;
+	while(charAt(str, i)!=null && i < start+len){
+		final+=charAt(str, i);
+		i++;
+	}
+	return final;
+}
+
 // return un id unique pour une weap/chip & un array d'idleek peu importe l'ordre.
 // ainsi que la case cible pour les armes à aoe (mettre null sinon pour les lazer !)
 function getUniqueID(@array, @w, @to){
@@ -83,6 +93,39 @@ function prepareCellArea2(@c, @obstacle){
     return @result;
 }
 
+function prepareCellArea3(@c, @obstacle){
+    if(_OBSTACLES[c]!=null) return null; // c'est un obstacle, pas besoin de préparer
+    var x = getCellX(c), y = getCellY(c), result = [];
+    // AREA_CIRCLE_1
+    var cell = getCellFromXY(x, y-3);
+    if(cell!=null && (_OBSTACLES[cell]==null || obstacle)) push(result, cell);
+    cell = getCellFromXY(x, y+3);
+    if(cell!=null && (_OBSTACLES[cell]==null || obstacle)) push(result, cell);
+    cell = getCellFromXY(x-3, y);
+    if(cell!=null && (_OBSTACLES[cell]==null || obstacle)) push(result, cell);
+    cell = getCellFromXY(x+3, y);
+    if(cell!=null && (_OBSTACLES[cell]==null || obstacle)) push(result, cell);
+	
+	cell = getCellFromXY(x+2, y+1);
+    if(cell!=null && (_OBSTACLES[cell]==null || obstacle)) push(result, cell);
+    cell = getCellFromXY(x+2, y-1);
+    if(cell!=null && (_OBSTACLES[cell]==null || obstacle)) push(result, cell);
+    cell = getCellFromXY(x+1, y+2);
+    if(cell!=null && (_OBSTACLES[cell]==null || obstacle)) push(result, cell);
+	cell = getCellFromXY(x+1, y-2);
+    if(cell!=null && (_OBSTACLES[cell]==null || obstacle)) push(result, cell);
+	cell = getCellFromXY(x-1, y+2);
+    if(cell!=null && (_OBSTACLES[cell]==null || obstacle)) push(result, cell);
+    cell = getCellFromXY(x-1, y-2);
+    if(cell!=null && (_OBSTACLES[cell]==null || obstacle)) push(result, cell);
+    cell = getCellFromXY(x-2, y+1);
+    if(cell!=null && (_OBSTACLES[cell]==null || obstacle)) push(result, cell);
+	cell = getCellFromXY(x-2, y-1);
+    if(cell!=null && (_OBSTACLES[cell]==null || obstacle)) push(result, cell);
+	
+    return @result;
+}
+
 // retourne le type de l'entity
 function getEntityType(@entity){
 	if(!isSummon(entity)) return @ENTITY_LEEK_;
@@ -97,7 +140,7 @@ function getEntityType(@entity){
 	return @ENTITY_PUNY_BULB; 
 }
 
-function refreshLeeksCellsAndAliveStatus(ignoreSelfLeek){
+function refreshLeeksCellsAndAliveStatus(){
 	_SELF = getLeek();
 	// refresh leek cells & alive allies/enemies
 	_ALIVE_ALLIES = getAliveAllies();
@@ -106,6 +149,7 @@ function refreshLeeksCellsAndAliveStatus(ignoreSelfLeek){
 	_ALIVE_ALLIES_BULBS = [];
 	_ALIVE_ENEMIES_LEEKS = [];
 	_ALIVE_ENEMIES_BULBS = [];
+	_ALIVE_ENEMIES_DANGER = [];
 	_COUNT_PUNY = 0;
 	_COUNT_ROCKY = 0;
 	_COUNT_ICED = 0;
@@ -113,12 +157,14 @@ function refreshLeeksCellsAndAliveStatus(ignoreSelfLeek){
 	_COUNT_METAL = 0;
 	_COUNT_FIRE = 0;
 	_COUNT_LIGHTNING = 0;
+	
+	_CACHE_CELLS_NO_TELEPORT=null;
 
 	_LEEKS_CELL=[];
 	for(var leek in _ALIVE_ALLIES+_ALIVE_ENEMIES){
-		if(ignoreSelfLeek!=leek) _LEEKS_CELL[getCell(leek)] = leek;
-		if(isSummon(leek)){
-			if(isAlly(leek)){
+		if(_SELF!=leek) _LEEKS_CELL[getCell(leek)] = leek;
+		if(isAlly(leek)){
+			if(isSummon(leek)){
 				push(_ALIVE_ALLIES_BULBS, leek);
 				var eType = getEntityType(leek);
 				if(eType==ENTITY_PUNY_BULB) _COUNT_PUNY++;
@@ -128,10 +174,14 @@ function refreshLeeksCellsAndAliveStatus(ignoreSelfLeek){
 				else if(eType==ENTITY_METALLIC_BULB) _COUNT_METAL++;
 				else if(eType==ENTITY_FIRE_BULB) _COUNT_FIRE++;
 				else if(eType==ENTITY_LIGHTNING_BULB) _COUNT_LIGHTNING++;
-			} else push(_ALIVE_ENEMIES_BULBS, leek);
-		}else{
-			if(isAlly(leek)) push(_ALIVE_ALLIES_LEEKS, leek);
+			} else push(_ALIVE_ALLIES_LEEKS, leek);
+		}else{//isEnemy
+			if(isSummon(leek)) push(_ALIVE_ENEMIES_BULBS, leek); 
 			else push(_ALIVE_ENEMIES_LEEKS, leek);
+			
+			if(getStrength(leek) >= 100 || getMagic(leek) >= 100){
+				push(_ALIVE_ENEMIES_DANGER, leek);
+			}
 		}
 	}
 
@@ -268,6 +318,43 @@ function getAbsoluteByLaunchedEffects(@leek){
 }
 
 //////////////////////////
+// REGISTRE
+//////////////////////////
+
+function getFullRegister(key){
+	var cnt = 0;
+	var reg;
+	var strCombos = "";
+	do{
+		reg = getRegister(key+"-"+cnt);
+		if(reg!=null) strCombos+=reg;
+		cnt++;
+	}while(reg != null);
+
+	var combos = jsonDecode(strCombos);
+	return @combos;
+}
+
+function setFullRegister(@key, @value){
+	var blocksize = 4999;
+	var len = length(value);
+	var cnt = 0;
+	var start=0;
+	while(start<len){
+		var cle = key+"-"+cnt;
+		var size=len-start;
+		if(size > blocksize) size = blocksize;
+		var substr = mySubString(value, start, size);
+		debug("len:"+length(substr)+" start:"+start+" size:"+size);
+		var val = setRegister(cle, substr);
+		if(val) debug(key+" OK"); 
+		else debugE(key+" "+length(substr));
+		cnt++;
+		start = cnt*blocksize;
+	}
+}
+
+//////////////////////////
 // DEBUG
 //////////////////////////
 function debugColor(message, color){
@@ -303,7 +390,7 @@ function stopBenchFunction(name){
 }
 function displayBench(){
 	for(var name:var nbCall in __count_func){
-		debugColor("Turn"+ getTurn() + " "+ name + ": " + nbCall + " Moy= " + round(__cumul_func[name]/nbCall) + " Total= " + round((__cumul_func[name])/1000) + "k", "blue");
+		debugColor("Turn"+ getTurn() + " "+ name + ": " + nbCall + " call. Moy= " + round(__cumul_func[name]/nbCall) + " Total= " + round((__cumul_func[name])/1000) + "k", "blue");
 	}
 }
 

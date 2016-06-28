@@ -1,8 +1,7 @@
 include('auto');
-// INSTRUCTION: lancer un combat de test avec ce leek pour récupérer la liste des combos disponibles en dur dans le registre, en clé le nb de TP, en value les set de combos selon l'arme.
+// INSTRUCTION: lancer un combat de test avec le leek et cette IA pour récupérer la liste des combos disponibles en dur dans le registre, en clé le nb de TP, en value les set de combos selon l'arme.
 // si pas d'arme en main, prendre la clé "EMPTY" sous forme de string.
-// ATTENTION : problème dans le registre, vers 16/17TP, on dépasse les 5000 char, ça rentre pas dans le registre...
-// TODO trouver une solution...
+// NB je fais des blocks de 4999 char par registre pour contourner la limite de 5000char (ça bug à 5000 par bloc), utiliser la fonction getFullRegister(key) pour avoir le registre complêt après réassemblage.
 
 if(getTurn()==1){
 	for(var reg:var val in getRegisters()){
@@ -16,38 +15,10 @@ var maxTP = getTP();
 global _STUFF = getWeapons()+getChips();
 global _COMBOS_TP = 0;
 
-var itemToRemoveOrdered = [CHIP_ARMORING, CHIP_ANTIDOTE, CHIP_PROTEIN, CHIP_FERTILIZER, CHIP_WINGED_BOOTS, CHIP_STEROID, CHIP_METALLIC_BULB, CHIP_HEALER_BULB, CHIP_SOPORIFIC, CHIP_BALL_AND_CHAIN, CHIP_VACCINE, CHIP_WALL, CHIP_SHIELD, CHIP_RAMPART, CHIP_LIBERATION];
-
-
-function mySubString(str, start, len){
-	var final = "", i = start;
-	while(charAt(str, i)!=null && i < start+len){
-		final+=charAt(str, i);
-		i++;
-	}
-	return final;
-}
-
-
 startOp();
-var blocksize = 4000;
 while(_COMBOS_TP<=maxTP +4){
 	var strrr = getJsonEncodedCombos(inHands);
-	var len = length(strrr);
-	var cnt = 0;
-	var start=0;
-	while(start<len){
-		var cle = _COMBOS_TP+"-"+cnt;
-		var size=len-start;
-		if(size > blocksize) size = blocksize;
-		var substr = mySubString(strrr, start, size);
-		debug("len:"+length(substr)+" start:"+start+" size:"+size);
-		var val = setRegister(cle, substr);
-		if(val) debug(_COMBOS_TP+" OK"); 
-		else debugE(_COMBOS_TP+" "+length(substr));
-		cnt++;
-		start = cnt*blocksize;
-	}
+	setFullRegister(_COMBOS_TP, strrr);
 	
 	_COMBOS_TP++;
 	if(getOperations()>= OPERATIONS_LIMIT*0.90) break;
@@ -56,7 +27,7 @@ while(_COMBOS_TP<=maxTP +4){
 stopOpk("Génération des combos");
 //outPutComboVar(result);
 
-// retourne une string contenant tous les combos possible pour un montant de TP donnée.
+// retourne une string contenant tous les combos possible de _STUFF pour _COMBOS_TP.
 function getJsonEncodedCombos(inHands){
 	var result = [];
 	for(var w in inHands){
