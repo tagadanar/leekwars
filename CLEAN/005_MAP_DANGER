@@ -1,46 +1,5 @@
 include('auto');
 
-// retourne les dégâts en 1 coup d'une arme sur moi même
-function getWeapChipDmg(@weapOrChip, @eMgc, @eStr, @eWsd, @eTp, @dmgPercentage){
-	var info = @_LEEKS[_SELF];
-    var selfAbsShield = @info["absShield"];
-    var selfRelShield = @info["relShield"];
-	var ratio = dmgPercentage/100;
-    var dmg = 0;
-
-	if(weapOrChip==CHIP_LIBERATION){
-		return _LEEKS[_SELF]["scoreLibe"];
-	}
-	// FIXME truc chiant à gérer...
-	if(weapOrChip==CHIP_BURNING) return 0;
-	var effects = @_ITEM_EFFECTS[weapOrChip];
-    for(var e in effects){
-		var type = e[0];
-		var optiMoy = (e[1]+3*e[2])/4;
-        if(type == EFFECT_DAMAGE){
-            var tmp = optiMoy*(1+(eStr/100));
-            tmp = (tmp *ratio *(1-(selfRelShield/100))) -selfAbsShield;
-            dmg+= tmp;
-        }
-        else if(type == EFFECT_POISON){
-			var duration = e[3];
-			duration = duration == 0 ? 1 : // 0 => 1
-				(duration == 2 ? 1.75 : // 2 => 1.75
-				(duration == 3 ? 2.25 : // 3 => 2.25
-				(duration == 4 ? 2.5 : // 4 => 2.5
-				duration))); // 1 => 1
-            dmg += optiMoy*(1+(eMgc/100)) *ratio *duration;
-        }
-        else if(type == EFFECT_HEAL){
-            dmg -= optiMoy*(1+(eWsd/100)) *ratio;
-        }
-        // si un jour on veut prendre en compte les entraves ou autre truc chelou, c'est ici qu'on rajoute un "score de dmg" par MP/TP/FORCE/MAGIE entravé
-    }
-    // vérif qu'on est pas en négatif
-    if(dmg < 0) dmg = 0;
-    return dmg;
-}
-
 /**
  * Retourne null ou un tableau [cell:damage] pour un ennemi donné à une arme/puce donnée
  *
@@ -49,18 +8,7 @@ function getWeapChipDmg(@weapOrChip, @eMgc, @eStr, @eWsd, @eTp, @dmgPercentage){
  * 
  */
 function getDmgMap(@enemy, @weaponOrChip){
-    // ANALYSE DU CONTEXTE
-	var eStats = @_LEEKS[enemy];
-    var eMgc = @eStats['mgc'];
-    var eStr = @eStats['str'];
-    var eWsd = @eStats['wsd'];
-    var eMp = @eStats['mp'];
-    var eTp = @eStats['tp'];
-    var eCell = getCell(enemy);
-    var damage = getWeapChipDmg(weaponOrChip, eMgc, eStr, eWsd, eTp, 100);
-    // inutile de faire la map de dégât si la puce/arme n'en fait pas.
-    if(damage==0) return null;
-    
+	var eCell = getCell(enemy), eMp = getMP(enemy);
     var area = _ITEM_AREA[weaponOrChip],
 	maxscope = _ITEM_MAXRANGE[weaponOrChip],
 	minscope = _ITEM_MINRANGE[weaponOrChip],
@@ -74,7 +22,7 @@ function getDmgMap(@enemy, @weaponOrChip){
    
     var ignored;
     // TODO : il faut aussi ignorer les leeks adv qui joue avant l'adv, mais méga flemme de le faire bien là...
-    if(area == AREA_LASER_LINE) ignored = getAliveAllies()+getAllEnemyBulb();
+    if(area == AREA_LASER_LINE) ignored = getListOfLeekToIgnoreForLazer(enemy);
     else ignored = @leekToIgnore;
  
     // his move
@@ -85,35 +33,8 @@ function getDmgMap(@enemy, @weaponOrChip){
     var map = [];
 	
 	//cells to check for dmg.
-	var cells = [];
-	if(_IS_TELEPORT/* && getCooldown(CHIP_TELEPORTATION)==0*/){
-		cells = @_CELLS_NO_OBSTACLES;	
-	}else{
-		if(_CACHE_CELLS_NO_TELEPORT==null){
-			var ignoreCells = [];
-			for(var en in _ALIVE_ENEMIES){
-				push(ignoreCells, getCell(en));
-			}
-			var cellsToTest = getReachableCells([getCell():0], getMP(), ignoreCells);
-			for(var cell:var dist in cellsToTest){
-				cells[cell]=cell;
-			}
-			for(var ally in _ALIVE_ALLIES_LEEKS){
-				if(ally==_SELF) continue;
-				var cell = getCell(ally);
-				cells[cell]=cell;
-			}
-			for(var bulb in _ALIVE_ALLIES_BULBS){
-				if(getSummoner(bulb)==_SELF){
-					for(var cell:var dist in getReachableCells([getCell(bulb):0], getMP(bulb)+3, [getCell()])){
-						cells[cell]=cell;
-					}
-				}
-			}
-			_CACHE_CELLS_NO_TELEPORT = cells;
-		}
-		cells = @_CACHE_CELLS_NO_TELEPORT;
-	}
+	var cells = @_CELLS_NO_OBSTACLES;	
+
     for(var i in cells){
         if(_OBSTACLES[i] != null)continue; // si c'est un obstacle on fait pas la cell
         map[i]= 0;
@@ -127,23 +48,22 @@ function getDmgMap(@enemy, @weaponOrChip){
             && dist >= minscope
             && (!inline || isOnSameLine(i, mc))
             && (!needlos || lineOfSight(i, mc, ignored))){
-                map[i] = damage;
+                map[i] = 1;
                 break;
             }
         }//end movecellz
     }//end mapcells
     if(area==AREA_CIRCLE_1 || area==AREA_CIRCLE_2 || area==AREA_CIRCLE_3){
 		for(var distance = 1; distance<=area-2; distance++){
-			var percentageDmg = (100 - ((50 / (area-2)) * distance));
-			var dmg = getWeapChipDmg(weaponOrChip, eMgc, eStr, eWsd, eTp, percentageDmg);
-			if(dmg ==0) break;
+			var ratio = (100 - ((50 / (area-2)) * distance))/100;
+			if(ratio ==0) break;
 			var circle = [];
 			for(var c:var value in map){
 				if(value>0)
 					for(var cell in @_areaCells1Obstacle[c])
 						if(map[cell]==null || map[cell]==0) push(circle, cell);
 			}
-			for(var cell in circle) map[cell] = dmg;
+			for(var cell in circle) map[cell] = ratio;
 		}
 	}
     return @map;
@@ -151,20 +71,11 @@ function getDmgMap(@enemy, @weaponOrChip){
 
 // retourne les items de l'adv ordonnés par danger.
 function getOrderedWeapChipScore(@enemy, eStr, eMgc, eWsd){
-    var info = @_LEEKS[enemy],
-	selfRelShield = info["relShield"],
-    selfAbsShield = info["absShield"];
-   	
     var dmg, cost, effects, allChipWeap = [], stuff;
 	if(getLevel() >= 57) stuff = getWeapons(enemy)+getChips(enemy);
-	else{
-		stuff = getWeapons()+getChips();
-		//stuff = [];
-		//var w = getWeapon(enemy);
-		//if(w!=null && ! inArray(stuff, w)) push(stuff, w); 
-	}
+	else stuff = getWeapons()+getChips();
     for(var item in stuff){
-        if(item == CHIP_BURNING){
+        if(item == CHIP_BURNING || item == CHIP_DEVIL_STRIKE){
 			continue;
 		}
 		else if(item == CHIP_LIBERATION){
@@ -181,12 +92,10 @@ function getOrderedWeapChipScore(@enemy, eStr, eMgc, eWsd){
         if(effects[0][0] == EFFECT_DAMAGE || effects[0][0] == EFFECT_POISON){
             for(var e in effects){
                 if(e[0] == EFFECT_DAMAGE ){
-                    var tmp = ((e[1]+e[2])/2)*(1+(eStr/100));
-                    tmp = (tmp*(1-(selfRelShield/100)))-selfAbsShield;
-                    dmg+= tmp;
+                    dmg+= e[2]*(1+(eStr/100));
                 }
                 else if(e[0] == EFFECT_POISON){
-                    dmg += ((e[1]+e[2])/2)*(1+(eMgc/100)) *e[3];
+                    dmg += e[1]*(1+(eMgc/100)) *e[3];
                 }
                 else if(e[0] == EFFECT_HEAL){
                     dmg -= ((e[1]+e[2])/2)*(1+(eWsd/100));
@@ -205,24 +114,6 @@ function getOrderedWeapChipScore(@enemy, eStr, eMgc, eWsd){
     return @allChipWeap;
 }
 
-function ignoreMPLeek(){
-	var cumulateMP = 0;
-	for(var leek in _ALIVE_ENEMIES_DANGER){
-		cumulateMP+= getMP(leek);
-	}
-	if(cumulateMP>_LIMIT_MASSMP_IGNORELEEK){
-		var farthest, dist;
-		for(var leek in _ALIVE_ENEMIES_DANGER){
-			var tmpdist = getCellDistance(getCell(), getCell(leek));
-			if(dist==null || dist < tmpdist){
-				farthest = leek;
-				dist = tmpdist;
-			}
-		}
-		removeElement(_ALIVE_ENEMIES_DANGER, farthest);
-	}
-}
-
 // load les maps armes par armes pour chaque adv dans l'ordre de danger
 function loadMapsDanger(maxOp){
 	//ignoreMPLeek();
@@ -235,91 +126,151 @@ function loadMapsDanger(maxOp){
 		var info = _LEEKS[e];
 		var weapChips = getOrderedWeapChipScore(e,info["str"],info["mgc"],info["wsd"]);
 		_LEEKS[e]['items'] = []; //reset du stuff
+		var minItemCost = 8;
 		for(var weapChip : var dmg in weapChips){
 			if(dmg>0){
 				push(_LEEKS[e]['items'], [
 					'item' : weapChip,
 					'damage' : dmg
 				]);
+				if(_ITEM_COST[weapChip]<minItemCost){
+					minItemCost=_ITEM_COST[weapChip];
+				}
 			}
 		}
+		_LEEKS[e]["minItemCost"]=minItemCost;
 		maxIndex[e] = count(_LEEKS[e]['items']);
 		if(theMax<maxIndex[e]) theMax = maxIndex[e];
 	}
-	
+	_INDEX_DANGER=theMax;
 	for(var index = 0; index < theMax; index++){
 		for(var e in _ALIVE_ENEMIES_DANGER){
 			if(index<maxIndex[e]){
 				var item = _LEEKS[e]['items'][index]["item"];
-				//if(__DEBUG_ON) debug("danger: "+getName(e) + " |weap"+index+": " + getWeaponName(item)+getChipName(item)+" score: "+_LEEKS[e]['items'][index]["damage"]);
 				map_leek_weap_danger[e][item] = getDmgMap(e, item);
+				if(e==_ALIVE_ENEMIES_DANGER[0]) debugE((index+1)+getItemName(item));
 			}
 		}
 		if(index > 0 && getOperations()-startOperation>maxOp){
 			debugE('Turn'+getTurn()+' breaking loadMapsDanger at index: '+index);
+			_INDEX_DANGER=index;
 			break;
 		}
 	}
-	finalizeMapsDanger();
 }
 
-function finalizeMapsDanger(){
-	map_leek_danger = []; // reset
-	for(var e in _ALIVE_ENEMIES_DANGER){
-		var cumulateMap = []; // reset
-		var maxTP = @_LEEKS[e]["tp"];
-		var items = @_LEEKS[e]["items"];
-		var cells = [];
-		if(_IS_TELEPORT && getCooldown(CHIP_TELEPORTATION)==0) cells = @_CELLS_NO_OBSTACLES;
-		else cells = @_CACHE_CELLS_NO_TELEPORT;
-		for(var c in cells){
-			if(_OBSTACLES[c]!=null) continue;
-			cumulateMap[c]=0;
-			var TP = maxTP;
-			
-			//var compensateImprecision = 0;
+function getSimplifiedVirtualStateDef(@leek, @stackOfResult){
+	var state = [], info = @_LEEKS[leek];
+	state["absShield"] = info["absShield"];
+	state["relShield"] = info["relShield"];
+	if(stackOfResult[leek]==null) return @state;
+	if(stackOfResult[leek]["debuff"]==true){
+		state["absShield"]=0;
+		state["relShield"]=0;
+	}
+	state["absShield"]+=stackOfResult[leek]["absShield"];
+	state["relShield"]+=stackOfResult[leek]["relShield"];
+	return @state;
+}
+
+function getSimplifiedVirtualStateAtk(@leek, @stackOfResult){
+	var state = [], info = @_LEEKS[leek];;
+	state["str"] = info["str"];
+	state["mgc"] = info["mgc"];
+	state["tp"] = info["tp"];
+	if(stackOfResult[leek]==null) return @state;
+	if(stackOfResult[leek]["debuff"]==true){
+		state["str"]-= info["alterateStr"];
+		state["mgc"]-= info["alterateMgc"];
+		state["tp"]-= info["alterateTP"];
+	}
+	state["str"]-= stackOfResult["shackleStr"];
+	state["mgc"]-= stackOfResult["shackleMgc"];
+	state["tp"]-= stackOfResult["shackleTP"];
+    return @state;
+}
+
+function getItemDmg(@item, @eMgc, @eStr, @absShield, @relShield, @ratio){
+	var dmg = 0;
+	if(item==CHIP_LIBERATION){
+		return _LEEKS[_SELF]["scoreLibe"];
+	}
+	// FIXME truc chiant à gérer...
+	if(item==CHIP_BURNING) return 0;
+	var effects = @_ITEM_EFFECTS[item];
+    for(var e in effects){
+		var type = e[0];
+		var optiMoy = (e[1]+3*e[2])/4;
+        if(type == EFFECT_DAMAGE){
+            var tmp = optiMoy*(1+(eStr/100));
+            tmp = (tmp *ratio *(1-(relShield/100))) -absShield;
+            dmg+= tmp;
+        }
+        else if(type == EFFECT_POISON){
+			var duration = e[3];
+			duration = duration == 0 ? 1 : // 0 => 1
+				(duration == 2 ? 1.75 : // 2 => 1.75
+				(duration == 3 ? 2.25 : // 3 => 2.25
+				(duration == 4 ? 2.5 : // 4 => 2.5
+				duration))); // 1 => 1
+            dmg += optiMoy*(1+(eMgc/100)) *ratio *duration;
+        }
+    }
+    // vérif qu'on est pas en négatif
+    if(dmg < 0) dmg = 0;
+    return @dmg;
+}
+
+// à besoin de loadMapsDanger(maxOp) pour renvoyer un vrai score.
+function getCellDanger(@cell, @ignoreLeeks, @stack){
+	var uniqId = cell+ignoreLeeks+stack;
+	if(_CACHE_DANGER[uniqId]==null){
+		var id = getLeekOnCell(cell);
+		if(id==-1||isEnemy(id)){ // permet de renvoyer le danger de l'ally si il est sur la case cell, sinon pour moi même.
+			id=_SELF;
+		}
+		var defendingState = getSimplifiedVirtualStateDef(id, stack);
+		var absShield = defendingState["absShield"], relShield = defendingState["relShield"];
+		var finalDanger = 0;
+		for(var enemy in _ALIVE_ENEMIES_DANGER){
+			if(inArray(ignoreLeeks, enemy)) continue;
+			var offensivState = getSimplifiedVirtualStateAtk(enemy, stack);
+			var items = @_LEEKS[enemy]["items"],
+			minItemCost = @_LEEKS[enemy]["minItemCost"],
+			TP = offensivState["tp"],
+			str = offensivState["str"],
+			mgc = offensivState["mgc"];
+			var cnt=0;
 			for(var i in items){
+				if(_INDEX_DANGER < cnt++) break;
 				var item = i["item"];
-				var cost = _ITEM_COST[item];
-				var damage = map_leek_weap_danger[e][item][c];
-				if(damage >0){
+				var ratio = map_leek_weap_danger[enemy][item][cell];
+				if(ratio>0){
+					var uniqIdDmg = item+"-"+str+"-"+mgc+"/"+absShield+"-"+relShield;
+					if(_CACHE_WEAPDMG[uniqIdDmg]==null){
+						_CACHE_WEAPDMG[uniqIdDmg] = getItemDmg(item, mgc, str, absShield, relShield, ratio);
+					}
+					var damage = _CACHE_WEAPDMG[uniqIdDmg], cost = _ITEM_COST[item];
 					while(cost<=TP){
-						cumulateMap[c]+=damage;
+						finalDanger+= damage;
 						TP-=cost;
 						if(_ITEM_HAVECD[item]) break;
 					}
+					if(minItemCost>TP) break;
 				}
 			}
 			if(TP<0) debugE("TP NOK §§§: " + TP);
 		}
-		map_leek_danger[e] = @cumulateMap;
+		_CACHE_DANGER[uniqId]=finalDanger;
 	}
+	return @_CACHE_DANGER[uniqId];
 }
 
 // à besoin de loadMapsDanger(maxOp) pour renvoyer un vrai score.
 function getMapDanger(ignoreLeeks){
 	var finalMap = [];
-	for(var enemy in _ALIVE_ENEMIES_DANGER){
-		if(inArray(ignoreLeeks, enemy)) continue;
-		for(var cell:var dmg in map_leek_danger[enemy]){
-			finalMap[cell]+=dmg;
-		}
+	for(var cell in _CELLS_NO_OBSTACLES){
+		finalMap[cell] = getCellDanger(cell, ignoreLeeks, []);
 	}
 	return @finalMap;
-}
-
-// à besoin de loadMapsDanger(maxOp) pour renvoyer un vrai score.
-function getCellDanger(cell, ignoreLeeks){
-	var danger = 0;
-	for(var enemy in _ALIVE_ENEMIES_DANGER){
-		if(inArray(ignoreLeeks, enemy)) continue;
-		danger += map_leek_danger[enemy][cell];
-	}
-	/*if(__DEBUG_ON && isEmpty(ignoreLeeks)){
-		var color = COLOR_GREEN, life = getLife();
-		if(danger>life) color = COLOR_BLUE;
-		else color = getColor(255*danger/life, 255-(danger/life*255), 0);
-		mark(cell, color);
-	}*/
-	return @danger;
 }

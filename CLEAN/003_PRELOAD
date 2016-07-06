@@ -40,13 +40,16 @@ if(getTurn()==1){
 		}
 	}
 }
-//init every turn
-refreshLeeksCellsAndAliveStatus();
+
+//init every turn but not for bulbz
+_CACHE_DANGER=[];
 
 // a uncomment si t'utilise getCellToUseWeapChipOnCell pour avoir la plus proche en terme de path
 //_SELF_FULLMAP_PATH_DIST=[];
 //_SELF_FULLMAP_PATH_DIST=getReachableCells([getCell():0], 100, []);
 
+//init every turn & called again for bulbz
+refreshLeeksCellsAndAliveStatus();
 refreshLeeksEffectsAndStates();
 
 //debug

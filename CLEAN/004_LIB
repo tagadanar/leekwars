@@ -99,6 +99,7 @@ function getComboSet(@entity){
 		if(TP>=7)  push(combos, [CHIP_DOPING]);
 		if(TP>=12) push(combos, [CHIP_LIGHTNING, CHIP_LIGHTNING, CHIP_FLASH]);
 		if(TP>=10) push(combos, [CHIP_SHOCK, CHIP_SHOCK, CHIP_SHOCK, CHIP_SHOCK, CHIP_SHOCK]);
+		if(TP>=8) push(combos, [CHIP_FLASH, CHIP_FLASH]);
 		if(TP>=8) push(combos, [CHIP_SHOCK, CHIP_SHOCK, CHIP_SHOCK, CHIP_SHOCK]);
 		if(TP>=4) push(combos, [CHIP_LIGHTNING]);
 		if(TP>=4) push(combos, [CHIP_FLASH]);
@@ -143,6 +144,38 @@ function getListOfLeekWhoPlayBefore(@leek){
 		}
 	}
 	return @leekWhoPlayBefore;
+}
+
+function getListOfLeekToIgnoreForLazer(@leek){
+	var leekToIgnore = getAliveAllies();
+	if(getLevel()<46) return @leekToIgnore;
+	var casterTurnOrder = getEntityTurnOrder();
+	var limitTurnOrder = getEntityTurnOrder(leek);
+	for(var entity in getAliveEnemies()){
+		if(isSummon(entity)) push(leekToIgnore, entity);
+		else{
+			var entityTurnOrder = getEntityTurnOrder(entity);
+			//Cas le plus simple, on récupère les entités entre le caster et la cible
+			if(casterTurnOrder < limitTurnOrder){
+				//si l'entité est entre le caster et la cible
+				if(casterTurnOrder < entityTurnOrder && entityTurnOrder < limitTurnOrder){
+					push(leekToIgnore, entity);
+				}
+			}
+			//Plus complexe, la cible joue avant le caster
+			else{
+				//On récupère déjà toutes les entités jouant après le caster, sans limite
+				if(casterTurnOrder < entityTurnOrder){
+					push(leekToIgnore, entity);
+				}
+				//Puis toutes celles jouant avant la cible
+				if(entityTurnOrder < limitTurnOrder){
+					push(leekToIgnore, entity);
+				}
+			}
+		}
+	}
+	return @leekToIgnore;
 }
 
 /**
@@ -222,13 +255,13 @@ function isSpecialChip(@c){
 function getLazerTargetsCell(@c, @minrange){
 	var x = getCellX(c), y = getCellY(c), result = [];
 	var cell = getCellFromXY(x+minrange, y);
-	if(cell!=null && _OBSTACLES[cell]==null && lineOfSight(c, cell)) push(result, cell);
+	if(cell!=null && _OBSTACLES[cell]==null && lineOfSight(c, cell, _EMPTYARRAY)) push(result, cell);
 	cell = getCellFromXY(x-minrange, y);
-	if(cell!=null && _OBSTACLES[cell]==null && lineOfSight(c, cell)) push(result, cell);
+	if(cell!=null && _OBSTACLES[cell]==null && lineOfSight(c, cell, _EMPTYARRAY)) push(result, cell);
 	cell = getCellFromXY(x, y+minrange);
-	if(cell!=null && _OBSTACLES[cell]==null && lineOfSight(c, cell)) push(result, cell);
+	if(cell!=null && _OBSTACLES[cell]==null && lineOfSight(c, cell, _EMPTYARRAY)) push(result, cell);
 	cell = getCellFromXY(x, y-minrange);
-	if(cell!=null && _OBSTACLES[cell]==null && lineOfSight(c, cell)) push(result, cell);
+	if(cell!=null && _OBSTACLES[cell]==null && lineOfSight(c, cell, _EMPTYARRAY)) push(result, cell);
 	return @result;
 }
 
@@ -236,28 +269,28 @@ function getLazerTargetsCell(@c, @minrange){
 function getLazerFromCellsToTargetCell(@c, @minrange, @maxrange){
 	var x = getCellX(c), y = getCellY(c), result = [];
 	var cell = getCellFromXY(x+minrange, y), inc = 1;
-	if(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && lineOfSight(c, cell)){
+	if(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && lineOfSight(c, cell, _EMPTYARRAY)){
 		while(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && getCellDistance(c, cell)<=maxrange){
 			push(result, cell);
 			cell = getCellFromXY(x+minrange+inc++, y);
 		}
 	}
 	cell = getCellFromXY(x-minrange, y); inc = 1;
-	if(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && lineOfSight(c, cell)){
+	if(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && lineOfSight(c, cell, _EMPTYARRAY)){
 		while(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && getCellDistance(c, cell)<=maxrange){
 			push(result, cell);
 			cell = getCellFromXY(x-minrange-inc++, y);
 		}
 	}
 	cell = getCellFromXY(x, y+minrange); inc = 1;
-	if(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && lineOfSight(c, cell)){
+	if(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && lineOfSight(c, cell, _EMPTYARRAY)){
 		while(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && getCellDistance(c, cell)<=maxrange){
 			push(result, cell);
 			cell = getCellFromXY(x, y+minrange+inc++);
 		}
 	}
 	cell = getCellFromXY(x, y-minrange); inc = 1;
-	if(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && lineOfSight(c, cell)){
+	if(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && lineOfSight(c, cell, _EMPTYARRAY)){
 		while(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && getCellDistance(c, cell)<=maxrange){
 			push(result, cell);
 			cell = getCellFromXY(x, y-minrange-inc++);
@@ -336,8 +369,8 @@ function _getCellsToUseWeapChipOnCell(@weapChip, @cell){
 			&& _LEEKS_CELL[fromCell]==null){
 				var dist = getCellDistance(fromCell,cell);
 				if(dist >= minrange && dist <= maxrange
-				&& (!needlos || lineOfSight(fromCell, cell, leekToIgnore))
-				&& (!inline || isOnSameLine(fromCell,cell))){
+				&& (!inline || isOnSameLine(fromCell,cell))
+				&& (!needlos || lineOfSight(fromCell, cell, leekToIgnore))){
 					push(result, fromCell);
 				}
 			}
@@ -361,8 +394,8 @@ function bulb_getCellsToUseChipOnCell(@weapChip, @cell){
 			&& !isLeek(fromCell)){
 				var dist = getCellDistance(fromCell,cell);
 				if(dist >= minrange && dist <= maxrange
-				&& (!needlos || lineOfSight(fromCell, cell, leekToIgnore))
-				&& (!inline || isOnSameLine(fromCell,cell))){
+				&& (!inline || isOnSameLine(fromCell,cell))
+				&& (!needlos || lineOfSight(fromCell, cell, leekToIgnore))){
 					push(result, fromCell);
 				}
 			}

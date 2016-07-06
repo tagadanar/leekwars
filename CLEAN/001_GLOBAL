@@ -15,7 +15,7 @@ global _RATIO_DANGER = 1;
 
 global _SCORE_MP = 30;
 global _SCORE_TP = 30;
-global _SCORE_REL_SHIELD = 3;
+global _SCORE_REL_SHIELD = 4;
 // ========================
 // INFOS LEEKS
 // ========================
@@ -24,6 +24,7 @@ global _SCORE_REL_SHIELD = 3;
 global _SELF = getLeek();
 global _IS_SUMMONER = false;
 global _IS_TELEPORT = false;
+global _IS_RESURECT = false;
 
 // Contient les informations sur les leeks, refresh à tous les tours en début de tour.
 global _LEEKS = [];
@@ -47,6 +48,9 @@ global _COEF_SHACKLE_STR;
 global _COEF_SHACKLE_MGC;
 global _COEF_LIBERATE;
 global _COEF_RETURN_DMG;
+
+global _RESU_TARGET;
+global _RESU_SCORE;
 
 // tableau getAliveEnemies/allies
 global _ALIVE_ALLIES;
@@ -86,9 +90,19 @@ global assoc_weap_from = []; // [itemId:cellFrom]
 global assoc_from_item_actions = []; // [cellFrom:[itemId:[actions]]]
 
 // cache
+global _INDEX_DANGER;
+global _CACHE_DANGER = [];
+global _CACHE_REACHABLE_DANGER = [];
+global _CACHE_REACHABLE_SIZE = [];
+global _CACHE_LOS = [];
+global _CACHE_WEAPDMG = [];
+
 global _CACHE_SCORE_SAFECELL;
 global _CACHE_SCORE_ACTION;
 global _CACHE_CELLS_NO_TELEPORT;
+
+// un tableau vide déjà init pour éviter de le ré-init à chaque appel d'une fonction avec un param à mettre à tableau vide.
+global _EMPTYARRAY = [];
 
 // Contient les id des cells obstacle en clé, test cell libre avec _OBSTACLES[cell]==null
 // init tour 1.
@@ -307,6 +321,96 @@ global _CHIP_ISSPECIAL = [
     CHIP_LIGHTNING_BULB: true, // summoning
     CHIP_TELEPORTATION: true, // déplacement complexe, aucune idée
     CHIP_INVERSION:true // déplacement complexe, pareil...
+];
+
+// contient l'association entre l'id d'une puce/arme et sa constante sous forme de string
+global _ITEM_CAN_ALTER_DANGER = [
+    CHIP_ACCELERATION:false,
+    CHIP_ADRENALINE:false,
+    CHIP_ANTIDOTE:false,
+    CHIP_ARMOR:true,
+    CHIP_ARMORING:false,
+    CHIP_BALL_AND_CHAIN:false,
+    CHIP_BANDAGE:false,
+    CHIP_BARK:false,
+    CHIP_BURNING:false,
+    CHIP_CARAPACE:false,
+    CHIP_COLLAR:false,
+    CHIP_CURE:false,
+    CHIP_DEVIL_STRIKE:false,
+    CHIP_DOPING:false,
+    CHIP_DRIP:false,
+    CHIP_FEROCITY:false,
+    CHIP_FERTILIZER:false,
+    CHIP_FIRE_BULB:false,
+    CHIP_FLAME:false,
+	CHIP_FLASH:false,
+    CHIP_FORTRESS:true,
+    CHIP_FRACTURE:true,
+    CHIP_HEALER_BULB:false,
+    CHIP_HELMET:true,
+    CHIP_ICE:false,
+    CHIP_ICEBERG:false,
+    CHIP_ICED_BULB:false,
+    CHIP_INVERSION:false,//?
+    CHIP_LEATHER_BOOTS:false,
+    CHIP_LIBERATION:true,
+    CHIP_LIGHTNING:false,
+    CHIP_LIGHTNING_BULB:false,
+    CHIP_LOAM:false,
+    CHIP_METALLIC_BULB:false,
+    CHIP_METEORITE:false,
+    CHIP_MIRROR:false,
+    CHIP_MOTIVATION:false,
+    CHIP_PEBBLE:false,
+    CHIP_PLAGUE:false,
+    CHIP_PROTEIN:false,
+    CHIP_PUNY_BULB:false,
+    CHIP_RAGE:false,
+    CHIP_RAMPART:false,
+    CHIP_REFLEXES:false,
+    CHIP_REGENERATION:false,
+    CHIP_REMISSION:false,
+    CHIP_RESURRECTION:false,
+    CHIP_ROCK:false,
+    CHIP_ROCKFALL:false,
+    CHIP_ROCKY_BULB:false,
+    CHIP_SEVEN_LEAGUE_BOOTS:false,
+    CHIP_SHIELD:true,
+    CHIP_SHOCK:false,
+    CHIP_SLOW_DOWN:false,//mp
+    CHIP_SOLIDIFICATION:false,
+    CHIP_SOPORIFIC:true,
+    CHIP_SPARK:false,
+    CHIP_STALACTITE:false,
+    CHIP_STEROID:false,
+    CHIP_STRETCHING:false,
+    CHIP_TELEPORTATION:false,//?
+    CHIP_THORN:false,
+    CHIP_TOXIN:false,
+    CHIP_TRANQUILIZER:true,
+    CHIP_VACCINE:false,
+    CHIP_VENOM:false,
+    CHIP_WALL:true,
+    CHIP_WARM_UP:false,
+    CHIP_WHIP:false,
+    CHIP_WINGED_BOOTS:false,
+	WEAPON_AXE:false, 
+	WEAPON_B_LASER:false,
+	WEAPON_BROADSWORD:true,
+	WEAPON_DESTROYER:true,
+	WEAPON_DOUBLE_GUN:false,
+	WEAPON_ELECTRISOR:false,
+	WEAPON_FLAME_THROWER:false,
+	WEAPON_GAZOR:false,
+	WEAPON_GRENADE_LAUNCHER:false,
+	WEAPON_KATANA:true,
+	WEAPON_LASER:false,
+	WEAPON_MACHINE_GUN:false,
+	WEAPON_MAGNUM:false,
+	WEAPON_M_LASER:false,
+	WEAPON_PISTOL:false,
+	WEAPON_SHOTGUN:false
 ];
 
 // contient l'association entre l'id d'une puce/arme et sa constante sous forme de string
