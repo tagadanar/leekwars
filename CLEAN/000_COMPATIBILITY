@@ -1,5 +1,4 @@
 global _LVL = getLevel();
-
 // redefine getCooldown for low lvl
 global __getCooldownFunc = getCooldown;
 global __useChipOnCellFunc = useChipOnCell;
