@@ -5,24 +5,36 @@ include('auto');
 
 function sayCupidon(){
 	var stupidSay = [
-		"Si taga est sur le chat, dites lui de coder ma map de danger plutôt que de glander.."
-		,"hmm... avec téléport ça serait plus simple non ?"
-		,"Je suis perdu là, c'est où la bagarre ?"
-		,"Vous avez vu ? non ? moi non plus."
-		,"Demain dès l'aube, à l'heure où blanchie la campagne, je partirai..."
-		,"Ne courrez pas, nous venons en paix ! pew pew pew !"
-		,"Et si l'homme est un chien c'est qu'il est plus fidèle, plus fidèle à des chattes qui se feront la belle !"
-		,"Quand dieu créa la mer rouge, il sala mal l'écume."
-		,"<3"
-		,"Négatif, je suis une mite en pull-over"
-		,"Vous allez vous aimer les uns les autres bordel de merde ?!"
+		"Je hais Lucky Luke ! Je hais Lucky Luke !"
+		,"Tagada, tagada, voilà les daltons !"
+		,"FREE HUGS !!"
+		,"MAGIE NOIRE ! MAGIE NOIRE ! Tais-toi, tais-toi, tais-toi la patte de poulet Satan hérétique !!"
+		,"Ah, non, pour moi les femmes, j'aime pas ça.. C'est de la saloperie !"
+		,"Simplet ! Le démon a vidé ton cerveau, y'a plus rien dedans. Tu périras par la main de Dieu, tu comprends ça ?"
+		,"Oh Regarde, Simplet, Regarde ! Il y a un morceau de charcuterie qui arrive ! Regarde le, Regarde ! ... AU BÛCHER !"
+		,"Qu'est-ce que j'apprends de manière inopinée ? La rumeur colporte que vous ne vous êtes jamais confessé !"
+		,"La confession ! Sans confession, point de salut ! Sans salut, point... point ne sert de... à rien qui ne sait partir."
 	];
+	if(!isSummon(getNearestEnemy())) push(stupidSay, getName(getNearestEnemy()) + " est un hérétique, je VEUX BRÛLER CETTE PERSONNE !");
+	
+	if(getName()=="JoeDalton") push(stupidSay, "Contrainte : Corps à corps only, pas de bulbes.");
+	if(getName()=="WilliamDalton") push(stupidSay, "Contrainte : Pas d'armes, pas de bulbes.");
+	if(getName()=="JackDalton") push(stupidSay, "Contrainte : Pas de puces.");
+	
 	say(stupidSay[randInt(0, count(stupidSay))]);
 }
 
 function getComboSet(@entity){
 	var eType = getEntityType(entity), TP = getTP(), combos = [];
-	if(eType==ENTITY_ROCKY_BULB){
+	if(eType==ENTITY_LEEK_){
+		// liste des combos à tester
+		var comboz = jsonDecode(getFullRegister(getTP()));
+		// choix du set de combo en fonction de mon état
+		if(getWeapon()==null) combos = @comboz["EMPTY"];
+		else combos = @comboz[string(getWeapon())];
+	}else if(eType==ENTITY_PUNY_BULB){
+		//TODO
+	}else if(eType==ENTITY_ROCKY_BULB){
 		if(TP>=12) push(combos, [CHIP_ROCKFALL, CHIP_ROCK, CHIP_PEBBLE]);
 		if(TP>=10) push(combos, [CHIP_ROCKFALL, CHIP_ROCK]);
 		if(TP>=8) push(combos, [CHIP_ROCKFALL, CHIP_HELMET]);
@@ -99,7 +111,7 @@ function getComboSet(@entity){
 		if(TP>=7)  push(combos, [CHIP_DOPING]);
 		if(TP>=12) push(combos, [CHIP_LIGHTNING, CHIP_LIGHTNING, CHIP_FLASH]);
 		if(TP>=10) push(combos, [CHIP_SHOCK, CHIP_SHOCK, CHIP_SHOCK, CHIP_SHOCK, CHIP_SHOCK]);
-		if(TP>=8) push(combos, [CHIP_FLASH, CHIP_FLASH]);
+		if(TP>=8) push(combos, [CHIP_FLASH, CHIP_SHOCK, CHIP_SHOCK]);
 		if(TP>=8) push(combos, [CHIP_SHOCK, CHIP_SHOCK, CHIP_SHOCK, CHIP_SHOCK]);
 		if(TP>=4) push(combos, [CHIP_LIGHTNING]);
 		if(TP>=4) push(combos, [CHIP_FLASH]);
@@ -119,7 +131,6 @@ function getComboSet(@entity){
  */
 function getListOfLeekWhoPlayBefore(@leek){
 	var leekWhoPlayBefore = [];
-	if(getLevel()<46) return @leekWhoPlayBefore;
 	var casterTurnOrder = getEntityTurnOrder();
 	var limitTurnOrder = getEntityTurnOrder(leek);
 	for(var entity in getAliveAllies() + getAliveEnemies()){
@@ -148,7 +159,6 @@ function getListOfLeekWhoPlayBefore(@leek){
 
 function getListOfLeekToIgnoreForLazer(@leek){
 	var leekToIgnore = getAliveAllies();
-	if(getLevel()<46) return @leekToIgnore;
 	var casterTurnOrder = getEntityTurnOrder();
 	var limitTurnOrder = getEntityTurnOrder(leek);
 	for(var entity in getAliveEnemies()){
@@ -187,7 +197,6 @@ function getListOfLeekToIgnoreForLazer(@leek){
  */
 function getListOfEnemyLeekWhoPlayAfter(@leek){
 	var leekWhoPlayBefore = [];
-	if(getLevel()<46) return @leekWhoPlayBefore;
 	var casterTurnOrder = getEntityTurnOrder();
 	var limitTurnOrder = getEntityTurnOrder(leek);
 	for(var entity in getAliveEnemies()){
@@ -223,21 +232,6 @@ function getDamagePercentage(@cell1, @cell2, @area) {
 	areaDist = area-2;// tricks pour win 5op ! mais la func bug si area_circle change de value de constante
 	if(dist > areaDist ) return 0;
 	return @(100 - ((50 / areaDist) * dist));
-}
-
-function getAllEnemyBulb(){
-	var bulbz = [];
-	for(var en in getAliveEnemies()) if(isSummon(en)) push(bulbz, en);
-	return @bulbz;
-}
-
-// return an array of cells according to AREA_CIRCLE_XX
-// cost 3, 4 or 5 op more than @_areaCellsX[cell]
-// depending of number of if()
-// 1 op per if + 1 for calling func + 1 from I dunno ?
-// so use directly the array for final version of optimised func
-function getCellArea(@c){
-	return @_areaCells1[c];
 }
 
 // renvoie si la puce a un effet positif ou négatif sur la cible
@@ -361,15 +355,38 @@ function _getCellsToUseWeapChipOnCell(@weapChip, @cell){
 	maxrange = _ITEM_MAXRANGE[weapChip],
 	inline = _ITEM_INLINE[weapChip],
 	needlos = _ITEM_NEEDLOS[weapChip];
-	for(var x1 = x-maxrange; x1 <= x+maxrange; x1++){
-		for(var y1 = y-maxrange; y1 <= y+maxrange; y1++){
-			var fromCell = getCellFromXY(x1, y1);
+	if(inline){
+		for(var x1 = x-maxrange; x1 <= x+maxrange; x1++){
+			var dist =((x-x1)<0?-(x-x1):x-x1);
+			if(dist < minrange) continue;
+			var fromCell = getCellFromXY(x1, y);
 			if(fromCell!=null 
 			&& _OBSTACLES[fromCell]==null 
-			&& _LEEKS_CELL[fromCell]==null){
-				var dist = getCellDistance(fromCell,cell);
-				if(dist >= minrange && dist <= maxrange
-				&& (!inline || isOnSameLine(fromCell,cell))
+			&& _LEEKS_CELL[fromCell]==null
+			&& (!needlos || lineOfSight(fromCell, cell, leekToIgnore))){
+				push(result, fromCell);
+			}
+		}
+		for(var y1 = y-maxrange; y1 <= y+maxrange; y1++){
+			var dist =((y-y1)<0?-(y-y1):y-y1);
+			if(dist < minrange) continue;
+			var fromCell = getCellFromXY(x, y1);
+			if(fromCell!=null 
+			&& _OBSTACLES[fromCell]==null 
+			&& _LEEKS_CELL[fromCell]==null
+			&& (!needlos || lineOfSight(fromCell, cell, leekToIgnore))){
+				push(result, fromCell);
+			}
+		}
+	}else{
+		for(var x1 = x-maxrange; x1 <= x+maxrange; x1++){
+			for(var y1 = y-maxrange; y1 <= y+maxrange; y1++){
+				var dist =((x-x1)<0?-(x-x1):x-x1)+(y-y1<0?-(y-y1):y-y1);//trick pour abs(x-x1)+abs(y-y1)..
+				if(dist > maxrange || dist < minrange) continue;
+				var fromCell = getCellFromXY(x1, y1);
+				if(fromCell!=null 
+				&& _OBSTACLES[fromCell]==null 
+				&& _LEEKS_CELL[fromCell]==null
 				&& (!needlos || lineOfSight(fromCell, cell, leekToIgnore))){
 					push(result, fromCell);
 				}
@@ -404,6 +421,7 @@ function bulb_getCellsToUseChipOnCell(@weapChip, @cell){
 	return @result;
 }
 
+/* this func is deprecated, _SELF_FULLMAP_PATH_DIST ne fait plus la mm chose...
 function _getCellToUseWeapChipOnCell(@weapChip, @cell){
 	var leekToIgnore = [getLeek()],result, mpDist = 100,
 	x = getCellX(cell), y = getCellY(cell), isWeap = isWeapon(weapChip),
@@ -430,6 +448,56 @@ function _getCellToUseWeapChipOnCell(@weapChip, @cell){
 		}
 	}
 	return @result;
+}*/
+
+function _getTargetableCells(@weapChip, @cell){
+	if(_CACHE_ITEM_FROMCELL_TARGETCELLS[weapChip][cell]==null){
+		var result = [], x = getCellX(cell), y = getCellY(cell),
+		minrange = _ITEM_MINRANGE[weapChip],
+		maxrange = _ITEM_MAXRANGE[weapChip],
+		inline = _ITEM_INLINE[weapChip],
+		needlos = _ITEM_NEEDLOS[weapChip];
+		if(inline){
+			for(var x1 = x-maxrange; x1 <= x+maxrange; x1++){
+				var dist =((x-x1)<0?-(x-x1):x-x1);
+				if(dist < minrange) continue;
+				var fromCell = getCellFromXY(x1, y);
+				if(fromCell!=null 
+				&& _OBSTACLES[fromCell]==null 
+				&& _LEEKS_CELL[fromCell]==null
+				&& (!needlos || lineOfSight(fromCell, cell, _EMPTYARRAY))){
+					push(result, fromCell);
+				}
+			}
+			for(var y1 = y-maxrange; y1 <= y+maxrange; y1++){
+				var dist =((y-y1)<0?-(y-y1):y-y1);
+				if(dist < minrange) continue;
+				var fromCell = getCellFromXY(x, y1);
+				if(fromCell!=null 
+				&& _OBSTACLES[fromCell]==null 
+				&& _LEEKS_CELL[fromCell]==null
+				&& (!needlos || lineOfSight(fromCell, cell, _EMPTYARRAY))){
+					push(result, fromCell);
+				}
+			}
+		}else{
+			for(var x1 = x-maxrange; x1 <= x+maxrange; x1++){
+				for(var y1 = y-maxrange; y1 <= y+maxrange; y1++){
+					var dist =((x-x1)<0?-(x-x1):x-x1)+(y-y1<0?-(y-y1):y-y1);//trick pour abs(x-x1)+abs(y-y1)..
+					if(dist > maxrange || dist < minrange) continue;
+					var fromCell = getCellFromXY(x1, y1);
+					if(fromCell!=null 
+					&& _OBSTACLES[fromCell]==null 
+					&& _LEEKS_CELL[fromCell]==null
+					&& (!needlos || lineOfSight(fromCell, cell, _EMPTYARRAY))){
+						push(result, fromCell);
+					}
+				}
+			}
+		}
+		_CACHE_ITEM_FROMCELL_TARGETCELLS[weapChip][cell]= @result;
+	}
+	return @_CACHE_ITEM_FROMCELL_TARGETCELLS[weapChip][cell];
 }
 
 function prepareSetMapActions(){

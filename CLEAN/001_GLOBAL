@@ -3,13 +3,15 @@
 ///////////////////////////////////////////
 
 global __DEBUG_ON = true;
+global __DDD_ON = false;
 global _LIMIT_MASSMP_IGNORELEEK = 50;
 global _OPERATION_MAP_DANGER = 6000000;
 global _OPERATION_BULB = 800000;
 
+global _MAX_ITEM_ID = 150;
 global _SCORE_KILL_DMG = 500;
 global _SCORE_KILL_PSN = 100;
-global _SCORE_DEATH = 2000;
+global _SCORE_DEATH = 3000;
 global _RATIO_IGNORE_DANGER = 0.25;
 global _RATIO_DANGER = 1;
 
@@ -22,9 +24,14 @@ global _SCORE_REL_SHIELD = 4;
 
 // ID du joueur leek.
 global _SELF = getLeek();
-global _IS_SUMMONER = false;
+global _NEAREST_ENEMY_LEEK;
+global _MAINWEAPON;
+global _IS_SUMMONER = false; // resu est considéré comme summoner, j'utilise les op pour trouver la cell où résu plutot que pour le tour du leek.
 global _IS_TELEPORT = false;
 global _IS_RESURECT = false;
+global _IS_CAC = false;
+global _IS_SHACKLE_MP = false;
+global _SHOULD_KEEP_MAINWEAP_INHAND = false;
 
 // Contient les informations sur les leeks, refresh à tous les tours en début de tour.
 global _LEEKS = [];
@@ -51,6 +58,9 @@ global _COEF_RETURN_DMG;
 
 global _RESU_TARGET;
 global _RESU_SCORE;
+
+global _SCORE_ITEM = [];
+global _MOY_COEF = [];
 
 // tableau getAliveEnemies/allies
 global _ALIVE_ALLIES;
@@ -94,8 +104,8 @@ global _INDEX_DANGER;
 global _CACHE_DANGER = [];
 global _CACHE_REACHABLE_DANGER = [];
 global _CACHE_REACHABLE_SIZE = [];
-global _CACHE_LOS = [];
 global _CACHE_WEAPDMG = [];
+global _CACHE_ITEM_FROMCELL_TARGETCELLS = [];
 
 global _CACHE_SCORE_SAFECELL;
 global _CACHE_SCORE_ACTION;

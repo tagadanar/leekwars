@@ -4,9 +4,7 @@ include('auto');
 // NB je fais des blocks de 4999 char par registre pour contourner la limite de 5000char (ça bug à 5000 par bloc), utiliser la fonction getFullRegister(key) pour avoir le registre complêt après réassemblage.
 
 if(getTurn()==1){
-	for(var reg:var val in getRegisters()){
-		deleteRegister(reg);
-	}
+	clearAllRegisters();
 }
 
 global combossssss, knownCombos, combo_mincost, EMPTY=-1;
@@ -14,6 +12,10 @@ var inHands = getWeapons();
 var maxTP = getTP();
 global _STUFF = getWeapons()+getChips();
 global _COMBOS_TP = 0;
+
+var stuffstr ="";
+for(var item in _STUFF) stuffstr+=getItemName(item)+" ";
+setRegister("-_Stuff", stuffstr);
 
 startOp();
 while(_COMBOS_TP<=maxTP +4){

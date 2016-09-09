@@ -34,6 +34,9 @@ function getUniqueID_safeCell(@cell, @ids, @stack){
 }
 
 //remplace lineOfSight pour y ajouter un cache pendant le tour.
+/* s'avère contre productif, leekToIgnore changeant trop souvent pour rendre ça rentable...
+global _CACHE_LOS = [];
+_CACHE_LOS=[];
 global __lineOfSight = lineOfSight;
 lineOfSight = function(@cell1, @cell2, @leekToIgnore){
 	var uniqId = cell1<=cell2 ? cell1+"-"+cell2+leekToIgnore : cell2+"-"+cell1+leekToIgnore;
@@ -42,6 +45,7 @@ lineOfSight = function(@cell1, @cell2, @leekToIgnore){
 	}
 	return @_CACHE_LOS[uniqId];
 };
+*/
 
 // return reachable cell as an array of [cell:dist]
 // cells must be in form : [cell:dist]
@@ -50,7 +54,7 @@ function getReachableCells(@cells, mp, @ignoreCells){
 	var stack = cells;
 	var tmp = cells;
 	var next = [];
-	while(mp--){
+	while(mp-->0){
 		for(var currentWorkingCell : var dist in tmp){
 			for(var c in @_areaCells1[currentWorkingCell]){
 				if(stack[c] == null && (isEmptyCell(c) || inArray(ignoreCells, c))){
@@ -63,6 +67,18 @@ function getReachableCells(@cells, mp, @ignoreCells){
 		next = [];
 	}
 	return @stack;
+}
+
+function getNearestEnemyLeek(){
+	var leek, dist, selfCell = getCell();
+	for(var e in _ALIVE_ENEMIES_LEEKS){
+		var tmp = getCellDistance(selfCell, getCell(e));
+		if(leek==null || tmp<dist){
+			leek = e;
+			dist = tmp;
+		}
+	}
+	return leek;
 }
 
 // return an array of cell according to AREA_CIRCLE_X, ordered from closest to farest.
@@ -143,7 +159,6 @@ function prepareCellArea3(@c, @obstacle){
 // retourne le type de l'entity
 function getEntityType(@entity){
 	if(!isSummon(entity)) return @ENTITY_LEEK_;
-	if(getLevel()<57) return @ENTITY_PUNY_BULB;
 	var chips = getChips(entity);
 	if(inArray(chips, CHIP_VACCINE)) return @ENTITY_HEALER_BULB;
 	if(inArray(chips, CHIP_ARMOR)) return @ENTITY_METALLIC_BULB;
@@ -173,9 +188,10 @@ function refreshLeeksCellsAndAliveStatus(){
 	_COUNT_LIGHTNING = 0;
 	
 	_CACHE_CELLS_NO_TELEPORT=null;
-	_CACHE_LOS=[];
+	_CACHE_DANGER=[];
 	_CACHE_REACHABLE_DANGER = [];
 	_CACHE_REACHABLE_SIZE = [];
+	_SCORE_ITEM = [];
 
 	_LEEKS_CELL=[];
 	for(var leek in _ALIVE_ALLIES+_ALIVE_ENEMIES){
@@ -198,9 +214,14 @@ function refreshLeeksCellsAndAliveStatus(){
 			
 			if(getStrength(leek) >= 100 || getMagic(leek) >= 100){
 				push(_ALIVE_ENEMIES_DANGER, leek);
+			}else if(getLevel()<20){
+				push(_ALIVE_ENEMIES_DANGER, leek);
 			}
 		}
 	}
+	
+	_NEAREST_ENEMY_LEEK = getNearestEnemyLeek();
+	if(_IS_CAC) _SELF_FULLMAP_PATH_DIST=getReachableCells([getCell(_NEAREST_ENEMY_LEEK):0], 100, [getCell()]);
 
 	if(_IS_RESURECT){
 		_RESU_TARGET = null;
@@ -208,7 +229,10 @@ function refreshLeeksCellsAndAliveStatus(){
 		for(var al in getDeadAllies()){
 			var score = getTotalLife(al)*2+getStrength(al)+getWisdom(al)
 						+getScience(al)+getResistance(al)+getAgility(al);
-			if(isSummon(al)) score/=3;
+			if(isSummon(al)){
+				if(getTotalLife(al) <= 1500) continue;
+				score/=3;
+			}
 			if(_RESU_SCORE < score){
 				_RESU_TARGET = al;
 				_RESU_SCORE = score;
@@ -224,27 +248,17 @@ function refreshLeeksCellsAndAliveStatus(){
 		if(getStrength(e)>=200 || getScience(e)>=200) _SCN_STR_200 = true;
 		if(getStrength(e)>=300 || getScience(e)>=300) _SCN_STR_300 = true;
 	}
+	if(getLevel()<30) _SCN_STR_100 = true;
 }
 
 function refreshLeeksEffectsAndStates(){
 	// init de l'état des leeks
 	_LEEKS=[];
-	var lvl = getLevel(), isLvl10 = lvl>=10, isLvl38 = lvl>=38, isLvl61 = lvl>=61;
 	for(var leek in _ALIVE_ALLIES+_ALIVE_ENEMIES){
-		var effects = [], bulbs = [], psnDmgTurn = 0, psnDmgTotal = 0, scoreLibe = 0, alterateStr = 0, alterateMgc = 0, alterateTP = 0;
+		var effects = [], bulbs = [], psnDmgTurn = 0, psnDmgTotal = 0, scoreLibe = 0, alterateStr = 0, alterateMgc = 0, alterateTP = 0, alterateMP = 0;
 		// gestion getEffects
-		if(isLvl61){
-			for(var e in getEffects(leek)){
-				setEffectsArray(effects, scoreLibe, psnDmgTurn, psnDmgTotal, alterateStr, alterateMgc, alterateTP, e);
-			}
-		}else{
-			for(var castor in _ALIVE_ALLIES+_ALIVE_ENEMIES){
-				for(var e in getLaunchedEffects(castor)){
-					if(e[6]==leek){
-						setEffectsArray(effects, scoreLibe, psnDmgTurn, psnDmgTotal, alterateStr, alterateMgc, alterateTP, e);
-					}
-				}
-			}
+		for(var e in getEffects(leek)){
+			setEffectsArray(effects, scoreLibe, psnDmgTurn, psnDmgTotal, alterateStr, alterateMgc, alterateTP, alterateMP, e);
 		}
 		if(!isSummon(leek)){
 			var bulbz;
@@ -264,16 +278,17 @@ function refreshLeeksEffectsAndStates(){
 			,"alterateStr": alterateStr
 			,"alterateMgc": alterateMgc
 			,"alterateTP": alterateTP
+			,"alterateMP": alterateMP
 			,"str": getStrength(leek)
 			,"mgc": getMagic(leek)
 			,"wsd": getWisdom(leek)
 			,"rst": getResistance(leek)
 			,"agi": getAgility(leek)
 			,"snc": getScience(leek)
-			,"tp": isLvl10 ? getTP(leek) : 10
-			,"mp": isLvl10 ? getMP(leek) : 3
-			,"relShield": isLvl38 ? getRelativeShield(leek) : getRelativeByLaunchedEffects(leek)
-			,"absShield": isLvl38 ? getAbsoluteShield(leek) : getAbsoluteByLaunchedEffects(leek)
+			,"tp": getTP(leek)
+			,"mp": getMP(leek)
+			,"relShield": getRelativeShield(leek)
+			,"absShield": getAbsoluteShield(leek)
 			,"dmgReturn": getDamageReturn(leek)
 			,'scoreLibe': scoreLibe
 			,'nbBulbs': count(bulbs)//todo check si ça vaut le coup de garder cette info..
@@ -283,7 +298,7 @@ function refreshLeeksEffectsAndStates(){
 	}
 }
 
-function setEffectsArray(@effects, @scoreLibe, @psnDmgTurn, @psnDmgTotal, @alterateStr, @alterateMgc, @alterateTP, @e){
+function setEffectsArray(@effects, @scoreLibe, @psnDmgTurn, @psnDmgTotal, @alterateStr, @alterateMgc, @alterateTP, @alterateMP, @e){
 	// [type, value, caster_id, turns, critical, item_id, target_id]
 	var type = e[0],
 	item = e[5],
@@ -291,27 +306,48 @@ function setEffectsArray(@effects, @scoreLibe, @psnDmgTurn, @psnDmgTotal, @alter
 	duration = e[3];
 	
 	effects[item] += value*duration;
-	///// ICI on précalcule le score de libération pour chaque leek.
-	// effect négatif, scoreLibe -=
+	
 	if(type==EFFECT_POISON){
 		psnDmgTurn += value;
 		psnDmgTotal += value*duration;
+	}else if(type==EFFECT_HEAL){
+		psnDmgTurn -= value;
+		psnDmgTotal -= value*duration;
+	}else if(type == EFFECT_SHACKLE_STRENGTH){
+		alterateStr -= value;
+	}else if(type == EFFECT_SHACKLE_MAGIC){
+		alterateMgc -= value;
+	}else if(type == EFFECT_SHACKLE_TP){
+		alterateTP -= value;
+	}else if(type == EFFECT_SHACKLE_MP){
+		alterateMP -= value;
+	}else if(type == EFFECT_BUFF_STRENGTH){
+		alterateStr += value;
+	}else if(type == EFFECT_BUFF_TP){
+		alterateTP += value;
+	}else if(type == EFFECT_BUFF_MP){
+		alterateMP += value;
+	}
+	
+	///// ICI on précalcule le score de libération pour chaque leek.
+	// effect négatif, scoreLibe -=
+	scoreLibe += getLibeScore(type, value, duration);
+}
+
+function getLibeScore(@type, @value, @duration){
+	var scoreLibe=0;
+	if(type==EFFECT_POISON){
 		scoreLibe -= value*duration;
 	}else if(type == EFFECT_SHACKLE_STRENGTH){
 		scoreLibe -= value*duration;
-		alterateStr -= value;
 	}else if(type == EFFECT_SHACKLE_MAGIC){
 		scoreLibe -= value*duration;
-		alterateMgc -= value;
 	}else if(type == EFFECT_SHACKLE_MP){
 		scoreLibe -= value*_SCORE_MP*duration;
 	}else if(type == EFFECT_SHACKLE_TP){
 		scoreLibe -= value*_SCORE_TP*duration;
-		alterateTP -= value;
 	// A partir d'ici, effet positif, scoreLibe +=
 	}else if(type==EFFECT_HEAL){
-		psnDmgTurn -= value;
-		psnDmgTotal -= value*duration;
 		scoreLibe += value*duration;
 	}else if(type == EFFECT_DAMAGE_RETURN){
 		scoreLibe += value*duration;
@@ -321,14 +357,12 @@ function setEffectsArray(@effects, @scoreLibe, @psnDmgTurn, @psnDmgTotal, @alter
 		scoreLibe += value*_SCORE_REL_SHIELD*duration*2;
 	}else if(type == EFFECT_BUFF_STRENGTH){
 		scoreLibe += value*duration;
-		alterateStr += value;
 	}else if(type == EFFECT_BUFF_AGILITY){
 		scoreLibe += value*duration;
 	}else if(type == EFFECT_BUFF_MP){
 		scoreLibe += value*_SCORE_MP*duration;
 	}else if(type == EFFECT_BUFF_TP){
 		scoreLibe += value*_SCORE_TP*duration;
-		alterateTP += value;
 	}else if(type == EFFECT_BUFF_WISDOM){
 		scoreLibe += value*duration;
 	}else if(type == EFFECT_BUFF_RESISTANCE){
@@ -336,42 +370,23 @@ function setEffectsArray(@effects, @scoreLibe, @psnDmgTurn, @psnDmgTotal, @alter
 	}else{
 		debugE("Unknown effect type: " + type);
 	}
-}
-
-function getRelativeByLaunchedEffects(@leek){
-	var launchedEffects = getLaunchedEffects(leek);
-	var rel = 0;
-	for(var effect in launchedEffects){
-		if(effect[0] == EFFECT_RELATIVE_SHIELD && effect[6] == leek) rel += effect[1];
-	}
-	return @rel;
-}
-
-function getAbsoluteByLaunchedEffects(@leek){
-	var launchedEffects = getLaunchedEffects(leek);
-	var abs = 0;
-	for(var effect in launchedEffects){
-		if(effect[0] == EFFECT_ABSOLUTE_SHIELD && effect[6] == leek) abs += effect[1];
-	}
-	return @abs;
+	return @scoreLibe;
 }
 
 //////////////////////////
 // REGISTRE
 //////////////////////////
 
-function getFullRegister(key){
-	var cnt = 0;
-	var reg;
-	var strCombos = "";
+global ___ = "-";
+
+function getFullRegister(@key){
+	var cnt = 0, reg, str = "";
 	do{
-		reg = getRegister(key+"-"+cnt);
-		if(reg!=null) strCombos+=reg;
+		reg = getRegister(key+___+cnt);
+		if(reg!=null) str+=reg;
 		cnt++;
 	}while(reg != null);
-
-	var combos = jsonDecode(strCombos);
-	return @combos;
+	return @str;
 }
 
 function setFullRegister(@key, @value){
@@ -380,16 +395,21 @@ function setFullRegister(@key, @value){
 	var cnt = 0;
 	var start=0;
 	while(start<len){
-		var cle = key+"-"+cnt;
+		var cle = key+___+cnt;
 		var size=len-start;
 		if(size > blocksize) size = blocksize;
 		var substr = mySubString(value, start, size);
-		debug("len:"+length(substr)+" start:"+start+" size:"+size);
 		var val = setRegister(cle, substr);
 		if(val) debug(key+" OK"); 
-		else debugE(key+" "+length(substr));
+		else debugE(key+" NOK");
 		cnt++;
 		start = cnt*blocksize;
+	}
+}
+
+function clearAllRegisters(){
+	for(var reg:var val in getRegisters()){
+		deleteRegister(reg);
 	}
 }
 

@@ -1,13 +1,100 @@
 include('auto');
 
+function getDmgMap(@enemy, @item){
+	var eCell = getCell(enemy), eMp = getMP(enemy), ignored, map = [];
+	var area = _ITEM_AREA[item],
+	maxscope = _ITEM_MAXRANGE[item],
+	minscope = _ITEM_MINRANGE[item],
+	inline = _ITEM_INLINE[item],
+	needlos = _ITEM_NEEDLOS[item];
+    // ignoring me cuz i move, him cuz he wont be block by himself & all that play before
+	var leekToIgnore = [getLeek(), enemy] + getListOfLeekWhoPlayBefore(enemy);
+    var cellToIgnore = [];
+    for(var l in leekToIgnore) push(cellToIgnore, getCell(l));
+	
+    var moveCells = getReachableCells([eCell:0], eMp, cellToIgnore);
+	// moveCells est ordonné de 0 à maxMP de par l'algo, je m'appuie dessus pour que ça marche.
+	if(_IS_SHACKLE_MP){
+		var mapMp = [];
+		var currentMP = 0;
+		for(var c:var dist in moveCells){
+			if(dist>currentMP){
+				var mapTmp = map;
+				if(area==AREA_CIRCLE_1 || area==AREA_CIRCLE_2 || area==AREA_CIRCLE_3){
+					for(var distance = 1; distance<=area-2; distance++){
+						var ratio = (100 - ((50 / (area-2)) * distance))/100;
+						if(ratio ==0) break;
+						var circle = [];
+						for(var ce:var value in mapTmp){
+							if(value>0)
+								for(var cell in @_areaCells1Obstacle[ce])
+									if(mapTmp[cell]==null || mapTmp[cell]==0) 
+										push(circle, cell);
+						}
+						for(var cell in circle) mapTmp[cell] = ratio;
+					}
+				}
+				mapMp[currentMP] = @mapTmp;
+				currentMP=dist;
+			}
+			var targetableCells = _getTargetableCells(item, c);
+			for(var cell in targetableCells){
+				if(map[cell]==null){
+					map[cell]=1;//coef
+				}
+			}
+		}
+		//dernière valeur de MP :)
+		var mapTmp = map;
+		if(area==AREA_CIRCLE_1 || area==AREA_CIRCLE_2 || area==AREA_CIRCLE_3){
+			for(var distance = 1; distance<=area-2; distance++){
+				var ratio = (100 - ((50 / (area-2)) * distance))/100;
+				if(ratio ==0) break;
+				var circle = [];
+				for(var ce:var value in mapTmp){
+					if(value>0)
+						for(var cell in @_areaCells1Obstacle[ce])
+							if(mapTmp[cell]==null || mapTmp[cell]==0) 
+								push(circle, cell);
+				}
+				for(var cell in circle) mapTmp[cell] = ratio;
+			}
+		}
+		mapMp[currentMP] = @mapTmp;
+		return @mapMp;
+	}else{ // classique.
+		for(var c:var dist in moveCells){
+			var targetableCells = _getTargetableCells(item, c);
+			for(var cell in targetableCells){
+				if(map[cell]==null){
+					map[cell]=1;//coef
+				}
+			}
+		}
+		//aoe
+		if(area==AREA_CIRCLE_1 || area==AREA_CIRCLE_2 || area==AREA_CIRCLE_3){
+			for(var distance = 1; distance<=area-2; distance++){
+				var ratio = (100 - ((50 / (area-2)) * distance))/100;
+				if(ratio ==0) break;
+				var circle = [];
+				for(var c:var value in map){
+					if(value>0)
+						for(var cell in @_areaCells1Obstacle[c])
+							if(map[cell]==null || map[cell]==0) push(circle, cell);
+				}
+				for(var cell in circle) map[cell] = ratio;
+			}
+		}
+		return @map;
+	}
+}
+
 /**
  * Retourne null ou un tableau [cell:damage] pour un ennemi donné à une arme/puce donnée
- *
  * @param int enemy ID de l'ennemi ciblé
  * @param int weaponOrChip ID de l'arme ou de la puce à tester
- * 
  */
-function getDmgMap(@enemy, @weaponOrChip){
+function getDmgMap2(@enemy, @weaponOrChip){
 	var eCell = getCell(enemy), eMp = getMP(enemy);
     var area = _ITEM_AREA[weaponOrChip],
 	maxscope = _ITEM_MAXRANGE[weaponOrChip],
@@ -71,24 +158,21 @@ function getDmgMap(@enemy, @weaponOrChip){
 
 // retourne les items de l'adv ordonnés par danger.
 function getOrderedWeapChipScore(@enemy, eStr, eMgc, eWsd){
-    var dmg, cost, effects, allChipWeap = [], stuff;
-	if(getLevel() >= 57) stuff = getWeapons(enemy)+getChips(enemy);
-	else stuff = getWeapons()+getChips();
+    var dmg, cost, effects, allChipWeap = [], stuff = getWeapons(enemy)+getChips(enemy);
     for(var item in stuff){
-        if(item == CHIP_BURNING || item == CHIP_DEVIL_STRIKE){
+        if(item == CHIP_BURNING || item == CHIP_DEVIL_STRIKE ){
 			continue;
 		}
+		//if(item == WEAPON_BROADSWORD || item == WEAPON_AXE || item == WEAPON_KATANA) continue;
 		else if(item == CHIP_LIBERATION){
 			allChipWeap[item] = _LEEKS[_SELF]["scoreLibe"]/_ITEM_COST[item];
 			continue;
 		}
 		if(isSpecialChip(item))continue;
-		if(_ITEM_HAVECD[item] && getLevel()>=36 && getCooldown(item, enemy)!=0) continue;
-		
+		if(_ITEM_HAVECD[item] && getCooldown(item, enemy)!=0) continue;
         dmg=0;
 		effects = _ITEM_EFFECTS[item];
 		cost = _ITEM_COST[item];
-       
         if(effects[0][0] == EFFECT_DAMAGE || effects[0][0] == EFFECT_POISON){
             for(var e in effects){
                 if(e[0] == EFFECT_DAMAGE ){
@@ -178,15 +262,18 @@ function getSimplifiedVirtualStateAtk(@leek, @stackOfResult){
 	state["str"] = info["str"];
 	state["mgc"] = info["mgc"];
 	state["tp"] = info["tp"];
+	state["mp"] = info["mp"];
 	if(stackOfResult[leek]==null) return @state;
 	if(stackOfResult[leek]["debuff"]==true){
 		state["str"]-= info["alterateStr"];
 		state["mgc"]-= info["alterateMgc"];
 		state["tp"]-= info["alterateTP"];
+		state["mp"]-= info["alterateMP"];
 	}
 	state["str"]-= stackOfResult["shackleStr"];
 	state["mgc"]-= stackOfResult["shackleMgc"];
 	state["tp"]-= stackOfResult["shackleTP"];
+	state["mp"]-= stackOfResult["shackleMP"];
     return @state;
 }
 
@@ -239,21 +326,35 @@ function getCellDanger(@cell, @ignoreLeeks, @stack){
 			minItemCost = @_LEEKS[enemy]["minItemCost"],
 			TP = offensivState["tp"],
 			str = offensivState["str"],
-			mgc = offensivState["mgc"];
+			mgc = offensivState["mgc"],
+			MP = offensivState["mp"],
+			inHand = getWeapon(enemy);
 			var cnt=0;
 			for(var i in items){
 				if(_INDEX_DANGER < cnt++) break;
 				var item = i["item"];
-				var ratio = map_leek_weap_danger[enemy][item][cell];
+				var ratio;
+				if(_IS_SHACKLE_MP){
+					ratio = map_leek_weap_danger[enemy][item][MP][cell];
+				}else{
+					ratio = map_leek_weap_danger[enemy][item][cell];
+				}
 				if(ratio>0){
-					var uniqIdDmg = item+"-"+str+"-"+mgc+"/"+absShield+"-"+relShield;
+					var uniqIdDmg = item+"-"+str+"-"+mgc+"/"+absShield+"-"+relShield+"/"+ratio;
 					if(_CACHE_WEAPDMG[uniqIdDmg]==null){
 						_CACHE_WEAPDMG[uniqIdDmg] = getItemDmg(item, mgc, str, absShield, relShield, ratio);
 					}
-					var damage = _CACHE_WEAPDMG[uniqIdDmg], cost = _ITEM_COST[item];
-					while(cost<=TP){
+					var damage = _CACHE_WEAPDMG[uniqIdDmg], cost = _ITEM_COST[item], switch=0;
+					if(item==CHIP_LIBERATION && stack[_SELF]["scoreLibe"] > 0){
+						damage += stack[_SELF]["scoreLibe"];
+					}else if(_ITEM_ISWEAP[item] && item!=inHand){
+						switch=1;
+						inHand=item;
+					}
+					while(cost+switch<=TP){
 						finalDanger+= damage;
-						TP-=cost;
+						TP-=cost+switch;
+						if(switch>0)switch=0;
 						if(_ITEM_HAVECD[item]) break;
 					}
 					if(minItemCost>TP) break;
@@ -273,4 +374,36 @@ function getMapDanger(ignoreLeeks){
 		finalMap[cell] = getCellDanger(cell, ignoreLeeks, []);
 	}
 	return @finalMap;
+}
+
+function findSafestCellToRez(@leek, @from){
+	var ignore = getListOfEnemyLeekWhoPlayAfter(leek);
+	var maxrange = _ITEM_MAXRANGE[CHIP_RESURRECTION];
+	var nearEnemyCell=getCell(getNearestEnemy());
+	var safeCell, dangerCell, distToEnemy, x = getCellX(from), y = getCellY(from);
+	var tryCloser = true;
+	if(getStrength(leek)<400) tryCloser = false;
+	for(var x1 = x-maxrange; x1 <= x+maxrange; x1++){
+		for(var y1 = y-maxrange; y1 <= y+maxrange; y1++){
+			var dist =((x-x1)<0?-(x-x1):x-x1)+(y-y1<0?-(y-y1):y-y1);//trick pour abs(x-x1)+abs(y-y1)..
+			if(dist > maxrange) continue;
+			var targetCell = getCellFromXY(x1, y1);
+			if(targetCell!=null
+			&& targetCell!=from
+			&& _OBSTACLES[targetCell]==null 
+			&& _LEEKS_CELL[targetCell]==null
+			&& lineOfSight(from, targetCell, _SELF)){
+				var danger = getCellDanger(targetCell, ignore, _EMPTYARRAY);
+				if(!safeCell || dangerCell>danger){
+					safeCell=targetCell;
+					dangerCell=danger;
+					distToEnemy = getCellDistance(targetCell, nearEnemyCell);
+				}else if(tryCloser && dangerCell==danger && distToEnemy>getCellDistance(targetCell, nearEnemyCell)){
+					safeCell=targetCell;
+					distToEnemy = getCellDistance(targetCell, nearEnemyCell);
+				}
+			}
+		}
+	}
+	return safeCell;
 }

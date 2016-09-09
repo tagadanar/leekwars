@@ -2,7 +2,6 @@ include('auto');
 
 // init turn 1
 if(getTurn()==1){
-	// TODO version avec lineOfSight(cell, cell)==false pour un osbtacle
 	for(var i=0;i<613;i++){
 		if(isObstacle(i)) _OBSTACLES[i]=true;
 		else _CELLS_NO_OBSTACLES[i] = i;
@@ -11,7 +10,8 @@ if(getTurn()==1){
 		_areaCells2[i] = prepareCellArea2(i, false);
 		_areaCells3[i] = prepareCellArea3(i, false);
 	}
-	for(var i=0;i<150;i++){ // reminder: idmax à 110 @janvier2016
+	for(var i=0; i <= _MAX_ITEM_ID; i++){ // reminder: idmax à 110 @janvier2016
+		_CACHE_ITEM_FROMCELL_TARGETCELLS[i] = [];
 		if(isWeapon(i)){
 			_ITEM_ISWEAP[i]=true;
 			_ITEM_HAVECD[i]=false;
@@ -31,26 +31,23 @@ if(getTurn()==1){
 			else if(i==CHIP_SOPORIFIC) _ITEM_MINRANGE[i]=3;
 			else if(i==CHIP_BALL_AND_CHAIN) _ITEM_MINRANGE[i]=3;
 			else _ITEM_MINRANGE[i]=getChipMinRange(i);
-			_ITEM_MAXRANGE[i]=getChipMaxRange(i);
+			if(i==CHIP_MOTIVATION||i==CHIP_RAGE) _ITEM_MAXRANGE[i]=0;
+			else _ITEM_MAXRANGE[i]=getChipMaxRange(i);
 			_ITEM_INLINE[i]=isInlineChip(i);
 			_ITEM_NEEDLOS[i]=chipNeedLos(i);
-			_ITEM_COST[i]=getChipCost(i);
+			if(i==CHIP_MOTIVATION) _ITEM_COST[i]=getChipCost(i)-round(0.4*(1+getScience()/100));
+			else if(i==CHIP_RAGE) _ITEM_COST[i]=getChipCost(i)-round(0.5*(1+getScience()/100));
+			else _ITEM_COST[i]=getChipCost(i);
 			_ITEM_AREA[i]=getChipArea(i);
 			_ITEM_EFFECTS[i]=getChipEffects(i);
 		}
 	}
 }
 
-//init every turn but not for bulbz
-_CACHE_DANGER=[];
-
 // a uncomment si t'utilise getCellToUseWeapChipOnCell pour avoir la plus proche en terme de path
 //_SELF_FULLMAP_PATH_DIST=[];
 //_SELF_FULLMAP_PATH_DIST=getReachableCells([getCell():0], 100, []);
-
-//init every turn & called again for bulbz
-refreshLeeksCellsAndAliveStatus();
-refreshLeeksEffectsAndStates();
+// j'ai bricolé un truc avec pour les gravityCells.. donc j'ai commenté la fonction getCellToUse qui utilisait cette old attribution du tableau. TODO clean ça un jour où j'ai la motiv...
 
 //debug
 resetBench();
