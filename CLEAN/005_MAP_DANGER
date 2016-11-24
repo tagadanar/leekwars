@@ -1,7 +1,7 @@
 include('auto');
 
 function getDmgMap(@enemy, @item){
-	var eCell = getCell(enemy), eMp = getMP(enemy), ignored, map = [];
+	var eCell = getCell(enemy), eMp = getMP(enemy), ignored, map = [], map_mp = [];
 	var area = _ITEM_AREA[item],
 	maxscope = _ITEM_MAXRANGE[item],
 	minscope = _ITEM_MINRANGE[item],
@@ -14,82 +14,38 @@ function getDmgMap(@enemy, @item){
 	
     var moveCells = getReachableCells([eCell:0], eMp, cellToIgnore);
 	// moveCells est ordonné de 0 à maxMP de par l'algo, je m'appuie dessus pour que ça marche.
-	if(_IS_SHACKLE_MP){
-		var mapMp = [];
-		var currentMP = 0;
-		for(var c:var dist in moveCells){
-			if(dist>currentMP){
-				var mapTmp = map;
-				if(area==AREA_CIRCLE_1 || area==AREA_CIRCLE_2 || area==AREA_CIRCLE_3){
-					for(var distance = 1; distance<=area-2; distance++){
-						var ratio = (100 - ((50 / (area-2)) * distance))/100;
-						if(ratio ==0) break;
-						var circle = [];
-						for(var ce:var value in mapTmp){
-							if(value>0)
-								for(var cell in @_areaCells1Obstacle[ce])
-									if(mapTmp[cell]==null || mapTmp[cell]==0) 
-										push(circle, cell);
-						}
-						for(var cell in circle) mapTmp[cell] = ratio;
-					}
-				}
-				mapMp[currentMP] = @mapTmp;
-				currentMP=dist;
-			}
-			var targetableCells = _getTargetableCells(item, c);
-			for(var cell in targetableCells){
-				if(map[cell]==null){
-					map[cell]=1;//coef
-				}
+	
+	for(var c:var dist in moveCells){
+		var targetableCells = _getTargetableCells(item, c);
+		for(var cell in targetableCells){
+			if(map[cell]==null){
+				map[cell]=1;//coef
+				map_mp[cell]=dist;
 			}
 		}
-		//dernière valeur de MP :)
-		var mapTmp = map;
-		if(area==AREA_CIRCLE_1 || area==AREA_CIRCLE_2 || area==AREA_CIRCLE_3){
-			for(var distance = 1; distance<=area-2; distance++){
-				var ratio = (100 - ((50 / (area-2)) * distance))/100;
-				if(ratio ==0) break;
-				var circle = [];
-				for(var ce:var value in mapTmp){
-					if(value>0)
-						for(var cell in @_areaCells1Obstacle[ce])
-							if(mapTmp[cell]==null || mapTmp[cell]==0) 
-								push(circle, cell);
-				}
-				for(var cell in circle) mapTmp[cell] = ratio;
-			}
-		}
-		mapMp[currentMP] = @mapTmp;
-		return @mapMp;
-	}else{ // classique.
-		for(var c:var dist in moveCells){
-			var targetableCells = _getTargetableCells(item, c);
-			for(var cell in targetableCells){
-				if(map[cell]==null){
-					map[cell]=1;//coef
-				}
-			}
-		}
-		//aoe
-		if(area==AREA_CIRCLE_1 || area==AREA_CIRCLE_2 || area==AREA_CIRCLE_3){
-			for(var distance = 1; distance<=area-2; distance++){
-				var ratio = (100 - ((50 / (area-2)) * distance))/100;
-				if(ratio ==0) break;
-				var circle = [];
-				for(var c:var value in map){
-					if(value>0)
-						for(var cell in @_areaCells1Obstacle[c])
-							if(map[cell]==null || map[cell]==0) push(circle, cell);
-				}
-				for(var cell in circle) map[cell] = ratio;
-			}
-		}
-		return @map;
 	}
+	//aoe
+	if(area==AREA_CIRCLE_1 || area==AREA_CIRCLE_2 || area==AREA_CIRCLE_3){
+		for(var distance = 1; distance<=area-2; distance++){
+			var ratio = (100 - ((50 / (area-2)) * distance))/100;
+			if(ratio ==0) break;
+			var circle = [];
+			for(var c:var value in map){
+				if(value>0)
+					for(var cell in @_areaCells1Obstacle[c])
+						if(map[cell]==null || map[cell]==0) push(circle, cell);
+			}
+			for(var cell in circle){
+				map[cell] = ratio;
+				map_mp[cell] = eMp;
+			}
+		}
+	}
+	return @[_map:@map, _mp:@map_mp];
 }
 
 /**
+ * /!\ Old version qui gère parfaitement la los, mais coute un bras. /!\
  * Retourne null ou un tableau [cell:damage] pour un ennemi donné à une arme/puce donnée
  * @param int enemy ID de l'ennemi ciblé
  * @param int weaponOrChip ID de l'arme ou de la puce à tester
@@ -159,13 +115,14 @@ function getDmgMap2(@enemy, @weaponOrChip){
 // retourne les items de l'adv ordonnés par danger.
 function getOrderedWeapChipScore(@enemy, eStr, eMgc, eWsd){
     var dmg, cost, effects, allChipWeap = [], stuff = getWeapons(enemy)+getChips(enemy);
+	var absShield = getAbsoluteShield(), relShield = getRelativeShield();
     for(var item in stuff){
         if(item == CHIP_BURNING || item == CHIP_DEVIL_STRIKE ){
 			continue;
 		}
 		//if(item == WEAPON_BROADSWORD || item == WEAPON_AXE || item == WEAPON_KATANA) continue;
 		else if(item == CHIP_LIBERATION){
-			allChipWeap[item] = _LEEKS[_SELF]["scoreLibe"]/_ITEM_COST[item];
+			allChipWeap[item] = _LEEKS[_SELF][_scoreLibe]/_ITEM_COST[item];
 			continue;
 		}
 		if(isSpecialChip(item))continue;
@@ -176,7 +133,7 @@ function getOrderedWeapChipScore(@enemy, eStr, eMgc, eWsd){
         if(effects[0][0] == EFFECT_DAMAGE || effects[0][0] == EFFECT_POISON){
             for(var e in effects){
                 if(e[0] == EFFECT_DAMAGE ){
-                    dmg+= e[2]*(1+(eStr/100));
+                    dmg+= (e[2]*(1+(eStr/100))*(1-(relShield/100)))-absShield;
                 }
                 else if(e[0] == EFFECT_POISON){
                     dmg += e[1]*(1+(eMgc/100)) *e[3];
@@ -203,39 +160,41 @@ function loadMapsDanger(maxOp){
 	//ignoreMPLeek();
 	var startOperation = getOperations();
 	map_leek_weap_danger = [];//reset de la map
+	_CACHE_DANGER=[];
 	var maxIndex = [];
 	var theMax = 0;
 	for(var e in _ALIVE_ENEMIES_DANGER){
 		map_leek_weap_danger[e] = [];//reset de la map
 		var info = _LEEKS[e];
-		var weapChips = getOrderedWeapChipScore(e,info["str"],info["mgc"],info["wsd"]);
-		_LEEKS[e]['items'] = []; //reset du stuff
+		var weapChips = getOrderedWeapChipScore(e,info[_str],info[_mgc],info[_wsd]);
+		_LEEKS[e][_items] = []; //reset du stuff
 		var minItemCost = 8;
 		for(var weapChip : var dmg in weapChips){
 			if(dmg>0){
-				push(_LEEKS[e]['items'], [
-					'item' : weapChip,
-					'damage' : dmg
+				push(_LEEKS[e][_items], [
+					_item : weapChip,
+					_damage : dmg
 				]);
 				if(_ITEM_COST[weapChip]<minItemCost){
 					minItemCost=_ITEM_COST[weapChip];
 				}
 			}
 		}
-		_LEEKS[e]["minItemCost"]=minItemCost;
-		maxIndex[e] = count(_LEEKS[e]['items']);
+		_LEEKS[e][_minItemCost]=minItemCost;
+		maxIndex[e] = count(_LEEKS[e][_items]);
 		if(theMax<maxIndex[e]) theMax = maxIndex[e];
 	}
 	_INDEX_DANGER=theMax;
 	for(var index = 0; index < theMax; index++){
 		for(var e in _ALIVE_ENEMIES_DANGER){
 			if(index<maxIndex[e]){
-				var item = _LEEKS[e]['items'][index]["item"];
+				var item = _LEEKS[e][_items][index][_item];
 				map_leek_weap_danger[e][item] = getDmgMap(e, item);
 				if(e==_ALIVE_ENEMIES_DANGER[0]) debugE((index+1)+getItemName(item));
 			}
 		}
-		if(index > 0 && getOperations()-startOperation>maxOp){
+		// on fait minimum 2 armes, on dépasse pas la limite, on fait pas plus de 7 armes.
+		if(index > 0 && (getOperations()-startOperation>maxOp || index > 6)){
 			debugE('Turn'+getTurn()+' breaking loadMapsDanger at index: '+index);
 			_INDEX_DANGER=index;
 			break;
@@ -245,42 +204,42 @@ function loadMapsDanger(maxOp){
 
 function getSimplifiedVirtualStateDef(@leek, @stackOfResult){
 	var state = [], info = @_LEEKS[leek];
-	state["absShield"] = info["absShield"];
-	state["relShield"] = info["relShield"];
+	state[_absShield] = info[_absShield];
+	state[_relShield] = info[_relShield];
 	if(stackOfResult[leek]==null) return @state;
-	if(stackOfResult[leek]["debuff"]==true){
-		state["absShield"]=0;
-		state["relShield"]=0;
+	if(stackOfResult[leek][_debuff]==true){
+		state[_absShield]=0;
+		state[_relShield]=0;
 	}
-	state["absShield"]+=stackOfResult[leek]["absShield"];
-	state["relShield"]+=stackOfResult[leek]["relShield"];
+	state[_absShield]+=stackOfResult[leek][_absShield];
+	state[_relShield]+=stackOfResult[leek][_relShield];
 	return @state;
 }
 
 function getSimplifiedVirtualStateAtk(@leek, @stackOfResult){
 	var state = [], info = @_LEEKS[leek];;
-	state["str"] = info["str"];
-	state["mgc"] = info["mgc"];
-	state["tp"] = info["tp"];
-	state["mp"] = info["mp"];
+	state[_str] = info[_str];
+	state[_mgc] = info[_mgc];
+	state[_tp] = info[_tp];
+	state[_mp] = info[_mp];
 	if(stackOfResult[leek]==null) return @state;
-	if(stackOfResult[leek]["debuff"]==true){
-		state["str"]-= info["alterateStr"];
-		state["mgc"]-= info["alterateMgc"];
-		state["tp"]-= info["alterateTP"];
-		state["mp"]-= info["alterateMP"];
+	if(stackOfResult[leek][_debuff]==true){
+		state[_str]-= info[_alterateStr];
+		state[_mgc]-= info[_alterateMgc];
+		state[_tp]-= info[_alterateTP];
+		state[_mp]-= info[_alterateMP];
 	}
-	state["str"]-= stackOfResult["shackleStr"];
-	state["mgc"]-= stackOfResult["shackleMgc"];
-	state["tp"]-= stackOfResult["shackleTP"];
-	state["mp"]-= stackOfResult["shackleMP"];
+	state[_str]-= stackOfResult[_shackleStr];
+	state[_mgc]-= stackOfResult[_shackleMgc];
+	state[_tp]-= stackOfResult[_shackleTP];
+	state[_mp]-= stackOfResult[_shackleMP];
     return @state;
 }
 
 function getItemDmg(@item, @eMgc, @eStr, @absShield, @relShield, @ratio){
 	var dmg = 0;
 	if(item==CHIP_LIBERATION){
-		return _LEEKS[_SELF]["scoreLibe"];
+		return _LEEKS[_SELF][_scoreLibe];
 	}
 	// FIXME truc chiant à gérer...
 	if(item==CHIP_BURNING) return 0;
@@ -296,9 +255,9 @@ function getItemDmg(@item, @eMgc, @eStr, @absShield, @relShield, @ratio){
         else if(type == EFFECT_POISON){
 			var duration = e[3];
 			duration = duration == 0 ? 1 : // 0 => 1
-				(duration == 2 ? 1.75 : // 2 => 1.75
-				(duration == 3 ? 2.25 : // 3 => 2.25
-				(duration == 4 ? 2.5 : // 4 => 2.5
+				(duration == 2 ? 1.5 : // 2 => 1
+				(duration == 3 ? 2 : // 3 => 1.25
+				(duration == 4 ? 2 : // 4 => 1.5
 				duration))); // 1 => 1
             dmg += optiMoy*(1+(eMgc/100)) *ratio *duration;
         }
@@ -317,52 +276,87 @@ function getCellDanger(@cell, @ignoreLeeks, @stack){
 			id=_SELF;
 		}
 		var defendingState = getSimplifiedVirtualStateDef(id, stack);
-		var absShield = defendingState["absShield"], relShield = defendingState["relShield"];
-		var finalDanger = 0;
+		var absShield = defendingState[_absShield], relShield = defendingState[_relShield];
+		var finalDanger = 0, sumMp = 0, nbItem = 0;
 		for(var enemy in _ALIVE_ENEMIES_DANGER){
 			if(inArray(ignoreLeeks, enemy)) continue;
 			var offensivState = getSimplifiedVirtualStateAtk(enemy, stack);
-			var items = @_LEEKS[enemy]["items"],
-			minItemCost = @_LEEKS[enemy]["minItemCost"],
-			TP = offensivState["tp"],
-			str = offensivState["str"],
-			mgc = offensivState["mgc"],
-			MP = offensivState["mp"],
-			inHand = getWeapon(enemy);
-			var cnt=0;
+			var items = @_LEEKS[enemy][_items],
+			minItemCost = @_LEEKS[enemy][_minItemCost],
+			TP = offensivState[_tp],
+			str = offensivState[_str],
+			mgc = offensivState[_mgc],
+			MP = offensivState[_mp];
+			var cnt=0, aoeItems = [];
 			for(var i in items){
 				if(_INDEX_DANGER < cnt++) break;
-				var item = i["item"];
-				var ratio;
-				if(_IS_SHACKLE_MP){
-					ratio = map_leek_weap_danger[enemy][item][MP][cell];
-				}else{
-					ratio = map_leek_weap_danger[enemy][item][cell];
+				var item = i[_item];
+				var ratio, mpused;
+				var mapTmp = @map_leek_weap_danger[enemy][item];
+				mpused = mapTmp[_mp][cell];
+				if(mpused <= MP) ratio = mapTmp[_map][cell];
+				else{
+					var area = _ITEM_AREA[item]-2;
+					var diff = mpused - MP;
+					if(area > 0 && area <= 3 && diff <= area){
+						ratio = 1 - (0.5/area*diff);
+					}else ratio = 0;
 				}
-				if(ratio>0){
+				if(ratio==1){
 					var uniqIdDmg = item+"-"+str+"-"+mgc+"/"+absShield+"-"+relShield+"/"+ratio;
 					if(_CACHE_WEAPDMG[uniqIdDmg]==null){
 						_CACHE_WEAPDMG[uniqIdDmg] = getItemDmg(item, mgc, str, absShield, relShield, ratio);
 					}
-					var damage = _CACHE_WEAPDMG[uniqIdDmg], cost = _ITEM_COST[item], switch=0;
-					if(item==CHIP_LIBERATION && stack[_SELF]["scoreLibe"] > 0){
-						damage += stack[_SELF]["scoreLibe"];
-					}else if(_ITEM_ISWEAP[item] && item!=inHand){
-						switch=1;
-						inHand=item;
+					var damage = _CACHE_WEAPDMG[uniqIdDmg], cost = _ITEM_COST[item];
+					if(item==CHIP_LIBERATION && stack[_SELF][_scoreLibe] > 0){
+						damage += stack[_SELF][_scoreLibe];
 					}
-					while(cost+switch<=TP){
+					while(cost<=TP){
 						finalDanger+= damage;
-						TP-=cost+switch;
-						if(switch>0)switch=0;
+						sumMp+= mpused;
+						nbItem++;
+						TP-=cost;
 						if(_ITEM_HAVECD[item]) break;
 					}
 					if(minItemCost>TP) break;
+				}else if(ratio>0){
+					push(aoeItems, i);
+				}
+			}
+			for(var i in aoeItems){
+				if(minItemCost>TP) break;
+				var item = i[_item];
+				var ratio, mpused;
+				var mapTmp = @map_leek_weap_danger[enemy][item];
+				if(mpused <= MP) ratio = mapTmp[_map][cell];
+				else{
+					var area = _ITEM_AREA[item]-2;
+					var diff = mpused - MP;
+					if(area > 0 && area <= 3 && diff <= area){
+						ratio = 1 - (0.5/area*diff);
+					}else ratio = 0;
+				}
+
+				var uniqIdDmg = item+"-"+str+"-"+mgc+"/"+absShield+"-"+relShield+"/"+ratio;
+				if(_CACHE_WEAPDMG[uniqIdDmg]==null){
+					_CACHE_WEAPDMG[uniqIdDmg] = getItemDmg(item, mgc, str, absShield, relShield, ratio);
+				}
+				var damage = _CACHE_WEAPDMG[uniqIdDmg], cost = _ITEM_COST[item];
+				if(item==CHIP_LIBERATION && stack[_SELF][_scoreLibe] > 0){
+					damage += stack[_SELF][_scoreLibe];
+				}
+				while(cost<=TP){
+					finalDanger+= damage;
+					sumMp+= mpused;
+					nbItem++;	
+					TP-=cost;
+					if(_ITEM_HAVECD[item]) break;
 				}
 			}
 			if(TP<0) debugE("TP NOK §§§: " + TP);
 		}
-		_CACHE_DANGER[uniqId]=finalDanger;
+		if(nbItem==0)nbItem++;
+		_CACHE_DANGER[uniqId]=@[_danger:finalDanger, _mpused:sumMp/nbItem];
 	}
 	return @_CACHE_DANGER[uniqId];
 }

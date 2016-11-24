@@ -1,8 +1,11 @@
 include('auto');
 
+//debug
+resetBench();
+
 // init turn 1
 if(getTurn()==1){
-	for(var i=0;i<613;i++){
+	for(var i=0;i<=_MAX_CELL;i++){
 		if(isObstacle(i)) _OBSTACLES[i]=true;
 		else _CELLS_NO_OBSTACLES[i] = i;
 		_areaCells1[i] = prepareCellArea(i, false);
@@ -35,8 +38,8 @@ if(getTurn()==1){
 			else _ITEM_MAXRANGE[i]=getChipMaxRange(i);
 			_ITEM_INLINE[i]=isInlineChip(i);
 			_ITEM_NEEDLOS[i]=chipNeedLos(i);
-			if(i==CHIP_MOTIVATION) _ITEM_COST[i]=getChipCost(i)-round(0.4*(1+getScience()/100));
-			else if(i==CHIP_RAGE) _ITEM_COST[i]=getChipCost(i)-round(0.5*(1+getScience()/100));
+			if(i==CHIP_MOTIVATION) _ITEM_COST[i]=getChipCost(i)-floor(0.4*(1+getScience()/100));
+			else if(i==CHIP_RAGE) _ITEM_COST[i]=getChipCost(i)-floor(0.5*(1+getScience()/100));
 			else _ITEM_COST[i]=getChipCost(i);
 			_ITEM_AREA[i]=getChipArea(i);
 			_ITEM_EFFECTS[i]=getChipEffects(i);
@@ -44,10 +47,208 @@ if(getTurn()==1){
 	}
 }
 
-// a uncomment si t'utilise getCellToUseWeapChipOnCell pour avoir la plus proche en terme de path
-//_SELF_FULLMAP_PATH_DIST=[];
-//_SELF_FULLMAP_PATH_DIST=getReachableCells([getCell():0], 100, []);
-// j'ai bricolé un truc avec pour les gravityCells.. donc j'ai commenté la fonction getCellToUse qui utilisait cette old attribution du tableau. TODO clean ça un jour où j'ai la motiv...
+function refreshLeeksCellsAndAliveStatus(){
+	_SELF = getLeek();
+	// refresh leek cells & alive allies/enemies
+	_ALIVE_ALLIES = getAliveAllies();
+	_ALIVE_ENEMIES = getAliveEnemies();
+	_ALIVE_ALLIES_LEEKS = [];
+	_ALIVE_ALLIES_BULBS = [];
+	_ALIVE_ENEMIES_LEEKS = [];
+	_ALIVE_ENEMIES_BULBS = [];
+	_ALIVE_ENEMIES_DANGER = [];
+	_COUNT_PUNY = 0;
+	_COUNT_ROCKY = 0;
+	_COUNT_ICED = 0;
+	_COUNT_HEALER = 0;
+	_COUNT_METAL = 0;
+	_COUNT_FIRE = 0;
+	_COUNT_LIGHTNING = 0;
+	
+	_CACHE_CELLS_NO_TELEPORT=null;
+	_CACHE_REACHABLE_DANGER = [];
+	_CACHE_REACHABLE_SIZE = [];
+	_SCORE_ITEM = [];
 
-//debug
-resetBench();
+	_LEEKS_CELL=[];
+	for(var leek in _ALIVE_ALLIES+_ALIVE_ENEMIES){
+		if(_SELF!=leek) _LEEKS_CELL[getCell(leek)] = leek;
+		if(isAlly(leek)){
+			if(isSummon(leek)){
+				push(_ALIVE_ALLIES_BULBS, leek);
+				var eType = getEntityType(leek);
+				if(eType==ENTITY_PUNY_BULB) _COUNT_PUNY++;
+				else if(eType==ENTITY_ROCKY_BULB) _COUNT_ROCKY++;
+				else if(eType==ENTITY_ICED_BULB) _COUNT_ICED++;
+				else if(eType==ENTITY_HEALER_BULB) _COUNT_HEALER++;
+				else if(eType==ENTITY_METALLIC_BULB) _COUNT_METAL++;
+				else if(eType==ENTITY_FIRE_BULB) _COUNT_FIRE++;
+				else if(eType==ENTITY_LIGHTNING_BULB) _COUNT_LIGHTNING++;
+			} else push(_ALIVE_ALLIES_LEEKS, leek);
+		}else{//isEnemy
+			if(isSummon(leek)) push(_ALIVE_ENEMIES_BULBS, leek); 
+			else push(_ALIVE_ENEMIES_LEEKS, leek);
+			
+			if(getStrength(leek) >= 100 || getMagic(leek) >= 100){
+				push(_ALIVE_ENEMIES_DANGER, leek);
+			}else if(getLevel()<20){
+				push(_ALIVE_ENEMIES_DANGER, leek);
+			}
+		}
+	}
+	
+	_NEAREST_ENEMY_LEEK = getNearestEnemyLeek();
+	_NEARE_FULLMAP_PATH_DIST=getReachableCells([getCell(_NEAREST_ENEMY_LEEK):0], 200, [getCell()]);
+	
+	_SELF_FULLMAP_PATH_DIST=getReachableCells([getCell():0], 200, _EMPTYARRAY);
+
+	if(_IS_RESURECT){
+		_RESU_TARGET = null;
+		_RESU_SCORE = 0;
+		for(var al in getDeadAllies()){
+			var score = getTotalLife(al)*2+getStrength(al)+getWisdom(al)
+						+getScience(al)+getResistance(al)+getAgility(al);
+			if(isSummon(al)){
+				if(getTotalLife(al) <= 1500) continue;
+				score/=3;
+			}
+			if(_RESU_SCORE < score){
+				_RESU_TARGET = al;
+				_RESU_SCORE = score;
+			}
+		}
+	}
+
+	_SCN_STR_100 = false;
+	_SCN_STR_200 = false;
+	_SCN_STR_300 = false;
+	for(var e in _ALIVE_ENEMIES){
+		if(getStrength(e)>=100 || getScience(e)>=100) _SCN_STR_100 = true;
+		if(getStrength(e)>=200 || getScience(e)>=200) _SCN_STR_200 = true;
+		if(getStrength(e)>=300 || getScience(e)>=300) _SCN_STR_300 = true;
+	}
+	if(getLevel()<30) _SCN_STR_100 = true;
+}
+
+function refreshLeeksEffectsAndStates(){
+	// init de l'état des leeks
+	_LEEKS=[];
+	for(var leek in _ALIVE_ALLIES+_ALIVE_ENEMIES){
+		var effects = [], bulbs = [], psnDmgTurn = 0, psnDmgTotal = 0, scoreLibe = 0, alterateStr = 0, alterateMgc = 0, alterateTP = 0, alterateMP = 0;
+		// gestion getEffects
+		for(var e in getEffects(leek)){
+			setEffectsArray(effects, scoreLibe, psnDmgTurn, psnDmgTotal, alterateStr, alterateMgc, alterateTP, alterateMP, e);
+		}
+		if(!isSummon(leek)){
+			var bulbz;
+			if(isAlly(leek)) bulbz = _ALIVE_ALLIES_BULBS;
+			else bulbz = _ALIVE_ENEMIES_BULBS;
+			for(var b in bulbz){
+				if(getSummoner(b)==leek) push(bulbs, b);
+			}
+		}
+		
+		var leekInfo = [
+			_totallife: getTotalLife(leek)
+			,_life: getLife(leek)
+			,_psnlife: getLife(leek)-psnDmgTurn
+			,_psnTurn: psnDmgTurn
+			,_psnTotal: psnDmgTotal
+			,_effects: @effects
+			,_alterateStr: alterateStr
+			,_alterateMgc: alterateMgc
+			,_alterateTP: alterateTP
+			,_alterateMP: alterateMP
+			,_str: getStrength(leek)
+			,_mgc: getMagic(leek)
+			,_wsd: getWisdom(leek)
+			,_rst: getResistance(leek)
+			,_agi: getAgility(leek)
+			,_snc: getScience(leek)
+			,_tp: getTP(leek)
+			,_mp: getMP(leek)
+			,_relShield: getRelativeShield(leek)
+			,_absShield: getAbsoluteShield(leek)
+			,_dmgReturn: getDamageReturn(leek)
+			,_scoreLibe: scoreLibe
+			,_nbBulbs: count(bulbs)//todo check si ça vaut le coup de garder cette info..
+			,_bulbs: @bulbs
+		];
+		_LEEKS[leek] = @leekInfo;
+	}
+}
+
+function setEffectsArray(@effects, @scoreLibe, @psnDmgTurn, @psnDmgTotal, @alterateStr, @alterateMgc, @alterateTP, @alterateMP, @e){
+	// [type, value, caster_id, turns, critical, item_id, target_id]
+	var type = e[0],
+	item = e[5],
+	value = e[1],
+	duration = e[3];
+	
+	effects[item] += value*duration;
+	
+	if(type==EFFECT_POISON){
+		psnDmgTurn += value;
+		psnDmgTotal += value*duration;
+	}else if(type==EFFECT_HEAL){
+		psnDmgTurn -= value;
+		psnDmgTotal -= value*duration;
+	}else if(type == EFFECT_SHACKLE_STRENGTH){
+		alterateStr -= value;
+	}else if(type == EFFECT_SHACKLE_MAGIC){
+		alterateMgc -= value;
+	}else if(type == EFFECT_SHACKLE_TP){
+		alterateTP -= value;
+	}else if(type == EFFECT_SHACKLE_MP){
+		alterateMP -= value;
+	}else if(type == EFFECT_BUFF_STRENGTH){
+		alterateStr += value;
+	}else if(type == EFFECT_BUFF_TP){
+		alterateTP += value;
+	}else if(type == EFFECT_BUFF_MP){
+		alterateMP += value;
+	}
+	
+	///// ICI on précalcule le score de libération pour chaque leek.
+	// effect négatif, scoreLibe -=
+	scoreLibe += getLibeScore(type, value, duration);
+}
+
+function getLibeScore(@type, @value, @duration){
+	var scoreLibe=0;
+	if(type==EFFECT_POISON){
+		scoreLibe -= value*duration;
+	}else if(type == EFFECT_SHACKLE_STRENGTH){
+		scoreLibe -= value*duration;
+	}else if(type == EFFECT_SHACKLE_MAGIC){
+		scoreLibe -= value*duration;
+	}else if(type == EFFECT_SHACKLE_MP){
+		scoreLibe -= value*_SCORE_MP*duration;
+	}else if(type == EFFECT_SHACKLE_TP){
+		scoreLibe -= value*_SCORE_TP*duration;
+	// A partir d'ici, effet positif, scoreLibe +=
+	}else if(type==EFFECT_HEAL){
+		scoreLibe += value*duration;
+	}else if(type == EFFECT_DAMAGE_RETURN){
+		scoreLibe += value*duration;
+	}else if(type == EFFECT_ABSOLUTE_SHIELD){
+		scoreLibe += value*duration*2;
+	}else if(type == EFFECT_RELATIVE_SHIELD){
+		scoreLibe += value*_SCORE_REL_SHIELD*duration*2;
+	}else if(type == EFFECT_BUFF_STRENGTH){
+		scoreLibe += value*duration;
+	}else if(type == EFFECT_BUFF_AGILITY){
+		scoreLibe += value*duration;
+	}else if(type == EFFECT_BUFF_MP){
+		scoreLibe += value*_SCORE_MP*duration;
+	}else if(type == EFFECT_BUFF_TP){
+		scoreLibe += value*_SCORE_TP*duration;
+	}else if(type == EFFECT_BUFF_WISDOM){
+		scoreLibe += value*duration;
+	}else if(type == EFFECT_BUFF_RESISTANCE){
+		scoreLibe += value*duration;
+	}else{
+		debugE("Unknown effect type: " + type);
+	}
+	return @scoreLibe;
+}

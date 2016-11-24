@@ -14,6 +14,30 @@ function sayCupidon(){
 		,"Oh Regarde, Simplet, Regarde ! Il y a un morceau de charcuterie qui arrive ! Regarde le, Regarde ! ... AU BÛCHER !"
 		,"Qu'est-ce que j'apprends de manière inopinée ? La rumeur colporte que vous ne vous êtes jamais confessé !"
 		,"La confession ! Sans confession, point de salut ! Sans salut, point... point ne sert de... à rien qui ne sait partir."
+		,"En garde, fils d'unijambiste !"
+		,"Vous allez me montrer ce que vous avez dans le froc, ma mignonne !"
+		,"Aha sir ! Mon père était ptete unijambiste, mais moi ma femme a pas de moustache !"
+		,"En garde, ma biquette ! Je vais vous découper l'gras du cul, ça vous fera ça de moins à trimbaler !"
+		,"Mais allez-y bon sang, magnez-vous le fion, espèce de grosse dinde !"
+		,"Fort heureusement, l'incident n'a fait aucune victime."
+		,"Balancez-leur les radasses et qu'ils s'en aillent au diable !"
+		,"Fort heureusement, je tiens à préciser que l'incident n'a fait aucune victime."
+		,"En voilà une bonne chose, faisons la liste des cons, et puis ça me donnera l'occasion de gratter du papier."
+		,"Je vais le tuer, Sire ! Je vais tellement si tant y taper sa gueule qu'il va décéder !"
+		,"Non mais vous croyez pas qu'j'marche au sifflet ! Mais qu'est-ce que j'en ai à foutre de vos horaires ? J'arrive quand j'arrive et puis c'est tout."
+		,"Si il y a un mot plus haut que l'autre, je vous mets toute la tartine dans la gueule et je rentre chez moi, j'ai pas que ça à glander."
+		,"Commencez pas à noyer la peau de l’ours avant d’avoir vendu le poisson."
+		,"Ah bah non ! On va leur foutre deux, trois pierres dans la gueule et on va allumer des incendies... Mais faut pas déconner, ils y sont pour rien."
+		,"Je dirais également que le genou peut partir dans les noix de manière assez soudaine et que ça pourrait éventuellement vous faire sortir les baloches par les oreilles. N'y voyez aucune malice !"
+		,"Ben ils m'ont dit d'aller me faire mettre. Après, ils m'ont jeté des gadins et une marmite avec un restant de soupe de poisson."
+		,"J’ai pénétré leur lieu d'habitation de façon subrogative, en tapinant."
+		,"Attention, attention… il va y arriver un moment où il y a des granges qui vont se mettre à flamber, faudra pas demander d’où ça vient !"
+		,"Je vais rentrer mes vaches, là, elles sont accessibles ou faut que je fasse monter un échafaudage ?"
+		,"Ce que je dis, tout le monde s'en tamponne ! Je gueule, je gueule, j'pourrais gueuler dans le cul d'un poney ce serait pareil !"
+		,"Je lui rembourse mes genoux, et si il a filé la vérole à mes bêtes, chuis chuis un marteau moi ! Je crame tout moi ! Ma ferme, la sienne, celles des autres, le château, j'vais flamber la moitié de la Bretagne."
+		,"Non mais est-ce que vous êtes pas un peu marteau, vous ? Parce que moi ça y est, j'ai les nerfs qui commencent à vriller ! Je vous montre : moi je bondis comme ça, et je vous arrive dessus en piqué diagonal. Et là c'est l'hymne à la cruauté, hein, un autel dressé au culte de la barbarie !"
+		,"Victoriae mundis et mundis lacrima. Bon, ça ne veut absolument rien dire, mais je trouve que c’est assez dans le ton."
+		,"Mais parce que votre existence est merdique mon pauvre ami, vous avez l'œil qui brille à chaque fois qu'un oiseau pète, c'est triste à voir. Ça fait des années que vous menez un train de vie de noix de St-Jacques, alors évidemment, un message qui annonce la visite d'un imbécile porteur de bonnes nouvelles, c'est déjà un petit festival pour vous ! J'suis sûr que vous vous êtes peigné pour l'occasion !"
 	];
 	if(!isSummon(getNearestEnemy())) push(stupidSay, getName(getNearestEnemy()) + " est un hérétique, je VEUX BRÛLER CETTE PERSONNE !");
 	
@@ -32,6 +56,8 @@ function getComboSet(@entity){
 		// choix du set de combo en fonction de mon état
 		if(getWeapon()==null) combos = @comboz["EMPTY"];
 		else combos = @comboz[string(getWeapon())];
+		combos = convertBinariesToCombos(combos);
+		unshift(combos, []); // ajout d'une combo vide au début
 	}else if(eType==ENTITY_PUNY_BULB){
 		//TODO
 	}else if(eType==ENTITY_ROCKY_BULB){
@@ -421,35 +447,7 @@ function bulb_getCellsToUseChipOnCell(@weapChip, @cell){
 	return @result;
 }
 
-/* this func is deprecated, _SELF_FULLMAP_PATH_DIST ne fait plus la mm chose...
-function _getCellToUseWeapChipOnCell(@weapChip, @cell){
-	var leekToIgnore = [getLeek()],result, mpDist = 100,
-	x = getCellX(cell), y = getCellY(cell), isWeap = isWeapon(weapChip),
-	minrange = isWeap ? getWeaponMinRange(weapChip) : getChipMinRange(weapChip),
-	maxrange = isWeap ? getWeaponMaxRange(weapChip) : getChipMaxRange(weapChip),
-	inline = isWeap ? isInlineWeapon(weapChip) : isInlineChip(weapChip),
-	needlos = isWeap ? weaponNeedLos(weapChip) : chipNeedLos(weapChip);
-	for(var x1 = x-maxrange; x1 <= x+maxrange; x1++){
-		for(var y1 = y-maxrange; y1 <= y+maxrange; y1++){
-			var fromCell = getCellFromXY(x1, y1);
-			if(fromCell!=null 
-			&& _OBSTACLES[fromCell]==null 
-			&& _LEEKS_CELL[fromCell]==null){
-				var dist = getCellDistance(fromCell,cell);
-				if(dist >= minrange && dist <= maxrange
-				&& (!needlos || lineOfSight(fromCell, cell, leekToIgnore))
-				&& (!inline || isOnSameLine(fromCell,cell))){
-					if(_SELF_FULLMAP_PATH_DIST[fromCell]!=null && _SELF_FULLMAP_PATH_DIST[fromCell]<mpDist){
-						mpDist=_SELF_FULLMAP_PATH_DIST[fromCell];
-						result=fromCell;
-					}
-				}
-			}
-		}
-	}
-	return @result;
-}*/
-
+// fonction avec cache qui considère que los est tjr pareil.
 function _getTargetableCells(@weapChip, @cell){
 	if(_CACHE_ITEM_FROMCELL_TARGETCELLS[weapChip][cell]==null){
 		var result = [], x = getCellX(cell), y = getCellY(cell),
@@ -500,6 +498,7 @@ function _getTargetableCells(@weapChip, @cell){
 	return @_CACHE_ITEM_FROMCELL_TARGETCELLS[weapChip][cell];
 }
 
+// fonction dédié à l'opti de la génération de setMapActions()
 function prepareSetMapActions(){
 	atkCellsArea1 = [];
 	atkCellsArea2 = [];

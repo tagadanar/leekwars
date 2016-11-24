@@ -56,22 +56,22 @@ function updateCoef(idbulb){
 		if(isAlly(target)){
 			if(eType==ENTITY_LEEK_){
 				var ignoreleeks=getListOfEnemyLeekWhoPlayAfter(target);
-				var danger = getCellDanger(getCell(target), ignoreleeks, _EMPTYARRAY);
+				var danger = getCellDanger(getCell(target), ignoreleeks, _EMPTYARRAY)[_danger];
 				var canDie = (target != _SELF) && getLife(target) < danger*0.9;
 				if(canDie) debugE("canDie: " + getName(target) + ":" + danger);
-				somme_life_ally+=infos["life"]; // SUM LIFE ALLY
+				somme_life_ally+=infos[_life]; // SUM LIFE ALLY
 				count_ally++; // COUNT ALLY LEEK
-				_COEF_HEAL[target] = -2;
+				_COEF_HEAL[target] = -3;
 				if(lifeRatio<0.9) _COEF_HEAL[target]+= -1;
 				if(lifeRatio<0.7) _COEF_HEAL[target]+= -1;
 				if(lifeRatio<0.5) _COEF_HEAL[target]+= -2;
-				if(canDie) _COEF_HEAL[target]=-25; // !!!!!!!!!!!!!!!!!!
+				if(canDie) _COEF_HEAL[target]=-30; // !!!!!!!!!!!!!!!!!!
 				else if(target==_SELF)_COEF_HEAL[target]+= -0.5;
 				if(getLevel(target)<getLevel()/2) _COEF_HEAL[target]/=2;
 				// reminder: doit être positif sinon les moins s'annulent !
 				_COEF_DMG[target] = _COEF_HEAL[target];
-				_COEF_VACCIN[target] = -1;
-				if(lifeRatio<0.8 && !canDie) _COEF_VACCIN[target]+= -1;
+				_COEF_VACCIN[target] = -2;
+				if(lifeRatio<0.95 && !canDie) _COEF_VACCIN[target]+= -3;
 				if(getLevel(target)<getLevel()/2) _COEF_VACCIN[target]/=2;
 				_COEF_MAXHP_BOOST[target] = -3;
 				if(getTotalLife(target)<=2400)_COEF_MAXHP_BOOST[target]+= -1;
@@ -83,7 +83,7 @@ function updateCoef(idbulb){
 				if(getTotalLife(target)<=800)_COEF_MAXHP_BOOST[target]+= -3;
 				if(target==_SELF && _IS_CAC)_COEF_MAXHP_BOOST[target]+= -3;
 				_COEF_ABSSHIELD[target] = -1.5;
-				if(infos["absShield"]==0) _COEF_ABSSHIELD[target]+= -1;
+				if(infos[_absShield]==0) _COEF_ABSSHIELD[target]+= -2;
 				if(lifeRatio<0.9)_COEF_ABSSHIELD[target]+= -0.2;
 				if(lifeRatio<0.8)_COEF_ABSSHIELD[target]+= -0.2;
 				if(lifeRatio<0.7)_COEF_ABSSHIELD[target]+= -0.2;
@@ -92,10 +92,11 @@ function updateCoef(idbulb){
 				if(lifeRatio<0.4)_COEF_ABSSHIELD[target]+= -0.2;
 				if(lifeRatio<0.3)_COEF_ABSSHIELD[target]+= -0.2;
 				if(lifeRatio<0.2)_COEF_ABSSHIELD[target]+= -0.2;
-				if(canDie) _COEF_ABSSHIELD[target]=-25; // !!!!!!!!!!!!!!!!!!
+				if(canDie) _COEF_ABSSHIELD[target]=-30; // !!!!!!!!!!!!!!!!!!
 				else if(target==_SELF && _IS_CAC)_COEF_ABSSHIELD[target]+= -0.5;
+				else if(getScience(target)>500)_COEF_ABSSHIELD[target]+= -1;
 				_COEF_RELSHIELD[target] = -1.5;
-				if(infos["relShield"]==0) _COEF_RELSHIELD[target] += -1;
+				if(infos[_relShield]==0) _COEF_RELSHIELD[target] += -2;
 				if(lifeRatio<0.9)_COEF_RELSHIELD[target]+= -0.2;
 				if(lifeRatio<0.8)_COEF_RELSHIELD[target]+= -0.2;
 				if(lifeRatio<0.7)_COEF_RELSHIELD[target]+= -0.2;
@@ -104,15 +105,16 @@ function updateCoef(idbulb){
 				if(lifeRatio<0.4)_COEF_RELSHIELD[target]+= -0.2;
 				if(lifeRatio<0.3)_COEF_RELSHIELD[target]+= -0.2;
 				if(lifeRatio<0.2)_COEF_RELSHIELD[target]+= -0.2;
-				if(canDie) _COEF_RELSHIELD[target]=-25; // !!!!!!!!!!!!!!!!!!
+				if(canDie) _COEF_RELSHIELD[target]=-30; // !!!!!!!!!!!!!!!!!!
 				else if(target==_SELF && _IS_CAC)_COEF_RELSHIELD[target]+= -0.5;
+				else if(getScience(target)>500)_COEF_RELSHIELD[target]+= -1;
 				_COEF_STR_BOOST[target] = -(getStrength(target)*2/1000);
-				if(getStrength(target)>200) _COEF_STR_BOOST[target] += -2;
+				if(getStrength(target)>200) _COEF_STR_BOOST[target] += -3;
 				if(target!=_SELF && getStrength(target)>0) _COEF_STR_BOOST[target] += -0.1;
-				_COEF_MP_BOOST[target] = -2.3;
+				_COEF_MP_BOOST[target] = -2.7;
 				if(getMP(target)<9) _COEF_MP_BOOST[target]+= -0.2;
-				if(target==_SELF) _COEF_MP_BOOST[target]+= -0.1;
-				_COEF_TP_BOOST[target] = -2.3;
+				if(target==_SELF&&count(_ALIVE_ALLIES_LEEKS)>1) _COEF_MP_BOOST[target]+= 1;
+				_COEF_TP_BOOST[target] = -2.7;
 				_COEF_AGI_BOOST[target] = -2;
 				_COEF_WSD_BOOST[target] = -2;
 				_COEF_RST_BOOST[target] = -(getResistance(target)/100);
@@ -125,7 +127,7 @@ function updateCoef(idbulb){
 			}
 			else {//bulb
 				count_ally+=0.4;
-				somme_life_ally+=infos["life"]*0.4; // ???
+				somme_life_ally+=infos[_life]*0.4; // ???
 				_COEF_HEAL[target] = -2;
 				if(lifeRatio<0.8) _COEF_HEAL[target]+= -0.75;
 				if(lifeRatio<0.6) _COEF_HEAL[target]+= -0.75;
@@ -149,15 +151,16 @@ function updateCoef(idbulb){
 				if(eType==ENTITY_METALLIC_BULB) _COEF_ABSSHIELD[target] = -0.1;
 				_COEF_RELSHIELD[target] = -1.2;
 				if(eType==ENTITY_METALLIC_BULB) _COEF_RELSHIELD[target] = -0.1;
-				_COEF_STR_BOOST[target] = -1.75;
+				_COEF_STR_BOOST[target] = -2;
 				if(eType==ENTITY_HEALER_BULB) _COEF_STR_BOOST[target] = 0;
 				if(eType==ENTITY_METALLIC_BULB) _COEF_STR_BOOST[target] = 0;
-				_COEF_MP_BOOST[target] = -2 + (getMP(target)/10);
-				if(eType==ENTITY_HEALER_BULB) _COEF_MP_BOOST[target]+= 1;
-				if(eType==ENTITY_METALLIC_BULB) _COEF_MP_BOOST[target]+= 1.3;
-				if(getStrength(target)>600) _COEF_MP_BOOST[target]+= -1.5;
+				_COEF_MP_BOOST[target] = -1;
+				if(getStrength(target)>=300) _COEF_MP_BOOST[target]+= -2;
+				if(getStrength(target)>=600) _COEF_MP_BOOST[target]+= -2;
 				_COEF_TP_BOOST[target] = -1;
-				if(getStrength(target)>600) _COEF_TP_BOOST[target]+= -2;
+				if(round(rand()))_COEF_TP_BOOST[target] += -0.1;
+				if(getStrength(target)>=300) _COEF_TP_BOOST[target]+= -2;
+				if(getStrength(target)>=600) _COEF_TP_BOOST[target]+= -2;
 				_COEF_AGI_BOOST[target] = -1;
 				_COEF_WSD_BOOST[target] = -1;
 				_COEF_RST_BOOST[target] = -(getResistance(target)/200);
@@ -169,7 +172,6 @@ function updateCoef(idbulb){
 				_COEF_RETURN_DMG[target] = -2;
 			}
 		}else{//enemy
-			_COEF_HEAL[target] = 3;
 			_COEF_VACCIN[target] = 2;
 			_COEF_MAXHP_BOOST[target] = 2;
 			_COEF_ABSSHIELD[target] = 2;
@@ -182,25 +184,27 @@ function updateCoef(idbulb){
 			_COEF_RST_BOOST[target] = 2;
 			_COEF_RETURN_DMG[target] = 2;
 			if(eType==ENTITY_LEEK_){
-				somme_life_enemy+=infos["life"]; // SUM LIFE ENEMY
+				somme_life_enemy+=infos[_life]; // SUM LIFE ENEMY
 				count_enemy++; // COUNT ENEMY LEEK
-				_COEF_DMG[target] = 4;
+				_COEF_DMG[target] = 6;
 				if(lifeRatio<0.8)_COEF_DMG[target]+= 1;
 				if(getLevel(target)<getLevel()/2) _COEF_DMG[target] -= 1;
+				_COEF_HEAL[target] = _COEF_DMG[target];
 				_COEF_SHACKLE_TP[target] = 5;
 				_COEF_SHACKLE_MP[target] = 5;
 				_COEF_SHACKLE_STR[target] = 4;
-				if(infos["str"]<100) _COEF_SHACKLE_STR[target] = 0.5;
+				if(infos[_str]<100) _COEF_SHACKLE_STR[target] = 0.5;
 				_COEF_SHACKLE_MGC[target] = 3;
-				if(infos["mgc"]<100) _COEF_SHACKLE_MGC[target] = 0.5;
+				if(infos[_mgc]<100) _COEF_SHACKLE_MGC[target] = 0.5;
 				_COEF_LIBERATE[target] = 1;
 			}
 			else{//bulb
-				somme_life_enemy+=infos["life"]*0.5; // SUM LIFE ENEMY
+				somme_life_enemy+=infos[_life]*0.5; // SUM LIFE ENEMY
 				count_enemy+=0.5;// COUNT ENEMY BULB
-				if(eType==ENTITY_PUNY_BULB) _COEF_DMG[target] = 0.7;
-				else if(eType==ENTITY_METALLIC_BULB) _COEF_DMG[target] = 1.8;
-				else _COEF_DMG[target] = 2.5;
+				if(eType==ENTITY_PUNY_BULB) _COEF_DMG[target] = 1;
+				else if(eType==ENTITY_METALLIC_BULB) _COEF_DMG[target] = 4.5;
+				else _COEF_DMG[target] = 5;
+				_COEF_HEAL[target] = _COEF_DMG[target];
 				_COEF_SHACKLE_TP[target] = 0.25;
 				_COEF_SHACKLE_MP[target] = 0.25;
 				_COEF_SHACKLE_STR[target] = 1;
@@ -220,17 +224,27 @@ function updateCoef(idbulb){
 		// fix des vals global
 		var ratioPv = somme_life_ally/somme_life_enemy;
 		if(ratioPv > 2) _RATIO_IGNORE_DANGER = 0.90;
-		else if(ratioPv > 1.75) _RATIO_IGNORE_DANGER = 0.80;
-		else if(ratioPv > 1.5) _RATIO_IGNORE_DANGER = 0.65;
-		else if(ratioPv > 1.25) _RATIO_IGNORE_DANGER = 0.45;
-		else _RATIO_IGNORE_DANGER = 0.25;
+		else if(ratioPv > 1.75) _RATIO_IGNORE_DANGER = 0.70;
+		else if(ratioPv > 1.5) _RATIO_IGNORE_DANGER = 0.5;
+		else if(ratioPv > 1.25) _RATIO_IGNORE_DANGER = 0.30;
+		else _RATIO_IGNORE_DANGER = 0.10;
+		
+		if(getFightType()!= FIGHT_TYPE_SOLO && getScience()<400) _RATIO_IGNORE_DANGER+=0.2;
+		else if(getFightType() == FIGHT_TYPE_SOLO) _RATIO_IGNORE_DANGER/=2;
+		if(_RATIO_DANGER>=0.9) _RATIO_IGNORE_DANGER = 0.9;
 		
 		
 		var ratioCount = count_ally/count_enemy;
-		if(ratioCount > 2) _RATIO_DANGER = 0.25;
-		else if(ratioCount > 1.6) _RATIO_DANGER = 0.5;
-		else if(ratioCount > 1.3) _RATIO_DANGER = 0.75;
-		else _RATIO_DANGER = 1;
+		if(ratioCount > 2) _RATIO_DANGER = 1;
+		else if(ratioCount > 1.6) _RATIO_DANGER = 2;
+		else if(ratioCount > 1.3) _RATIO_DANGER = 3;
+		else _RATIO_DANGER = 4;
+		
+		if(_CANT_HEAL){
+			_RATIO_DANGER = 5;
+			_RATIO_IGNORE_DANGER = 0;
+		}
+		if(_IS_CAC) _RATIO_DANGER/=2;
 		// au cas ou je veux modif ça un jour...
 		//_SCORE_KILL_DMG = 200;
 		//_SCORE_KILL_PSN = 50;
@@ -242,28 +256,28 @@ function updateCoef(idbulb){
 function getVirtualState(@leek, @stackOfResult){
     var state = _LEEKS[leek];
 	if(stackOfResult[leek]==null) return @state;
-	if(stackOfResult[leek]["debuff"]==true){
-		state["psnlife"] = state["life"];
-		state["psnTurn"] = 0;
-		state["psnTotal"] = 0;
-		state["absShield"] = 0;
-		state["relShield"] = 0;
+	if(stackOfResult[leek][_debuff]==true){
+		state[_psnlife] = state[_life];
+		state[_psnTurn] = 0;
+		state[_psnTotal] = 0;
+		state[_absShield] = 0;
+		state[_relShield] = 0;
 	}
-	if(stackOfResult[leek]["antidote"]==true){
-		state["psnlife"] = state["life"];
-		state["psnTurn"] = 0;
-		state["psnTotal"] = 0;
+	if(stackOfResult[leek][_antidote]==true){
+		state[_psnlife] = state[_life];
+		state[_psnTurn] = 0;
+		state[_psnTotal] = 0;
 	}
-	state["mp"]-=stackOfResult[leek]["shackleMP"];
-	state["absShield"]+=stackOfResult[leek]["absShield"];
-	state["relShield"]+=stackOfResult[leek]["relShield"];
-	state["str"]+=stackOfResult[leek]["str"];
-	state["rst"]+=stackOfResult[leek]["rst"];
-    state["life"]-=stackOfResult[leek]["dmg"]; // dmg
-    state["life"]+=stackOfResult[leek]["heal"]; // heal
-    if(state["totallife"]<state["life"])state["life"]=state["totallife"];
-    state["psnlife"]-=stackOfResult[leek]["psn"];
-	state["psnTurn"]+=stackOfResult[leek]["psn"];
+	state[_mp]-=stackOfResult[leek][_shackleMP];
+	state[_absShield]+=stackOfResult[leek][_absShield];
+	state[_relShield]+=stackOfResult[leek][_relShield];
+	state[_str]+=stackOfResult[leek][_str];
+	state[_rst]+=stackOfResult[leek][_rst];
+    state[_life]-=stackOfResult[leek][_dmg];
+    state[_life]+=stackOfResult[leek][_heal];
+    if(state[_totallife]<state[_life])state[_life]=state[_totallife];
+    state[_psnlife]-=stackOfResult[leek][_psn];
+	state[_psnTurn]+=stackOfResult[leek][_psn];
     return @state;
 }
 
@@ -281,11 +295,17 @@ function getSpecialChipScore(item){
 			cost+=1;
 		}
 		if(_COUNT_FIRE+_COUNT_LIGHTNING==0 && (item==CHIP_FIRE_BULB || item==CHIP_LIGHTNING_BULB)){
-			cost+=7; //bonus summon d'un bulb offensif quand y'en a pas.
-		}
+			cost+=9; //bonus summon d'un bulb offensif quand y'en a pas.
+		}else if(_COUNT_ICED==0 && item==CHIP_ICED_BULB){
+			cost+=4;
+		}else if(_COUNT_ROCKY==0 && item==CHIP_ROCKY_BULB){
+			cost+=3;
+		}else if(count(_ALIVE_ALLIES_BULBS)-_COUNT_HEALER-_COUNT_METAL<=2){
+			cost+=2;
+		} 
 		score += cost*(150-(count(_ALIVE_ALLIES_BULBS)*4)); // TODO ???
-		if(_COUNT_HEALER>=2 && item == CHIP_HEALER_BULB) score/=2;
-		if(_COUNT_METAL>=1 && item == CHIP_METALLIC_BULB) score/=2;
+		if(_COUNT_HEALER>=2 && item == CHIP_HEALER_BULB) score/=5;
+		if(_COUNT_METAL>=1 && item == CHIP_METALLIC_BULB) score/=5;
 	}
 	return score;
 }
@@ -298,42 +318,42 @@ function getScoreOfAction(@action, @stackOfResult, @stackOfDeath){
 	// gestion du cache
 	var uniqId = ""+action+stackOfResult+stackOfDeath;
 	if(_CACHE_SCORE_ACTION[uniqId] != null){
-		stackOfResult = _CACHE_SCORE_ACTION[uniqId]["stackOfResult"];
-		stackOfDeath = _CACHE_SCORE_ACTION[uniqId]["stackOfDeath"];
+		stackOfResult = _CACHE_SCORE_ACTION[uniqId][_stackOfResult];
+		stackOfDeath = _CACHE_SCORE_ACTION[uniqId][_stackOfDeath];
 		stopBenchFunction("getScoreOfAction");
-		return _CACHE_SCORE_ACTION[uniqId]["score"];
+		return _CACHE_SCORE_ACTION[uniqId][_score];
 	}else{
 		cacheThis = true;
 	}
 	
     var me = getVirtualState(_SELF, stackOfResult),
-	myStr = me["str"],
-    myMgc = me["mgc"],
-    myWis = me["wsd"],
-	myRst = me["rst"],
-	mySnc = me["snc"],
-	myAgi = me["agi"],
-	myAbsShield = me["absShield"],
-	myRelShield = me["relShield"],
-    item = action["item"],
-    lifeMissing = me["totallife"]-me["life"],
+	myStr = me[_str],
+    myMgc = me[_mgc],
+    myWis = me[_wsd],
+	myRst = me[_rst],
+	mySnc = me[_snc],
+	myAgi = me[_agi],
+	myAbsShield = me[_absShield],
+	myRelShield = me[_relShield],
+    item = action[_item],
+    lifeMissing = me[_totallife]-me[_life],
     area = _ITEM_AREA[item],
     isAOE = area==AREA_CIRCLE_1||area==AREA_CIRCLE_2||area==AREA_CIRCLE_3,
     effects = @_ITEM_EFFECTS[item],
     score = 0,
-	from = action["from"],
-	to = action["to"],
+	from = action[_from],
+	to = action[_to],
 	isSelf = from==to;
 	// gestion inaoe
  	if((item == CHIP_DRIP && getCellDistance(from, to)<=2) || item == CHIP_DEVIL_STRIKE){
-		if(!inArray(action["targets"], _SELF)) push(action["targets"], _SELF);
+		if(!inArray(action[_targets], _SELF)) push(action[_targets], _SELF);
 		isSelf=true;
 	}
 	// gestion summon
 	if(isSpecialChip(item)){
 		score = getSpecialChipScore(item);
 	}
-	else for(var target in action["targets"]){
+	else for(var target in action[_targets]){
         if(target==_SELF && !isSelf) continue; // ignore self, je suis pas sur la case ici !
         if(stackOfDeath[target]!=null) continue; // si la cible est déjà morte, next !
         var virtualTargetState = getVirtualState(target, stackOfResult);
@@ -353,17 +373,17 @@ function getScoreOfAction(@action, @stackOfResult, @stackOfDeath){
 			var pessimistmoy = (min+moy)/2;
 			duration = e[3];
 			duration = duration == 0 ? 1 : // 0 => 1
-				(duration == 2 ? 1.75 : // 2 => 1.75
-				(duration == 3 ? 2.25 : // 3 => 2.25
+				(duration == 2 ? 1.5 : // 2 => 1.5
+				(duration == 3 ? 2 : // 3 => 2
 				(duration == 4 ? 2.5 : // 4 => 2.5
 				duration))); // 1 => 1
             if(type == EFFECT_DAMAGE){
                 minDmgValue += ( pessimistmoy*(1+(myStr/100))
-                    *(1-(virtualTargetState["relShield"]/100))
-                    *(dmgRatio/100)) - virtualTargetState["absShield"];
+                    *(1-(virtualTargetState[_relShield]/100))
+                    *(dmgRatio/100)) - virtualTargetState[_absShield];
                 avgDmgValue += (optimistmoy*(1+(myStr/100))
-                    *(1-(virtualTargetState["relShield"]/100))
-                    *(dmgRatio/100)) - virtualTargetState["absShield"];
+                    *(1-(virtualTargetState[_relShield]/100))
+                    *(dmgRatio/100)) - virtualTargetState[_absShield];
 				if(avgDmgValue<0) avgDmgValue = 0;
             }
             else if(type == EFFECT_POISON){
@@ -400,30 +420,30 @@ function getScoreOfAction(@action, @stackOfResult, @stackOfDeath){
 				boostTPValue = round(moy*(1+(mySnc/100))*(dmgRatio/100))*duration;
 			}
 			else if(type == EFFECT_SHACKLE_TP){
-				var mgcReduced = myMgc-virtualTargetState["snc"];
+				var mgcReduced = myMgc-virtualTargetState[_snc];
 				mgcReduced = mgcReduced < 0 ? 0 : mgcReduced;
 				shackleTPValue = round(pessimistmoy*(1+mgcReduced/100)*(dmgRatio/100))*duration;
 			}
 			else if(type == EFFECT_SHACKLE_MP){
-				var mgcReduced = myMgc-virtualTargetState["snc"];
+				var mgcReduced = myMgc-virtualTargetState[_snc];
 				mgcReduced = mgcReduced < 0 ? 0 : mgcReduced;
 				shackleMPValue = round(pessimistmoy*(1+mgcReduced/100)*(dmgRatio/100))*duration;
 			}
 			else if(type == EFFECT_SHACKLE_STRENGTH){
-				var mgcReduced = myMgc-virtualTargetState["snc"];
+				var mgcReduced = myMgc-virtualTargetState[_snc];
 				mgcReduced = mgcReduced < 0 ? 0 : mgcReduced;
 				shackleStrValue = round(moy*(1+mgcReduced/100)*(dmgRatio/100))*duration;
 			}
 			else if(type == EFFECT_SHACKLE_MAGIC){
-				var mgcReduced = myMgc-virtualTargetState["snc"];
+				var mgcReduced = myMgc-virtualTargetState[_snc];
 				mgcReduced = mgcReduced < 0 ? 0 : mgcReduced;
 				shackleMgcValue = round(moy*(1+mgcReduced/100)*(dmgRatio/100))*duration;
 			}
 			else if(type == EFFECT_DEBUFF){ // LIBERATION !
-				debuffValue = _LEEKS[target]["scoreLibe"];
+				debuffValue = _LEEKS[target][_scoreLibe];
 			}
 			else if(type == EFFECT_ANTIDOTE){
-				antidoteValue= virtualTargetState["psnTotal"];	
+				antidoteValue= virtualTargetState[_psnTotal];	
 			}
 			else if(type == EFFECT_KILL){
 				if(isSummon(target)&&isAlly(target)){
@@ -435,7 +455,7 @@ function getScoreOfAction(@action, @stackOfResult, @stackOfDeath){
 				returnDmgValue=moy*(1+(myAgi/100))*(dmgRatio/100)*duration;
 			}
             else{
-				debugE("unhandled:"+getWeaponName(action["item"])+getChipName(action["item"]));
+				debugE("unhandled:"+getWeaponName(action[_item])+getChipName(action[_item]));
             }
 			
 			//gestion libé
@@ -450,22 +470,22 @@ function getScoreOfAction(@action, @stackOfResult, @stackOfDeath){
 							boostMPValue > 0 ? boostMPValue :
 							returnDmgValue > 0 ? returnDmgValue : 0;
 				if(val > 0){
-					stackOfResult[_SELF]["scoreLibe"]+= getLibeScore(type, val, duration);
+					stackOfResult[_SELF][_scoreLibe]+= getLibeScore(type, val, duration);
 				}
 			}
         }
         // ici maybe check if damage pas < à 0 !
 		//TODO dans le kill et le normal, faire les revoies de dégâts !
-        if(virtualTargetState["life"]<=minDmgValue){
-			minDmgValue=virtualTargetState["life"];
+        if(virtualTargetState[_life]<=minDmgValue){
+			minDmgValue=virtualTargetState[_life];
             score+=minDmgValue*_COEF_DMG[target];
             stackOfDeath[target]=target;
-			var isBulb = isSummon(target) ? 0.75 : 1;
+			var isBulb = isSummon(target) ? 0.3 : 1;
 			score+=_SCORE_KILL_DMG*_COEF_DMG[target]*isBulb;
 			// mort de ses bulbes
-			for(var bulb in virtualTargetState["bulbs"]){
+			for(var bulb in virtualTargetState[_bulbs]){
 				stackOfDeath[bulb]=bulb;
-				score+=_SCORE_KILL_DMG*_COEF_DMG[bulb];
+				score+=_SCORE_KILL_DMG*_COEF_DMG[bulb]*0.3;
 			}
             //lifesteal
             lifeSteal+=minDmgValue*myWis/1000;
@@ -474,23 +494,23 @@ function getScoreOfAction(@action, @stackOfResult, @stackOfDeath){
                 lifeMissing-=lifeSteal;
                 score+=lifeSteal*_COEF_HEAL[_SELF];
 				if(stackOfResult[_SELF]==null)stackOfResult[_SELF]=[];
-                stackOfResult[_SELF]["heal"]+=lifeSteal;
+                stackOfResult[_SELF][_heal]+=lifeSteal;
             }
             //lifestealend
-        }else if(turnPsn>0 && virtualTargetState["psnlife"] <= turnPsn){
+        }else if(turnPsn>0 && virtualTargetState[_psnlife] <= turnPsn){
 			// kill poison, pas encore sur de comment je gère ça mieux...
             stackOfDeath[target]=target;
             score+=turnPsn*_COEF_DMG[target];
 			score+=_SCORE_KILL_PSN*_COEF_DMG[target];
 			// mort de ses bulbes
-			for(var bulb in virtualTargetState["bulbs"]){
+			for(var bulb in virtualTargetState[_bulbs]){
 				stackOfDeath[bulb]=bulb;
 				score+=_SCORE_KILL_PSN*_COEF_DMG[bulb];
 			}
         }else{
             if(stackOfResult[target]==null)stackOfResult[target]=[];
             if(avgDmgValue){
-                stackOfResult[target]["dmg"]+=minDmgValue; // sauvegarde du min
+                stackOfResult[target][_dmg]+=minDmgValue; // sauvegarde du min
                 score +=avgDmgValue*_COEF_DMG[target]; // score de l'avg
                 //lifesteal
                 lifeSteal+=avgDmgValue*myWis/1000;
@@ -499,27 +519,27 @@ function getScoreOfAction(@action, @stackOfResult, @stackOfDeath){
                     lifeMissing-=lifeSteal;
                     score+=lifeSteal*_COEF_HEAL[_SELF];
 					if(stackOfResult[_SELF]==null)stackOfResult[_SELF]=[];
-                    stackOfResult[_SELF]["heal"]+=lifeSteal;
+                    stackOfResult[_SELF][_heal]+=lifeSteal;
                 }
                 //lifestealend
             }
             if(avgPsn){
-                stackOfResult[target]["psn"]+=turnPsn;
+                stackOfResult[target][_psn]+=turnPsn;
                 var ratioBulb = isSummon(target) ? 0.5 : 1;
                 score +=avgPsn*_COEF_DMG[target]*ratioBulb;
             }
             if(healValue){
 				if(item==CHIP_VACCINE){
-					var onEffect = _LEEKS[target]["effects"][item];
+					var onEffect = _LEEKS[target][_effects][item];
 					if(onEffect != null) score+=onEffect*_COEF_VACCIN[target];
 					score -=healValue*_COEF_VACCIN[target];
 				}else{
-					var totallife = virtualTargetState["totallife"];
-					var targetMissingLife = totallife-virtualTargetState["life"];
+					var totallife = virtualTargetState[_totallife];
+					var targetMissingLife = totallife-virtualTargetState[_life];
 					if(item==CHIP_REGENERATION){
 						if(targetMissingLife >= healValue*0.9){
 							if(healValue>targetMissingLife) healValue=targetMissingLife;
-							stackOfResult[target]["heal"]+=healValue;
+							stackOfResult[target][_heal]+=healValue;
 							score -=healValue*_COEF_HEAL[target];
 							if(isSummon(target))score/=4;
 						}else{
@@ -527,7 +547,7 @@ function getScoreOfAction(@action, @stackOfResult, @stackOfDeath){
 						}
 					}else{
 						if(healValue>targetMissingLife) healValue=targetMissingLife;
-						stackOfResult[target]["heal"]+=healValue;
+						stackOfResult[target][_heal]+=healValue;
 						score -=healValue*_COEF_HEAL[target];
 					}
 				}
@@ -536,19 +556,19 @@ function getScoreOfAction(@action, @stackOfResult, @stackOfDeath){
 				score -= maxhpValue*_COEF_MAXHP_BOOST[target];
 			}
 			if(absShieldValue){
-				var alreadyHaveArmor = stackOfResult[target]["absShield"] > 0;
-				var onEffect = _LEEKS[target]["effects"][item];
+				var alreadyHaveArmor = stackOfResult[target][_absShield] > 0;
+				var onEffect = _LEEKS[target][_effects][item];
 				if(onEffect != null) score+=onEffect*_COEF_ABSSHIELD[target];
-				else stackOfResult[target]["absShield"]+=absShieldValue/duration;
+				else stackOfResult[target][_absShield]+=absShieldValue/duration;
 				score -=absShieldValue*_COEF_ABSSHIELD[target];
 				if(alreadyHaveArmor) score/=2;
 				if(!_SCN_STR_100) score = 1;// todo del this & handle in coef.
 			}
 			if(relShieldValue){
-				var alreadyHaveArmor = stackOfResult[target]["relShield"] > 0;
-				var onEffect = _LEEKS[target]["effects"][item];
+				var alreadyHaveArmor = stackOfResult[target][_relShield] > 0;
+				var onEffect = _LEEKS[target][_effects][item];
 				if(onEffect != null) score+=onEffect*4*_COEF_RELSHIELD[target];
-				else stackOfResult[target]["relShield"]+=relShieldValue/duration;
+				else stackOfResult[target][_relShield]+=relShieldValue/duration;
 				score -=relShieldValue*_SCORE_REL_SHIELD*_COEF_RELSHIELD[target];
 				if(alreadyHaveArmor) score/=2;
 				//*3 pour que 30% d'armure soit == à 90 armor abs environ
@@ -556,61 +576,61 @@ function getScoreOfAction(@action, @stackOfResult, @stackOfDeath){
 				if(!_SCN_STR_200) score = 1;
 			}
 			if(boostStrValue){
-				var onEffect = _LEEKS[target]["effects"][item];
+				var onEffect = _LEEKS[target][_effects][item];
 				if(onEffect != null) score+=onEffect*_COEF_STR_BOOST[target];
-				else stackOfResult[target]["str"]+=boostStrValue/duration;
+				else stackOfResult[target][_str]+=boostStrValue/duration;
 				score -= boostStrValue*_COEF_STR_BOOST[target];
 			}
 			if(boostAgiValue){
-				var onEffect = _LEEKS[target]["effects"][item];
+				var onEffect = _LEEKS[target][_effects][item];
 				if(onEffect != null) score+=onEffect*_COEF_AGI_BOOST[target];
 				score -= boostAgiValue*_COEF_AGI_BOOST[target];
 			}
 			if(boostResValue){
-				var onEffect = _LEEKS[target]["effects"][item];
+				var onEffect = _LEEKS[target][_effects][item];
 				if(onEffect != null) score+=onEffect*_COEF_RST_BOOST[target];
-				else stackOfResult[target]["rst"]+=boostResValue/duration;
+				else stackOfResult[target][_rst]+=boostResValue/duration;
 				score -= boostResValue*_COEF_RST_BOOST[target];
 			}
 			if(boostMPValue){
-				var onEffect = _LEEKS[target]["effects"][item];
+				var onEffect = _LEEKS[target][_effects][item];
 				if(onEffect != null) score+=onEffect*40*_COEF_MP_BOOST[target];
-				else stackOfResult[target]["mp"]+=boostMPValue/duration;
+				else stackOfResult[target][_mp]+=boostMPValue/duration;
 				score -= boostMPValue*_SCORE_MP*_COEF_MP_BOOST[target];//1mp=30str
 			}
 			if(boostTPValue){
-				var onEffect = _LEEKS[target]["effects"][item];
+				var onEffect = _LEEKS[target][_effects][item];
 				if(onEffect != null) score+=onEffect*40*_COEF_TP_BOOST[target];
 				score -= boostTPValue*_SCORE_TP*_COEF_TP_BOOST[target];//1tp=30str
 			}
 			if(shackleTPValue){
 				score += shackleTPValue*_SCORE_TP*_COEF_SHACKLE_TP[target];
-				stackOfResult[target]["shackleTP"]+=shackleMgcValue/duration;
+				stackOfResult[target][_shackleTP]+=shackleMgcValue/duration;
 			}
-			if(shackleMPValue && virtualTargetState["mp"]-stackOfResult[target]["shackleMP"]>0){
+			if(shackleMPValue && virtualTargetState[_mp]-stackOfResult[target][_shackleMP]>0){
 				score += shackleMPValue*_SCORE_MP*_COEF_SHACKLE_MP[target];
-				stackOfResult[target]["shackleMP"]+=shackleMPValue/duration;
+				stackOfResult[target][_shackleMP]+=shackleMPValue/duration;
 			}
 			if(shackleStrValue){
 				score += shackleStrValue*_COEF_SHACKLE_STR[target];
-				stackOfResult[target]["shackleStr"]+=shackleStrValue/duration;
+				stackOfResult[target][_shackleStr]+=shackleStrValue/duration;
 			}
 			if(shackleMgcValue){
 				score += shackleMgcValue*_COEF_SHACKLE_MGC[target];
-				stackOfResult[target]["shackleMgc"]+=shackleMgcValue/duration;
+				stackOfResult[target][_shackleMgc]+=shackleMgcValue/duration;
 			}
 			if(debuffValue){
-				stackOfResult[target]["debuff"]=true;
+				stackOfResult[target][_debuff]=true;
 				score += debuffValue*_COEF_LIBERATE[target];
 			}
 			if(antidoteValue){
-				stackOfResult[target]["antidote"]=true;
+				stackOfResult[target][_antidote]=true;
 				score -= antidoteValue*_COEF_HEAL[target];
 			}
 			if(returnDmgValue){
-				var onEffect = _LEEKS[target]["effects"][item];
+				var onEffect = _LEEKS[target][_effects][item];
 				if(onEffect != null) score+=onEffect*4*_COEF_RETURN_DMG[target];
-				else stackOfResult[target]["relShield"]+=returnDmgValue;
+				else stackOfResult[target][_relShield]+=returnDmgValue;
 				score -=returnDmgValue*_SCORE_REL_SHIELD*_COEF_RETURN_DMG[target];
 				if(!_SCN_STR_200) score = 1;
 			}
@@ -618,9 +638,9 @@ function getScoreOfAction(@action, @stackOfResult, @stackOfDeath){
     }
 	if(cacheThis){
 		_CACHE_SCORE_ACTION[uniqId] = [];
-		_CACHE_SCORE_ACTION[uniqId]["stackOfResult"] = stackOfResult;
-		_CACHE_SCORE_ACTION[uniqId]["stackOfDeath"] = stackOfDeath;
-		_CACHE_SCORE_ACTION[uniqId]["score"] = score;
+		_CACHE_SCORE_ACTION[uniqId][_stackOfResult] = stackOfResult;
+		_CACHE_SCORE_ACTION[uniqId][_stackOfDeath] = stackOfDeath;
+		_CACHE_SCORE_ACTION[uniqId][_score] = score;
 	}
 	stopBenchFunction("getScoreOfAction");
     return @score;
@@ -635,7 +655,7 @@ function addActionToMAPS(@item, @from, @to, @targets){
 	if(assoc_from_item_actions[from]==null) assoc_from_item_actions[from] = [];
 	if(assoc_from_item_actions[from][item]==null) assoc_from_item_actions[from][item] = [];
 	
-	var action = ["item":item, "from":from, "to":to, "targets":targets];
+	var action = [_item:item, _from:from, _to:to, _targets:targets];
 	push(assoc_from_item_actions[from][item], action);
 }
 function setMapActions(){
@@ -703,7 +723,9 @@ function setMapActions(){
 			if(c==CHIP_LIBERATION){
 				targets = _ALIVE_ALLIES+_ALIVE_ENEMIES;
 			}else if(_CHIP_ISPOSITIV[c]){
-				if(_CHIP_ISONLYBULB[c]) targets = _ALIVE_ALLIES_BULBS;
+				var isOnlyBulb = _CHIP_ISONLYBULB[c];
+				if(isOnlyBulb) targets = _ALIVE_ALLIES_BULBS;
+				else if(isOnlyBulb===null) targets = _ALIVE_ALLIES_LEEKS;
 				else targets = _ALIVE_ALLIES;
 			}else{
 				targets = _ALIVE_ENEMIES;
@@ -768,22 +790,11 @@ function findBestMove(@allComboz, @gravityArray){
 		if(ok) push(allCombos, combo);
 	}
 	
-	// coute trop cher et rend les actions plus nulles par manque de variété.
-	// gg mec.
-	//allCombos = sortCombos(allCombos);
-	
-	// nouveau test, random.
-	// relou cas ne traite pas le move vide en premier :/
-	var first = shift(allCombos);
-	shuffle(allCombos);
-	unshift(allCombos, first);
-	
-
 	//raz du cache.
 	_CACHE_SCORE_SAFECELL = [];
 	_CACHE_SCORE_ACTION = [];
-	var _OP_LIMIT = OPERATIONS_LIMIT*0.97;
-	if(_IS_SUMMONER) _OP_LIMIT-= _OPERATION_BULB*(_LEEKS[_SELF]["nbBulbs"]+1);
+	var _OP_LIMIT = OPERATIONS_LIMIT*0.95;
+	if(_IS_SUMMONER) _OP_LIMIT-= _OPERATION_BULB*(_LEEKS[_SELF][_nbBulbs]+1);
 	var _BESTMOVE=null;
 	var selfCell = getCell();
 	var selfMP = getMP();
@@ -851,9 +862,7 @@ function findBestMove(@allComboz, @gravityArray){
 					if(self_action_array[item]!=null){
 						var tmpstack=stack, tmpdead=dead;
 						//creation d'une action self sur cette case.
-						var action = ["item":item, 
-						"from":aCell, "to":aCell,
-						"targets":[_SELF]];
+						var action= [_item:item, _from:aCell, _to:aCell, _targets:[_SELF]];
 						tmpScore=getScoreOfAction(action, tmpstack, tmpdead);
 						if(aBest == null || aScore < tmpScore){
 							aScore = tmpScore;
@@ -863,7 +872,7 @@ function findBestMove(@allComboz, @gravityArray){
 						}
 					}
 					if(aBest != null && aScore>0){
-						aBest["score"] = aScore; // pour le debug
+						aBest[_score] = aScore; // pour le debug
 						push(best, aBest);
 						stack = aStack;
 						dead = aDead;
@@ -874,43 +883,26 @@ function findBestMove(@allComboz, @gravityArray){
 					}
 				}
 				// si je me suis boost les mp, on les prend en compte pour la suite
-				if(stack[_SELF]["mp"]!=null) mpLeft+=round(stack[_SELF]["mp"]);
+				if(stack[_SELF][_mp]!=null) mpLeft+=round(stack[_SELF][_mp]);
 				// à partir du score de la meilleure combo depuis aCell, recherche de la meilleure case safe.
-				startBenchFunction("getBestSafeCellScore");
-				var uniqId = canAlterDanger ? getUniqueID_safeCell(aCell, dead, stack) : getUniqueID_safeCell(aCell, dead, "");
-				if(_CACHE_SCORE_SAFECELL[uniqId]==null){
-					var ignored = [selfCell];
-					for(var d in dead) push(ignored, getCell(d));
-					
-					if(_CACHE_REACHABLE_DANGER[aCell]==null){
-						_CACHE_REACHABLE_DANGER[aCell] = getReachableCells([aCell:0], mpLeft, ignored);
-						_CACHE_REACHABLE_SIZE[aCell] = mpLeft;
-					}else if(_CACHE_REACHABLE_SIZE[aCell] < mpLeft){
-						_CACHE_REACHABLE_DANGER[aCell] = getReachableCells(_CACHE_REACHABLE_DANGER[aCell], mpLeft-_CACHE_REACHABLE_SIZE[aCell], ignored);
-						_CACHE_REACHABLE_SIZE[aCell] = mpLeft;
-					}
-					var reachable = @_CACHE_REACHABLE_DANGER[aCell];
-					
-					
-					var result = getBestSafeCellScore(reachable, dead, stack, selfLife, lifePercent, gravityArray, mpLeft);
-					_CACHE_SCORE_SAFECELL[uniqId] = result;
-				}
-				var bestSafeMove = @_CACHE_SCORE_SAFECELL[uniqId];
-				stopBenchFunction("getBestSafeCellScore");
-				var safestCell = bestSafeMove["sCell"];
-				var safeScore = bestSafeMove["score"];
-				var minDanger = bestSafeMove["danger"];
+				
+				var bestSafeMove = getBestSafeCellScore(canAlterDanger, aCell, dead, stack, selfLife, lifePercent, gravityArray, mpLeft, selfCell);
+				
+				var safestCell = bestSafeMove[_sCell];
+				var safeScore = bestSafeMove[_score];
+				var minDanger = bestSafeMove[_danger];
+				var mpUsed = bestSafeMove[_mpused];
 				
 				var finalScore = score + safeScore; // cumul des actions
 
-				if(_BESTMOVE==null || _BESTMOVE["score"]<finalScore) _BESTMOVE = [
-					"score":finalScore,
-					"actions":best,
-					//"aCell":aCell,
-					"sCell":safestCell,
-					"danger":minDanger,
-					"stack":stack,//pour le debuging
-					"dead":dead//pour le debuging
+				if(_BESTMOVE==null || _BESTMOVE[_score]<finalScore) _BESTMOVE = [
+					_score:finalScore,
+					_actions:best,
+					_sCell:safestCell,
+					_danger:minDanger,
+					_mpused: mpUsed,
+					_stack:stack,//pour le debuging
+					_dead:dead//pour le debuging
 				];
 				if(getOperations()>_OP_LIMIT){
 					debugE("Turn"+getTurn()+" breaked ! Combos left: "+ cntCombo +"/"+count(allCombos));
@@ -928,48 +920,72 @@ function findBestMove(@allComboz, @gravityArray){
 	return @_BESTMOVE;
 }
 
-function getBestSafeCellScore(@reachable, @dead, @stack, @selfLife, @lifePercent, @gravityArray, @mpLeft){
-	var minDanger = 9999999;
-	var bestScore = -9999999;
-	var safestCell;
-	var nearECell = getCell(_NEAREST_ENEMY_LEEK);
-	var mpE = getMP(_NEAREST_ENEMY_LEEK), mpSelf = getMP();
-	mpE -= stack[_NEAREST_ENEMY_LEEK]["shackleMP"];
-	for(var sCell:var mpused in reachable){
-		if(mpused > mpLeft) break;
-		var danger = getCellDanger(sCell, dead, stack);
-		var tmpScore = 0;
-		if(danger > selfLife*_RATIO_IGNORE_DANGER) tmpScore-= danger*_RATIO_DANGER;
-		if(lifePercent<0.6) tmpScore*=2;
-		if(danger >= selfLife*0.95) tmpScore-=_SCORE_DEATH;
-		for(var cell in _areaCells1[sCell]) if(_LEEKS_CELL[cell]!=null && nearECell!=cell) tmpScore-=150;
-		for(var cell in _areaCells2[sCell]) if(_LEEKS_CELL[cell]!=null && nearECell!=cell) tmpScore-=20;
-		for(var cell:var dist in gravityArray){
-			if(cell==nearECell){
-				if(_SELF_FULLMAP_PATH_DIST!=null){
-					var pathDist = _SELF_FULLMAP_PATH_DIST[sCell];
-					if(_IS_CAC && pathDist + mpE <= mpSelf) tmpScore += 50; // bonus inrange
-					if(pathDist==null) tmpScore -= abs(dist-getCellDistance(cell, sCell))*2;
-					else tmpScore -= abs(dist-pathDist)*2;
-				}else tmpScore -= abs(dist-getCellDistance(cell, sCell))*2;
-			}else tmpScore -= abs(dist-getCellDistance(cell, sCell));
+function getBestSafeCellScore(@canAlterDanger, @aCell, @dead, @stack, @selfLife, @lifePercent, @gravityArray, @mpLeft, @selfCell){
+	startBenchFunction("getBestSafeCellScore");
+	var uniqId = canAlterDanger ? getUniqueID_safeCell(aCell, dead, stack) : getUniqueID_safeCell(aCell, dead, "");
+	if(_CACHE_SCORE_SAFECELL[uniqId]==null){
+		var ignored = [selfCell];
+		for(var d in dead) push(ignored, getCell(d));
+		if(_CACHE_REACHABLE_DANGER[aCell]==null){
+			_CACHE_REACHABLE_DANGER[aCell] = getReachableCells([aCell:0], mpLeft, ignored);
+			_CACHE_REACHABLE_SIZE[aCell] = mpLeft;
+		}else if(_CACHE_REACHABLE_SIZE[aCell] < mpLeft){
+			_CACHE_REACHABLE_DANGER[aCell] = getReachableCells(_CACHE_REACHABLE_DANGER[aCell], mpLeft-_CACHE_REACHABLE_SIZE[aCell], ignored);
+			_CACHE_REACHABLE_SIZE[aCell] = mpLeft;
 		}
-		if(safestCell==null || tmpScore > bestScore){
-			safestCell = sCell;
-			minDanger = danger;
-			bestScore = tmpScore;
+		var reachable = @_CACHE_REACHABLE_DANGER[aCell];
+		
+		var minDanger = 9999999;
+		var bestScore = -9999999;
+		var safestCell, finalmpUsed;
+		var nearECell = getCell(_NEAREST_ENEMY_LEEK);
+		var coefNear = _IS_CAC ? 6 : 2;
+		var mpE = getMP(_NEAREST_ENEMY_LEEK), mpSelf = getMP();
+		mpE -= stack[_NEAREST_ENEMY_LEEK][_shackleMP];
+		for(var sCell:var mpused in reachable){
+			if(mpused > mpLeft) break;
+			var cellDanger = getCellDanger(sCell, dead, stack);
+			var danger = cellDanger[_danger], mpUsed = cellDanger[_mpused];
+			var tmpScore = 0;
+			if(danger > selfLife*_RATIO_IGNORE_DANGER) tmpScore-= danger*_RATIO_DANGER;
+			if(lifePercent<0.6) tmpScore*=2;
+			if(danger >= selfLife*0.75) tmpScore-=_SCORE_DEATH;
+			tmpScore+= mpUsed*_RATIO_MP_USED;
+			for(var cell in _areaCells1[sCell]) if(_LEEKS_CELL[cell]!=null && nearECell!=cell) tmpScore-=150;
+			for(var cell in _areaCells2[sCell]) if(_LEEKS_CELL[cell]!=null && nearECell!=cell) tmpScore-=20;
+			for(var cell:var dist in gravityArray){
+				if(cell==nearECell){
+					if(_NEARE_FULLMAP_PATH_DIST!=null){
+						var pathDist = _NEARE_FULLMAP_PATH_DIST[sCell];
+						if(_IS_CAC && pathDist!=null && pathDist + mpE <= mpSelf) tmpScore += 600; // bonus inrange
+						if(pathDist==null) tmpScore -= abs(dist-getCellDistance(cell, sCell))*coefNear;
+						else tmpScore -= abs(dist-pathDist)*2;
+					}else tmpScore -= abs(dist-getCellDistance(cell, sCell))*2;
+				}else tmpScore -= abs(dist-getCellDistance(cell, sCell));
+			}
+			if(_IS_CAC && count(@_areaCells1[nearECell])==1){
+				for(var cell in _areaCells1[nearECell]){
+					if(cell==sCell) tmpScore+= 3000;
+				}
+			}
+			if(safestCell==null || tmpScore > bestScore){
+				safestCell = sCell;
+				minDanger = danger;
+				bestScore = tmpScore;
+				finalmpUsed = mpUsed;
+			}
 		}
+		_CACHE_SCORE_SAFECELL[uniqId] = @[_sCell:safestCell, _danger:minDanger, _score:bestScore, _mpused:finalmpUsed];
 	}
-	return @["sCell":safestCell, "danger":minDanger, "score":bestScore];
+	stopBenchFunction("getBestSafeCellScore");
+	return @_CACHE_SCORE_SAFECELL[uniqId];
 }
 
 function playBestMove(bestMove){
-	debug('score: ' + bestMove["score"]);
-	debug('danger:' + bestMove["danger"]);
-	debug('dead: ' + bestMove["dead"]);
+	debug(bestMove);
 	var delayedSummon = [];
-	for(var action in bestMove["actions"]){
-		var item = action["item"], from = action["from"], to = action["to"];
+	for(var action in bestMove[_actions]){
+		var item = action[_item], from = action[_from], to = action[_to];
 		moveTowardCell(from);
 		if(isSpecialChip(item)){ // GESTION SUMMON
 			push(delayedSummon, item);
@@ -978,7 +994,7 @@ function playBestMove(bestMove){
 			useWeaponOnCell(to);
 		}
 		else useChipOnCell(item, to);
-		debug(_ITEMID_TOSTRING[item]+": "+action["score"]);
+		debug(_ITEMID_TOSTRING[item]+": "+action[_score]);
 		
 		// on compte les utilisations :
 		if(!isSummon(getLeek())){
@@ -987,8 +1003,8 @@ function playBestMove(bestMove){
 			else setRegister(_ITEMID_TOSTRING[item],number(reg)+1);
 		}
 	}
-	if(bestMove["sCell"]!=null){
-		moveTowardCell(bestMove["sCell"]);
+	if(bestMove[_sCell]!=null){
+		moveTowardCell(bestMove[_sCell]);
 	}
 	for(var item in delayedSummon){
 		if(item == CHIP_RESURRECTION){
@@ -998,7 +1014,13 @@ function playBestMove(bestMove){
 			summon(item, getCellToUseChip(item, _SELF), iaBulb);
 		}
 	}
+	if(getTP()>=15 && getCooldown(CHIP_RESURRECTION)==0 && _RESU_TARGET!=null && !isSummon(_RESU_TARGET)){
+		var cell = findSafestCellToRez(_RESU_TARGET, getCell());
+		resurrect(_RESU_TARGET, cell);
+	}
+	var _MAINWEAPON = getMainWeapon();
 	if(_SHOULD_KEEP_MAINWEAP_INHAND && getWeapon()!= _MAINWEAPON) setWeapon(_MAINWEAPON);
+	else if(_MAINWEAPON != null && getWeapon()==null) setWeapon(_MAINWEAPON);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -1065,9 +1087,7 @@ function findBestMoveBulb(@allCombos, @maxOp){
 					if(self_action_array[item]!=null){
 						var tmpstack=stack, tmpdead=dead;
 						//creation d'une action self sur cette case.
-						var action = ["item":item, 
-						"from":aCell, "to":aCell,
-						"targets":[_SELF]];
+						var action= [_item:item, _from:aCell, _to:aCell, _targets:[_SELF]];
 						tmpScore=getScoreOfAction(action, tmpstack, tmpdead);
 						if(aBest == null || aScore < tmpScore){
 							aScore = tmpScore;
@@ -1077,7 +1097,7 @@ function findBestMoveBulb(@allCombos, @maxOp){
 						}
 					}
 					if(aBest != null && aScore>0){
-						aBest["score"] = aScore; // pour le debug
+						aBest[_score] = aScore; // pour le debug
 						push(best, aBest);
 						stack = aStack;
 						dead = aDead;
@@ -1087,11 +1107,11 @@ function findBestMoveBulb(@allCombos, @maxOp){
 					}
 				}
 				
-				if(_BESTMOVE==null || _BESTMOVE["score"]<score) _BESTMOVE = [
-					"score":score,
-					"actions":best,
-					"stack":stack,//pour le debuging
-					"dead":dead//pour le debuging
+				if(_BESTMOVE==null || _BESTMOVE[_score]<score) _BESTMOVE = [
+					_score:score,
+					_actions:best,
+					_stack:stack,//pour le debuging
+					_dead:dead//pour le debuging
 				];
 				if(getOperations()>stopingOp){
 					debugE("Turn"+getTurn()+" breaked bulb ! Combos left: "+ cntCombo +"/"+count(allCombos));
@@ -1111,13 +1131,14 @@ function getSafestCell(@dead, @gravityArray, @ratio_ignore){
 	var reachable = getReachableCells([getCell():0], getMP(), []);
 	var safestCell;
 	for(var sCell:var mpused in reachable){
-		var danger = getCellDanger(sCell, dead, []);
-		if(count(_ALIVE_ALLIES_BULBS)>4) danger = 0;
+		var danger = getCellDanger(sCell, dead, [])[_danger];
+		if(count(_ALIVE_ALLIES_BULBS)>5) danger = 0;
 		var tmpScore = 0;
 		if(danger > selfLife*ratio_ignore) tmpScore-= danger*_RATIO_DANGER;
 		if(danger >= selfLife) tmpScore-=_SCORE_DEATH;
-		for(var cell in _areaCells1[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=250;
-		for(var cell in _areaCells2[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=100;
+		for(var cell in _areaCells1[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=500;
+		for(var cell in _areaCells2[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=300;
+		for(var cell in _areaCells3[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=100;
 		for(var cell:var dist in gravityArray){
 			tmpScore -= abs(dist-getCellDistance(cell, sCell));
 		}
@@ -1127,16 +1148,18 @@ function getSafestCell(@dead, @gravityArray, @ratio_ignore){
 			bestScore = tmpScore;
 		}
 	}
-	return @safestCell;//@["sCell":safestCell, "danger":minDanger, "score":bestScore];
+	return @safestCell;//@[_sCell:safestCell, _danger:minDanger, _score:bestScore];
 }
 
 function iaBulb(){
-	var limitOp = _OPERATION_BULB*0.7;
+	var limitOp = _OPERATION_BULB*0.3;
 	refreshLeeksCellsAndAliveStatus();
 	refreshLeeksEffectsAndStates();
 	if(getTurn()==getBirthTurn()) updateCoef(getLeek());
-	var ratio_ignore = 0.25+_RATIO_IGNORE_DANGER;// ratio de pv que j'ignore pour m'avancer sans mourir
-	if(count(_ALIVE_ALLIES_BULBS)>4) ratio_ignore+=0.25;
+	var ratio_ignore = 0.2+_RATIO_IGNORE_DANGER;// ratio de pv que j'ignore pour m'avancer sans mourir
+	if(count(_ALIVE_ALLIES_BULBS)>4) ratio_ignore+=0.2;
+	if(ratio_ignore>1) ratio_ignore = 0.95;
+	
 	var gravityArray = [getCell(getNearestEnemy()):4, getCell(getSummoner()):4];
 	if(getEntityType(getLeek())==ENTITY_HEALER_BULB){
 		ratio_ignore=0;
@@ -1166,10 +1189,12 @@ function iaBulb(){
 	debugW("BEST: "+bestMove);
 	if(bestMove!=null) playBestMove(bestMove);
 	startOp();
-	var dead = bestMove==null ? [] : bestMove["dead"]; 
+	var dead = bestMove==null ? [] : bestMove[_dead]; 
 	var selectedCell = getSafestCell(dead, gravityArray, ratio_ignore);
 	moveTowardCell(selectedCell);
+
 	stopOpkW("BULB safeCell");
 	debugW('TOTALOP: '+(getOperations()/1000)+'k');
 	if(getTP()) say("Bonjour, moi c'est Fab.");
 }
+

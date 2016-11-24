@@ -23,29 +23,10 @@ function getItemName(@item){
 
 // return un id unique pour une weap/chip & un array d'idleek peu importe l'ordre.
 // ainsi que la case cible pour les armes à aoe (mettre null sinon pour les lazer !)
-function getUniqueID(@array, @w, @to){
-	sort(array);
-	return @(""+w+array+to);
-}
-
 function getUniqueID_safeCell(@cell, @ids, @stack){
 	sort(ids);
 	return @(""+cell+ids+stack);
 }
-
-//remplace lineOfSight pour y ajouter un cache pendant le tour.
-/* s'avère contre productif, leekToIgnore changeant trop souvent pour rendre ça rentable...
-global _CACHE_LOS = [];
-_CACHE_LOS=[];
-global __lineOfSight = lineOfSight;
-lineOfSight = function(@cell1, @cell2, @leekToIgnore){
-	var uniqId = cell1<=cell2 ? cell1+"-"+cell2+leekToIgnore : cell2+"-"+cell1+leekToIgnore;
-	if(_CACHE_LOS[uniqId]==null){
-		_CACHE_LOS[uniqId]=__lineOfSight(cell1, cell2, leekToIgnore);
-	}
-	return @_CACHE_LOS[uniqId];
-};
-*/
 
 // return reachable cell as an array of [cell:dist]
 // cells must be in form : [cell:dist]
@@ -169,215 +150,68 @@ function getEntityType(@entity){
 	return @ENTITY_PUNY_BULB; 
 }
 
-function refreshLeeksCellsAndAliveStatus(){
-	_SELF = getLeek();
-	// refresh leek cells & alive allies/enemies
-	_ALIVE_ALLIES = getAliveAllies();
-	_ALIVE_ENEMIES = getAliveEnemies();
-	_ALIVE_ALLIES_LEEKS = [];
-	_ALIVE_ALLIES_BULBS = [];
-	_ALIVE_ENEMIES_LEEKS = [];
-	_ALIVE_ENEMIES_BULBS = [];
-	_ALIVE_ENEMIES_DANGER = [];
-	_COUNT_PUNY = 0;
-	_COUNT_ROCKY = 0;
-	_COUNT_ICED = 0;
-	_COUNT_HEALER = 0;
-	_COUNT_METAL = 0;
-	_COUNT_FIRE = 0;
-	_COUNT_LIGHTNING = 0;
-	
-	_CACHE_CELLS_NO_TELEPORT=null;
-	_CACHE_DANGER=[];
-	_CACHE_REACHABLE_DANGER = [];
-	_CACHE_REACHABLE_SIZE = [];
-	_SCORE_ITEM = [];
+//////////////////////////
+// OPTI BINAIRE
+//////////////////////////
 
-	_LEEKS_CELL=[];
-	for(var leek in _ALIVE_ALLIES+_ALIVE_ENEMIES){
-		if(_SELF!=leek) _LEEKS_CELL[getCell(leek)] = leek;
-		if(isAlly(leek)){
-			if(isSummon(leek)){
-				push(_ALIVE_ALLIES_BULBS, leek);
-				var eType = getEntityType(leek);
-				if(eType==ENTITY_PUNY_BULB) _COUNT_PUNY++;
-				else if(eType==ENTITY_ROCKY_BULB) _COUNT_ROCKY++;
-				else if(eType==ENTITY_ICED_BULB) _COUNT_ICED++;
-				else if(eType==ENTITY_HEALER_BULB) _COUNT_HEALER++;
-				else if(eType==ENTITY_METALLIC_BULB) _COUNT_METAL++;
-				else if(eType==ENTITY_FIRE_BULB) _COUNT_FIRE++;
-				else if(eType==ENTITY_LIGHTNING_BULB) _COUNT_LIGHTNING++;
-			} else push(_ALIVE_ALLIES_LEEKS, leek);
-		}else{//isEnemy
-			if(isSummon(leek)) push(_ALIVE_ENEMIES_BULBS, leek); 
-			else push(_ALIVE_ENEMIES_LEEKS, leek);
-			
-			if(getStrength(leek) >= 100 || getMagic(leek) >= 100){
-				push(_ALIVE_ENEMIES_DANGER, leek);
-			}else if(getLevel()<20){
-				push(_ALIVE_ENEMIES_DANGER, leek);
-			}
-		}
+function convertCombosToBinaries(@combos){
+	var result = [];
+	for(var combo in combos){
+		push(result, getBinFromCombo(combo));
 	}
-	
-	_NEAREST_ENEMY_LEEK = getNearestEnemyLeek();
-	if(_IS_CAC) _SELF_FULLMAP_PATH_DIST=getReachableCells([getCell(_NEAREST_ENEMY_LEEK):0], 100, [getCell()]);
-
-	if(_IS_RESURECT){
-		_RESU_TARGET = null;
-		_RESU_SCORE = 0;
-		for(var al in getDeadAllies()){
-			var score = getTotalLife(al)*2+getStrength(al)+getWisdom(al)
-						+getScience(al)+getResistance(al)+getAgility(al);
-			if(isSummon(al)){
-				if(getTotalLife(al) <= 1500) continue;
-				score/=3;
-			}
-			if(_RESU_SCORE < score){
-				_RESU_TARGET = al;
-				_RESU_SCORE = score;
-			}
-		}
-	}
-
-	_SCN_STR_100 = false;
-	_SCN_STR_200 = false;
-	_SCN_STR_300 = false;
-	for(var e in _ALIVE_ENEMIES){
-		if(getStrength(e)>=100 || getScience(e)>=100) _SCN_STR_100 = true;
-		if(getStrength(e)>=200 || getScience(e)>=200) _SCN_STR_200 = true;
-		if(getStrength(e)>=300 || getScience(e)>=300) _SCN_STR_300 = true;
-	}
-	if(getLevel()<30) _SCN_STR_100 = true;
+	return @result;
 }
 
-function refreshLeeksEffectsAndStates(){
-	// init de l'état des leeks
-	_LEEKS=[];
-	for(var leek in _ALIVE_ALLIES+_ALIVE_ENEMIES){
-		var effects = [], bulbs = [], psnDmgTurn = 0, psnDmgTotal = 0, scoreLibe = 0, alterateStr = 0, alterateMgc = 0, alterateTP = 0, alterateMP = 0;
-		// gestion getEffects
-		for(var e in getEffects(leek)){
-			setEffectsArray(effects, scoreLibe, psnDmgTurn, psnDmgTotal, alterateStr, alterateMgc, alterateTP, alterateMP, e);
-		}
-		if(!isSummon(leek)){
-			var bulbz;
-			if(isAlly(leek)) bulbz = _ALIVE_ALLIES_BULBS;
-			else bulbz = _ALIVE_ENEMIES_BULBS;
-			for(var b in bulbz){
-				if(getSummoner(b)==leek) push(bulbs, b);
-			}
-		}
-		var leekInfo = [
-			"totallife": getTotalLife(leek)
-			,"life": getLife(leek)
-			,"psnlife": getLife(leek)-psnDmgTurn
-			,"psnTurn": psnDmgTurn
-			,"psnTotal": psnDmgTotal
-			,"effects": @effects
-			,"alterateStr": alterateStr
-			,"alterateMgc": alterateMgc
-			,"alterateTP": alterateTP
-			,"alterateMP": alterateMP
-			,"str": getStrength(leek)
-			,"mgc": getMagic(leek)
-			,"wsd": getWisdom(leek)
-			,"rst": getResistance(leek)
-			,"agi": getAgility(leek)
-			,"snc": getScience(leek)
-			,"tp": getTP(leek)
-			,"mp": getMP(leek)
-			,"relShield": getRelativeShield(leek)
-			,"absShield": getAbsoluteShield(leek)
-			,"dmgReturn": getDamageReturn(leek)
-			,'scoreLibe': scoreLibe
-			,'nbBulbs': count(bulbs)//todo check si ça vaut le coup de garder cette info..
-			,'bulbs': @bulbs
-		];
-		_LEEKS[leek] = @leekInfo;
+function convertBinariesToCombos(@binaries){
+	var result = [];
+	for(var binary in binaries){
+		push(result, getComboFromBin(binary));
 	}
+	return @result;
 }
 
-function setEffectsArray(@effects, @scoreLibe, @psnDmgTurn, @psnDmgTotal, @alterateStr, @alterateMgc, @alterateTP, @alterateMP, @e){
-	// [type, value, caster_id, turns, critical, item_id, target_id]
-	var type = e[0],
-	item = e[5],
-	value = e[1],
-	duration = e[3];
-	
-	effects[item] += value*duration;
-	
-	if(type==EFFECT_POISON){
-		psnDmgTurn += value;
-		psnDmgTotal += value*duration;
-	}else if(type==EFFECT_HEAL){
-		psnDmgTurn -= value;
-		psnDmgTotal -= value*duration;
-	}else if(type == EFFECT_SHACKLE_STRENGTH){
-		alterateStr -= value;
-	}else if(type == EFFECT_SHACKLE_MAGIC){
-		alterateMgc -= value;
-	}else if(type == EFFECT_SHACKLE_TP){
-		alterateTP -= value;
-	}else if(type == EFFECT_SHACKLE_MP){
-		alterateMP -= value;
-	}else if(type == EFFECT_BUFF_STRENGTH){
-		alterateStr += value;
-	}else if(type == EFFECT_BUFF_TP){
-		alterateTP += value;
-	}else if(type == EFFECT_BUFF_MP){
-		alterateMP += value;
+function getComboFromBin(@binary){
+	var combo = [];
+	var mask = createMask(0, 3);
+	var cnt = binary & mask;	
+	for(var i = 0; i < cnt; i++){
+		var key = (binary & createMask(4+i*4, 7+i*4)) >> (4+i*4);
+		var item = _DECODING_STUFF[key];
+		push(combo, item);
 	}
-	
-	///// ICI on précalcule le score de libération pour chaque leek.
-	// effect négatif, scoreLibe -=
-	scoreLibe += getLibeScore(type, value, duration);
+	return @combo;
 }
 
-function getLibeScore(@type, @value, @duration){
-	var scoreLibe=0;
-	if(type==EFFECT_POISON){
-		scoreLibe -= value*duration;
-	}else if(type == EFFECT_SHACKLE_STRENGTH){
-		scoreLibe -= value*duration;
-	}else if(type == EFFECT_SHACKLE_MAGIC){
-		scoreLibe -= value*duration;
-	}else if(type == EFFECT_SHACKLE_MP){
-		scoreLibe -= value*_SCORE_MP*duration;
-	}else if(type == EFFECT_SHACKLE_TP){
-		scoreLibe -= value*_SCORE_TP*duration;
-	// A partir d'ici, effet positif, scoreLibe +=
-	}else if(type==EFFECT_HEAL){
-		scoreLibe += value*duration;
-	}else if(type == EFFECT_DAMAGE_RETURN){
-		scoreLibe += value*duration;
-	}else if(type == EFFECT_ABSOLUTE_SHIELD){
-		scoreLibe += value*duration*2;
-	}else if(type == EFFECT_RELATIVE_SHIELD){
-		scoreLibe += value*_SCORE_REL_SHIELD*duration*2;
-	}else if(type == EFFECT_BUFF_STRENGTH){
-		scoreLibe += value*duration;
-	}else if(type == EFFECT_BUFF_AGILITY){
-		scoreLibe += value*duration;
-	}else if(type == EFFECT_BUFF_MP){
-		scoreLibe += value*_SCORE_MP*duration;
-	}else if(type == EFFECT_BUFF_TP){
-		scoreLibe += value*_SCORE_TP*duration;
-	}else if(type == EFFECT_BUFF_WISDOM){
-		scoreLibe += value*duration;
-	}else if(type == EFFECT_BUFF_RESISTANCE){
-		scoreLibe += value*duration;
-	}else{
-		debugE("Unknown effect type: " + type);
+function getBinFromCombo(@combo){
+	if(count(combo)>7) debugE("TROP D'ITEM DANS LA COMBO POUR EN FAIRE UN BINARY");
+	var id = 0;
+	var mask = createMask(0, 3);
+	id |= mask & count(combo);
+	for(var i = 0; i < count(combo); i++){
+		id |= (_ENCODING_STUFF[combo[i]] << (4+4*i));
 	}
-	return @scoreLibe;
+	return @id;
+}
+
+function createMask(@a, @b){
+   var r = 0;
+   for(var i=a; i<=b; i++) r |= 1 << i;
+   return @r;
+}
+
+function displayBinary(integer){
+	var str = "", groupSize = 8;
+    for(var i = 31; i >= 0 ; i--) {
+		var mask = 1 << i;
+		str += (integer & mask) != 0 ? "1" : "0";
+		if (i % groupSize == 0) str += " ";
+	}
+	debug(integer+": "+str);
 }
 
 //////////////////////////
 // REGISTRE
 //////////////////////////
-
-global ___ = "-";
 
 function getFullRegister(@key){
 	var cnt = 0, reg, str = "";
@@ -398,7 +232,7 @@ function setFullRegister(@key, @value){
 		var cle = key+___+cnt;
 		var size=len-start;
 		if(size > blocksize) size = blocksize;
-		var substr = mySubString(value, start, size);
+		var substr = substring(value, start, size);//mySubString(value, start, size);
 		var val = setRegister(cle, substr);
 		if(val) debug(key+" OK"); 
 		else debugE(key+" NOK");
@@ -423,13 +257,13 @@ function debugColor(message, color){
 function startOp(){
 	__debug_operation = getOperations();
 }
-function stopOp(title){
-	if(__DEBUG_ON) debug(title + ": " + (getOperations()-__debug_operation-7));	
+function stopOp(@title){
+	if(__DEBUG_ON) debug(title + ": " + (getOperations()-__debug_operation-6-2-length(title)));	
 }
-function stopOpk(title){
+function stopOpk(@title){
 	if(__DEBUG_ON) debug(title + ": " + round((getOperations()-__debug_operation)/1000) + "k");
 }
-function stopOpkW(title){
+function stopOpkW(@title){
 	if(__DEBUG_ON) debugW(title + ": " + round((getOperations()-__debug_operation)/1000) + "k");
 }
 // mesure de consommation d'opération moyenne d'une fonction

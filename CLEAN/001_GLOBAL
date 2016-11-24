@@ -2,22 +2,32 @@
 // Fichier de déclaration des globales
 ///////////////////////////////////////////
 
+global _totallife=0, _life=1, _psnlife=2,_psnTurn=3, _psnTotal=4, _effects=5, _alterateStr=6, _alterateMgc=7, _alterateTP=8, _alterateMP=9, _str=10, _mgc=11, _wsd=12, _rst=13, _agi=14, _snc=15, _tp=16, _mp=17, _relShield=18, _absShield=19, _dmgReturn=20, _scoreLibe=21, _nbBulbs=22, _bulbs=23, _map=24, _debuff=25, _shackleStr=26, _shackleMgc=27, _shackleTP=28, _shackleMP=29, _danger=30, _mpused=31, _item=32, _items=33, _minItemCost=34, _damage=35, _antidote=36, _dmg=37, _psn=38, _heal=39, _stackOfResult=40, _stackOfDeath=41, _score=42, _from=43, _to=44, _targets=45, _sCell=46, _stack=47, _actions=48, _dead=49;
+
 global __DEBUG_ON = true;
 global __DDD_ON = false;
-global _LIMIT_MASSMP_IGNORELEEK = 50;
-global _OPERATION_MAP_DANGER = 6000000;
-global _OPERATION_BULB = 800000;
+global ___ = "-";
+global _OPERATION_MAP_DANGER = 1500000; // ratio + mp
+global _OPERATION_BULB = 1000000;
 
 global _MAX_ITEM_ID = 150;
-global _SCORE_KILL_DMG = 500;
+global _MAX_CELL = 612; 
+global _MIN_INT = -2147483648, _MAX_INT = 2147483647;
+global _SCORE_KILL_DMG = 2000;
 global _SCORE_KILL_PSN = 100;
-global _SCORE_DEATH = 3000;
+global _SCORE_DEATH = 15000;
+
+global _RATIO_RISK_DEATH = 0.8; // un danger > à 80% de ma vie total est risky
 global _RATIO_IGNORE_DANGER = 0.25;
 global _RATIO_DANGER = 1;
+global _RATIO_MP_USED = 5;
 
 global _SCORE_MP = 30;
 global _SCORE_TP = 30;
 global _SCORE_REL_SHIELD = 4;
+
+global _DECODING_STUFF = getWeapons()+getChips(), _ENCODING_STUFF = [];
+if(getTurn()==1)for(var id : var item in _DECODING_STUFF) _ENCODING_STUFF[item] = id;
 // ========================
 // INFOS LEEKS
 // ========================
@@ -25,13 +35,16 @@ global _SCORE_REL_SHIELD = 4;
 // ID du joueur leek.
 global _SELF = getLeek();
 global _NEAREST_ENEMY_LEEK;
-global _MAINWEAPON;
-global _IS_SUMMONER = false; // resu est considéré comme summoner, j'utilise les op pour trouver la cell où résu plutot que pour le tour du leek.
+global _IS_SUMMONER = false;
 global _IS_TELEPORT = false;
 global _IS_RESURECT = false;
 global _IS_CAC = false;
-global _IS_SHACKLE_MP = false;
+global _CANT_HEAL = false;
 global _SHOULD_KEEP_MAINWEAP_INHAND = false;
+global _GRAVITY_CELLS = [];
+
+// fonction
+global getMainWeapon;
 
 // Contient les informations sur les leeks, refresh à tous les tours en début de tour.
 global _LEEKS = [];
@@ -84,7 +97,6 @@ global _COUNT_LIGHTNING;
 
 global reachableCells; //[cell:mp]
 global map_danger; // [cell:dmg]
-global map_leek_danger; // [leek: map_danger]; 
 global map_leek_weap_danger; // [leek: [weap: [map_danger]]]
 
 global _SCN_STR_100;
@@ -125,6 +137,7 @@ global _LEEKS_CELL;
 
 // not used, utile pour getCellToUseWeapChipOnCell, pour avoir la plus proche en path
 global _SELF_FULLMAP_PATH_DIST;
+global _NEARE_FULLMAP_PATH_DIST;
 
 // contient les AREA_CIRCLE_X de chaque cell non obstacle dans un array [cell1, cell2...]
 // init tour 1.
@@ -193,38 +206,38 @@ global _CHIP_ISPOSITIV = [
     CHIP_DRIP:true,
     CHIP_FEROCITY:true,
     CHIP_FERTILIZER:true,
-    CHIP_FIRE_BULB:true,//specialCHIP
+    CHIP_FIRE_BULB:null,//specialCHIP
     CHIP_FLAME:false,
     CHIP_FORTRESS:true,
     CHIP_FRACTURE:false,
-    CHIP_HEALER_BULB:true,//specialCHIP
+    CHIP_HEALER_BULB:null,//specialCHIP
     CHIP_HELMET:true,
     CHIP_ICE:false,
     CHIP_ICEBERG:false,
-    CHIP_ICED_BULB:true,//specialCHIP
-    CHIP_INVERSION:true,//specialCHIP
+    CHIP_ICED_BULB:null,//specialCHIP
+    CHIP_INVERSION:null,//specialCHIP
     CHIP_LEATHER_BOOTS:true,
-    CHIP_LIBERATION:false,//chip chelou, gérer comme offensive pour le moment..
+    CHIP_LIBERATION:null,//chip chelou, gérer comme offensive pour le moment..
     CHIP_LIGHTNING:false,
-    CHIP_LIGHTNING_BULB:true,//specialCHIP
+    CHIP_LIGHTNING_BULB:null,//specialCHIP
     CHIP_LOAM:true,
-    CHIP_METALLIC_BULB:true,//specialCHIP
+    CHIP_METALLIC_BULB:null,//specialCHIP
     CHIP_METEORITE:false,
     CHIP_MIRROR:true,
     CHIP_MOTIVATION:true,
     CHIP_PEBBLE:false,
     CHIP_PLAGUE:false,
     CHIP_PROTEIN:true,
-    CHIP_PUNY_BULB:true,//specialCHIP
+    CHIP_PUNY_BULB:null,//specialCHIP
     CHIP_RAGE:true,
     CHIP_RAMPART:true,
     CHIP_REFLEXES:true,
     CHIP_REGENERATION:true,
     CHIP_REMISSION:true,
-    CHIP_RESURRECTION:true,//specialCHIP
+    CHIP_RESURRECTION:null,//specialCHIP
     CHIP_ROCK:false,
     CHIP_ROCKFALL:false,
-    CHIP_ROCKY_BULB:true,//specialCHIP
+    CHIP_ROCKY_BULB:null,//specialCHIP
     CHIP_SEVEN_LEAGUE_BOOTS:true,
     CHIP_SHIELD:true,
     CHIP_SHOCK:false,
@@ -235,7 +248,7 @@ global _CHIP_ISPOSITIV = [
     CHIP_STALACTITE:false,
     CHIP_STEROID:true,
     CHIP_STRETCHING:true,
-    CHIP_TELEPORTATION:true,//specialCHIP
+    CHIP_TELEPORTATION:null,//specialCHIP
     CHIP_THORN:true,
     CHIP_TOXIN:false,
     CHIP_TRANQUILIZER:false,
@@ -297,7 +310,7 @@ global _CHIP_ISONLYBULB = [
     CHIP_ROCK:false,
     CHIP_ROCKFALL:false,
     CHIP_ROCKY_BULB:false,//specialCHIP
-    CHIP_SEVEN_LEAGUE_BOOTS:false,
+    CHIP_SEVEN_LEAGUE_BOOTS:null,
     CHIP_SHIELD:false,
     CHIP_SHOCK:false,
     CHIP_SLOW_DOWN:false,
