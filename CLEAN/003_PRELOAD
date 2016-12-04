@@ -245,7 +245,7 @@ function getLibeScore(@type, @value, @duration){
 	}else if(type == EFFECT_RELATIVE_SHIELD){
 		scoreLibe += value*_SCORE_REL_SHIELD*duration*2;
 	}else if(type == EFFECT_BUFF_STRENGTH){
-		scoreLibe += value*duration;
+		scoreLibe += value*duration*3;
 	}else if(type == EFFECT_BUFF_AGILITY){
 		scoreLibe += value*duration;
 	}else if(type == EFFECT_BUFF_MP){
