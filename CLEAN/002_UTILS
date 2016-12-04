@@ -137,17 +137,25 @@ function prepareCellArea3(@c, @obstacle){
     return @result;
 }
 
+function getCellsFromLeeks(@leeks){
+	var cells = [];
+	for(var l in leeks) push(cells, getCell(l));
+	return @cells;
+}
+
 // retourne le type de l'entity
 function getEntityType(@entity){
 	if(!isSummon(entity)) return @ENTITY_LEEK_;
-	var chips = getChips(entity);
-	if(inArray(chips, CHIP_VACCINE)) return @ENTITY_HEALER_BULB;
-	if(inArray(chips, CHIP_ARMOR)) return @ENTITY_METALLIC_BULB;
-	if(inArray(chips, CHIP_ROCKFALL)) return @ENTITY_ROCKY_BULB;
-	if(inArray(chips, CHIP_ICEBERG)) return @ENTITY_ICED_BULB;
-	if(inArray(chips, CHIP_METEORITE)) return @ENTITY_FIRE_BULB;
-	if(inArray(chips, CHIP_LIGHTNING)) return @ENTITY_LIGHTNING_BULB;
-	return @ENTITY_PUNY_BULB; 
+	else{
+		var name = getName(entity);
+		return	 name == "metallic_bulb"	? ENTITY_METALLIC_BULB :
+				(name == "healer_bulb"		? ENTITY_HEALER_BULB :
+				(name == "lightning_bulb"	? ENTITY_LIGHTNING_BULB :
+				(name == "fire_bulb"		? ENTITY_FIRE_BULB :
+				(name == "iced_bulb"		? ENTITY_ICED_BULB :
+				(name == "rocky_bulb"		? ENTITY_ROCKY_BULB : 
+											  ENTITY_PUNY_BULB)))));
+	}
 }
 
 //////////////////////////

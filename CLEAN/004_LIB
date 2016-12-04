@@ -275,13 +275,13 @@ function isSpecialChip(@c){
 function getLazerTargetsCell(@c, @minrange){
 	var x = getCellX(c), y = getCellY(c), result = [];
 	var cell = getCellFromXY(x+minrange, y);
-	if(cell!=null && _OBSTACLES[cell]==null && lineOfSight(c, cell, _EMPTYARRAY)) push(result, cell);
+	if(cell!=null && _OBSTACLES[cell]==null && lineOfSight(c, cell, [])) push(result, cell);
 	cell = getCellFromXY(x-minrange, y);
-	if(cell!=null && _OBSTACLES[cell]==null && lineOfSight(c, cell, _EMPTYARRAY)) push(result, cell);
+	if(cell!=null && _OBSTACLES[cell]==null && lineOfSight(c, cell, [])) push(result, cell);
 	cell = getCellFromXY(x, y+minrange);
-	if(cell!=null && _OBSTACLES[cell]==null && lineOfSight(c, cell, _EMPTYARRAY)) push(result, cell);
+	if(cell!=null && _OBSTACLES[cell]==null && lineOfSight(c, cell, [])) push(result, cell);
 	cell = getCellFromXY(x, y-minrange);
-	if(cell!=null && _OBSTACLES[cell]==null && lineOfSight(c, cell, _EMPTYARRAY)) push(result, cell);
+	if(cell!=null && _OBSTACLES[cell]==null && lineOfSight(c, cell, [])) push(result, cell);
 	return @result;
 }
 
@@ -289,28 +289,28 @@ function getLazerTargetsCell(@c, @minrange){
 function getLazerFromCellsToTargetCell(@c, @minrange, @maxrange){
 	var x = getCellX(c), y = getCellY(c), result = [];
 	var cell = getCellFromXY(x+minrange, y), inc = 1;
-	if(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && lineOfSight(c, cell, _EMPTYARRAY)){
+	if(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && lineOfSight(c, cell, [])){
 		while(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && getCellDistance(c, cell)<=maxrange){
 			push(result, cell);
 			cell = getCellFromXY(x+minrange+inc++, y);
 		}
 	}
 	cell = getCellFromXY(x-minrange, y); inc = 1;
-	if(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && lineOfSight(c, cell, _EMPTYARRAY)){
+	if(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && lineOfSight(c, cell, [])){
 		while(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && getCellDistance(c, cell)<=maxrange){
 			push(result, cell);
 			cell = getCellFromXY(x-minrange-inc++, y);
 		}
 	}
 	cell = getCellFromXY(x, y+minrange); inc = 1;
-	if(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && lineOfSight(c, cell, _EMPTYARRAY)){
+	if(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && lineOfSight(c, cell, [])){
 		while(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && getCellDistance(c, cell)<=maxrange){
 			push(result, cell);
 			cell = getCellFromXY(x, y+minrange+inc++);
 		}
 	}
 	cell = getCellFromXY(x, y-minrange); inc = 1;
-	if(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && lineOfSight(c, cell, _EMPTYARRAY)){
+	if(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && lineOfSight(c, cell, [])){
 		while(cell!=null && _OBSTACLES[cell]==null && _LEEKS_CELL[cell]==null && getCellDistance(c, cell)<=maxrange){
 			push(result, cell);
 			cell = getCellFromXY(x, y-minrange-inc++);
@@ -463,7 +463,7 @@ function _getTargetableCells(@weapChip, @cell){
 				if(fromCell!=null 
 				&& _OBSTACLES[fromCell]==null 
 				&& _LEEKS_CELL[fromCell]==null
-				&& (!needlos || lineOfSight(fromCell, cell, _EMPTYARRAY))){
+				&& (!needlos || lineOfSight(fromCell, cell, []))){
 					push(result, fromCell);
 				}
 			}
@@ -474,7 +474,7 @@ function _getTargetableCells(@weapChip, @cell){
 				if(fromCell!=null 
 				&& _OBSTACLES[fromCell]==null 
 				&& _LEEKS_CELL[fromCell]==null
-				&& (!needlos || lineOfSight(fromCell, cell, _EMPTYARRAY))){
+				&& (!needlos || lineOfSight(fromCell, cell, []))){
 					push(result, fromCell);
 				}
 			}
@@ -487,7 +487,7 @@ function _getTargetableCells(@weapChip, @cell){
 					if(fromCell!=null 
 					&& _OBSTACLES[fromCell]==null 
 					&& _LEEKS_CELL[fromCell]==null
-					&& (!needlos || lineOfSight(fromCell, cell, _EMPTYARRAY))){
+					&& (!needlos || lineOfSight(fromCell, cell, []))){
 						push(result, fromCell);
 					}
 				}
@@ -498,48 +498,30 @@ function _getTargetableCells(@weapChip, @cell){
 	return @_CACHE_ITEM_FROMCELL_TARGETCELLS[weapChip][cell];
 }
 
-// fonction dédié à l'opti de la génération de setMapActions()
-function prepareSetMapActions(){
-	atkCellsArea1 = [];
-	atkCellsArea2 = [];
-	atkCellsArea3 = [];
-	defCellsArea1 = [];
-	defCellsArea2 = [];
-	defCellsArea3 = []; // raz
-	for(var e in _ALIVE_ENEMIES){
-		var cell = getCell(e);
-		atkCellsArea1[cell]=cell;
-		atkCellsArea2[cell]=cell;
-		atkCellsArea3[cell]=cell;
-		for(var c in _areaCells1[cell]){
-			atkCellsArea1[c]=c;
-			atkCellsArea2[c]=c;
-			atkCellsArea3[c]=c;
-		}
-		for(var c in _areaCells2[cell]){
-			atkCellsArea2[c]=c;
-			atkCellsArea3[c]=c;
-		}
-		for(var c in _areaCells3[cell]){
-			atkCellsArea3[c]=c;
-		}
-	}
-	for(var e in _ALIVE_ALLIES){
-		var cell = getCell(e);
-		defCellsArea1[cell]=cell;
-		defCellsArea2[cell]=cell;
-		defCellsArea3[cell]=cell;
-		for(var c in _areaCells1[cell]){
-			defCellsArea1[c]=c;
-			defCellsArea2[c]=c;
-			defCellsArea3[c]=c;
-		}
-		for(var c in _areaCells2[cell]){
-			defCellsArea2[c]=c;
-			defCellsArea3[c]=c;
-		}
-		for(var c in _areaCells3[cell]){
-			defCellsArea3[c]=c;
+function _getNearCellToUseItemOnCell(@item, @cell, @mapPathDist){
+	var leekToIgnore =@[getLeek()],result, mpDist = 100,
+	x = getCellX(cell), y = getCellY(cell), isWeap = isWeapon(item),
+	minrange = isWeap ? getWeaponMinRange(item) : getChipMinRange(item),
+	maxrange = isWeap ? getWeaponMaxRange(item) : getChipMaxRange(item),
+	inline = isWeap ? isInlineWeapon(item) : isInlineChip(item),
+	needlos = isWeap ? weaponNeedLos(item) : chipNeedLos(item);
+	for(var x1 = x-maxrange; x1 <= x+maxrange; x1++){
+		for(var y1 = y-maxrange; y1 <= y+maxrange; y1++){
+			var fromCell = getCellFromXY(x1, y1);
+			if(fromCell!=null 
+			&& _OBSTACLES[fromCell]==null 
+			&& _LEEKS_CELL[fromCell]==null){
+				var dist = getCellDistance(fromCell,cell);
+				if(dist >= minrange && dist <= maxrange
+				&& (!needlos || lineOfSight(fromCell, cell, leekToIgnore))
+				&& (!inline || isOnSameLine(fromCell,cell))){
+					if(mapPathDist[fromCell]!=null && mapPathDist[fromCell]<mpDist){
+						mpDist=mapPathDist[fromCell];
+						result=fromCell;
+					}
+				}
+			}
 		}
 	}
+	return @result;
 }

@@ -4,13 +4,14 @@
 
 global _totallife=0, _life=1, _psnlife=2,_psnTurn=3, _psnTotal=4, _effects=5, _alterateStr=6, _alterateMgc=7, _alterateTP=8, _alterateMP=9, _str=10, _mgc=11, _wsd=12, _rst=13, _agi=14, _snc=15, _tp=16, _mp=17, _relShield=18, _absShield=19, _dmgReturn=20, _scoreLibe=21, _nbBulbs=22, _bulbs=23, _map=24, _debuff=25, _shackleStr=26, _shackleMgc=27, _shackleTP=28, _shackleMP=29, _danger=30, _mpused=31, _item=32, _items=33, _minItemCost=34, _damage=35, _antidote=36, _dmg=37, _psn=38, _heal=39, _stackOfResult=40, _stackOfDeath=41, _score=42, _from=43, _to=44, _targets=45, _sCell=46, _stack=47, _actions=48, _dead=49;
 
+
 global __DEBUG_ON = true;
 global __DDD_ON = false;
 global ___ = "-";
 global _OPERATION_MAP_DANGER = 1500000; // ratio + mp
-global _OPERATION_BULB = 1000000;
+global _OPERATION_BULB = 600000;
 
-global _MAX_ITEM_ID = 150;
+global _MAX_ITEM_ID = 150; //110 @2016
 global _MAX_CELL = 612; 
 global _MIN_INT = -2147483648, _MAX_INT = 2147483647;
 global _SCORE_KILL_DMG = 2000;
@@ -35,19 +36,50 @@ if(getTurn()==1)for(var id : var item in _DECODING_STUFF) _ENCODING_STUFF[item] 
 // ID du joueur leek.
 global _SELF = getLeek();
 global _NEAREST_ENEMY_LEEK;
-global _IS_SUMMONER = false;
-global _IS_TELEPORT = false;
-global _IS_RESURECT = false;
-global _IS_CAC = false;
-global _CANT_HEAL = false;
-global _SHOULD_KEEP_MAINWEAP_INHAND = false;
 global _GRAVITY_CELLS = [];
+global _SHOULD_KEEP_MAINWEAP_INHAND = false;
+global _CANT_HEAL = getWisdom()<=0 && _ENCODING_STUFF[CHIP_HEALER_BULB]==null;
+global _IS_TELEPORT = _ENCODING_STUFF[CHIP_TELEPORTATION]!=null;
+global _IS_RESURECT = _ENCODING_STUFF[CHIP_RESURRECTION]!=null;
+global _IS_SUMMONER = _ENCODING_STUFF[CHIP_LIGHTNING_BULB]!=null
+				   || _ENCODING_STUFF[CHIP_FIRE_BULB]!=null
+				   || _ENCODING_STUFF[CHIP_METALLIC_BULB]!=null
+				   || _ENCODING_STUFF[CHIP_HEALER_BULB]!=null
+				   || _ENCODING_STUFF[CHIP_ICED_BULB]!=null
+				   || _ENCODING_STUFF[CHIP_ROCKY_BULB]!=null
+				   || _ENCODING_STUFF[CHIP_PUNY_BULB]!=null;
+global _IS_CAC = !(_ENCODING_STUFF[WEAPON_M_LASER]!=null
+				|| _ENCODING_STUFF[WEAPON_ELECTRISOR]!=null
+				|| _ENCODING_STUFF[WEAPON_GRENADE_LAUNCHER]!=null
+				|| _ENCODING_STUFF[WEAPON_GAZOR]!=null
+				|| _ENCODING_STUFF[WEAPON_DESTROYER]!=null
+				|| _ENCODING_STUFF[WEAPON_B_LASER]!=null
+				|| _ENCODING_STUFF[WEAPON_FLAME_THROWER]!=null
+				|| _ENCODING_STUFF[WEAPON_LASER]!=null
+				|| _ENCODING_STUFF[WEAPON_MAGNUM]!=null
+				|| _ENCODING_STUFF[WEAPON_SHOTGUN]!=null
+				|| _ENCODING_STUFF[WEAPON_DOUBLE_GUN]!=null
+				|| _ENCODING_STUFF[WEAPON_PISTOL]!=null
+				|| _ENCODING_STUFF[WEAPON_MACHINE_GUN]!=null
+				|| _ENCODING_STUFF[CHIP_METEORITE]!=null
+				|| _ENCODING_STUFF[CHIP_LIGHTNING]!=null
+				|| _ENCODING_STUFF[CHIP_PLAGUE]!=null
+				|| _ENCODING_STUFF[CHIP_ICEBERG]!=null
+				|| _ENCODING_STUFF[CHIP_STALACTITE]!=null
+				|| _ENCODING_STUFF[CHIP_ROCKFALL]!=null
+				|| _ENCODING_STUFF[CHIP_TOXIN]!=null
+				|| _ENCODING_STUFF[CHIP_VENOM]!=null
+				|| _ENCODING_STUFF[CHIP_FLASH]!=null
+				|| _ENCODING_STUFF[CHIP_SPARK]!=null
+				|| _ENCODING_STUFF[CHIP_SHOCK]!=null
+				|| _ENCODING_STUFF[CHIP_ROCK]!=null
+				|| _ENCODING_STUFF[CHIP_PEBBLE]!=null
+				|| _ENCODING_STUFF[CHIP_ICE]!=null
+				|| _ENCODING_STUFF[CHIP_FLAME]!=null
+				|| _ENCODING_STUFF[CHIP_BURNING]!=null);
 
 // fonction
 global getMainWeapon;
-
-// Contient les informations sur les leeks, refresh à tous les tours en début de tour.
-global _LEEKS = [];
 
 // les infos utilisés pour la prise de décision
 global _COEF_DMG;
@@ -104,7 +136,8 @@ global _SCN_STR_200;
 global _SCN_STR_300;
 
 // pour baisser le coût de setMapActions();
-global atkCellsArea1 = [], atkCellsArea2 = [], atkCellsArea3 = [], defCellsArea1 = [], defCellsArea2 = [], defCellsArea3 = [];
+global atkCellsPoint = [], atkCellsArea1 = [], atkCellsArea2 = [], atkCellsArea3 = [],
+	   defCellsPoint = [], defCellsArea1 = [], defCellsArea2 = [], defCellsArea3 = [];
 global map_actions; // ["id":w, "from":fromCell, "to":toCell, "targets":targets]
 // autre global de la map actions (used in findBestMove):
 global self_action_array = []; // [chip:chip]
@@ -123,13 +156,13 @@ global _CACHE_SCORE_SAFECELL;
 global _CACHE_SCORE_ACTION;
 global _CACHE_CELLS_NO_TELEPORT;
 
-// un tableau vide déjà init pour éviter de le ré-init à chaque appel d'une fonction avec un param à mettre à tableau vide.
-global _EMPTYARRAY = [];
-
 // Contient les id des cells obstacle en clé, test cell libre avec _OBSTACLES[cell]==null
 // init tour 1.
 global _OBSTACLES = [];
 global _CELLS_NO_OBSTACLES = [];
+// Contient les informations sur les leeks, refresh à tous les tours en début de tour.
+global _LEEKS = [];
+
 
 // Contient les id des cells des leeks, sauf le leek qui joue.
 // refresh au debug de chaque tour.
@@ -208,6 +241,7 @@ global _CHIP_ISPOSITIV = [
     CHIP_FERTILIZER:true,
     CHIP_FIRE_BULB:null,//specialCHIP
     CHIP_FLAME:false,
+	CHIP_FLASH:false,
     CHIP_FORTRESS:true,
     CHIP_FRACTURE:false,
     CHIP_HEALER_BULB:null,//specialCHIP
@@ -280,6 +314,7 @@ global _CHIP_ISONLYBULB = [
     CHIP_FERTILIZER:true,
     CHIP_FIRE_BULB:false,//specialCHIP
     CHIP_FLAME:false,
+	CHIP_FLASH:false,
     CHIP_FORTRESS:false,
     CHIP_FRACTURE:false,
     CHIP_HEALER_BULB:false,//specialCHIP
@@ -614,4 +649,205 @@ global _ITEM_PRIORITY = [
     CHIP_INVERSION:22,//specialCHIP
 	CHIP_TELEPORTATION:22,//specialCHIP
     CHIP_RESURRECTION:22//specialCHIP
+];
+
+global toASCII =@
+[   9 : '\t'
+,   10 : '\n'
+,   13 : '\n'
+,   32 : ' '
+,   33 : '!'
+,   34 : '"'
+,   35 : '#'
+,   36 : '$'
+,   37 : '%'
+,   38 : '&'
+,   39 : "'"
+,   40 : '('
+,   41 : ')'
+,   42 : '*'
+,   43 : '+'
+,   44 : ','
+,   45 : '-'
+,   46 : '.'
+,   47 : '/'
+,   48 : '0'
+,   49 : '1'
+,   50 : '2'
+,   51 : '3'
+,   52 : '4'
+,   53 : '5'
+,   54 : '6'
+,   55 : '7'
+,   56 : '8'
+,   57 : '9'
+,   58 : ':'
+,   59 : ''
+,   60 : '<'
+,   61 : '='
+,   62 : '>'
+,   63 : '?'
+,   64 : '@'
+,   65 : 'A'
+,   66 : 'B'
+,   67 : 'C'
+,   68 : 'D'
+,   69 : 'E'
+,   70 : 'F'
+,   71 : 'G'
+,   72 : 'H'
+,   73 : 'I'
+,   74 : 'J'
+,   75 : 'K'
+,   76 : 'L'
+,   77 : 'M'
+,   78 : 'N'
+,   79 : 'O'
+,   80 : 'P'
+,   81 : 'Q'
+,   82 : 'R'
+,   83 : 'S'
+,   84 : 'T'
+,   85 : 'U'
+,   86 : 'V'
+,   87 : 'W'
+,   88 : 'X'
+,   89 : 'Y'
+,   90 : 'Z'
+,   91 : '['
+,   92 : '\\'
+,   93 : ']'
+,   94 : '^'
+,   95 : '_'
+,   96 : '`'
+,   97 : 'a'
+,   98 : 'b'
+,   99 : 'c'
+,   100 : 'd'
+,   101 : 'e'
+,   102 : 'f'
+,   103 : 'g'
+,   104 : 'h'
+,   105 : 'i'
+,   106 : 'j'
+,   107 : 'k'
+,   108 : 'l'
+,   109 : 'm'
+,   110 : 'n'
+,   111 : 'o'
+,   112 : 'p'
+,   113 : 'q'
+,   114 : 'r'
+,   115 : 's'
+,   116 : 't'
+,   117 : 'u'
+,   118 : 'v'
+,   119 : 'w'
+,   120 : 'x'
+,   121 : 'y'
+,   122 : 'z'
+,   123 : '{'
+,   124 : '|'
+,   125 : '}'
+,   126 : '~'
+];
+
+global toCode =@
+[   '\t' : 9
+,   '\n' : 13 
+,   ' ' : 32 
+,   '!' : 33 
+,   '"' : 34 
+,   '#' : 35 
+,   '$' : 36 
+,   '%' : 37 
+,   '&' : 38 
+,   "'" : 39 
+,   '(' : 40 
+,   ')' : 41 
+,   '*' : 42 
+,   '+' : 43 
+,   ',' : 44 
+,   '-' : 45 
+,   '.' : 46 
+,   '/' : 47 
+,   '0' : 48 
+,   '1' : 49 
+,   '2' : 50 
+,   '3' : 51 
+,   '4' : 52 
+,   '5' : 53 
+,   '6' : 54 
+,   '7' : 55 
+,   '8' : 56 
+,   '9' : 57 
+,   ':' : 58 
+,   '' : 59 
+,   '<' : 60 
+,   '=' : 61 
+,   '>' : 62 
+,   '?' : 63 
+,   '@' : 64 
+,   'A' : 65 
+,   'B' : 66 
+,   'C' : 67 
+,   'D' : 68 
+,   'E' : 69 
+,   'F' : 70 
+,   'G' : 71 
+,   'H' : 72 
+,   'I' : 73 
+,   'J' : 74 
+,   'K' : 75 
+,   'L' : 76 
+,   'M' : 77 
+,   'N' : 78 
+,   'O' : 79 
+,   'P' : 80 
+,   'Q' : 81 
+,   'R' : 82 
+,   'S' : 83 
+,   'T' : 84 
+,   'U' : 85 
+,   'V' : 86 
+,   'W' : 87 
+,   'X' : 88 
+,   'Y' : 89 
+,   'Z' : 90 
+,   '[' : 91 
+,   '\\' : 92 
+,   ']' : 93 
+,   '^' : 94 
+,   '_' : 95 
+,   '`' : 96 
+,   'a' : 97 
+,   'b' : 98 
+,   'c' : 99 
+,   'd' : 100
+,   'e' : 101
+,   'f' : 102
+,   'g' : 103
+,   'h' : 104
+,   'i' : 105
+,   'j' : 106
+,   'k' : 107
+,   'l' : 108
+,   'm' : 109
+,   'n' : 110
+,   'o' : 111
+,   'p' : 112
+,   'q' : 113
+,   'r' : 114
+,   's' : 115
+,   't' :116
+,   'u' :117
+,   'v' :118
+,   'w' :119
+,   'x' :120
+,   'y' :121
+,   'z' :122
+,   '{' :123
+,   '|' :124
+,   '}' :125
+,   '~' :126
 ];

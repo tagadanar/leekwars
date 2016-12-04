@@ -387,7 +387,7 @@ function findSafestCellToRez(@leek, @from){
 			&& _OBSTACLES[targetCell]==null 
 			&& _LEEKS_CELL[targetCell]==null
 			&& lineOfSight(from, targetCell, _SELF)){
-				var danger = getCellDanger(targetCell, ignore, _EMPTYARRAY);
+				var danger = getCellDanger(targetCell, ignore, []);
 				if(!safeCell || dangerCell>danger){
 					safeCell=targetCell;
 					dangerCell=danger;

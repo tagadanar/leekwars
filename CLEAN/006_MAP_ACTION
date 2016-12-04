@@ -1,0 +1,181 @@
+include('auto');
+
+function addActionToMAPS(@item, @from, @to, @targets){
+	var dist = reachableCells[from];
+    if(dist==null )return; // filtering all action I can't reach
+	if(assoc_weap_from[item]==null) assoc_weap_from[item] = [];
+	push(assoc_weap_from[item], from);
+	
+	if(assoc_from_item_actions[from]==null) assoc_from_item_actions[from] = [];
+	if(assoc_from_item_actions[from][item]==null) assoc_from_item_actions[from][item] = [];
+	
+	var action = [_item:item, _from:from, _to:to, _targets:targets];
+	push(assoc_from_item_actions[from][item], action);
+}
+function setMapActions(){
+	prepareSetMapActions();
+	self_action_array = []; // clear
+	assoc_weap_from = []; // clear
+	assoc_from_item_actions = [];//clear
+    var interest;
+    for(var w in getWeapons()){
+        var weaponArea = _ITEM_AREA[w];    
+        if(weaponArea == AREA_POINT){ // normal cible unique.
+            for(var target in _ALIVE_ENEMIES){ // pas d'ally susceptible d'être une cible.
+                var toCell = getCell(target);
+                var targets = [target];
+                for(var from in _getCellsToUseWeapChipOnCell(w, toCell)){
+                    addActionToMAPS(w, from, toCell, targets);
+                }
+            }
+        }else if(weaponArea == AREA_LASER_LINE){ // cas d'un lazer
+			var minrange = _ITEM_MINRANGE[w];
+	        var maxrange = _ITEM_MAXRANGE[w];			
+			for(var leek in _ALIVE_ALLIES+_ALIVE_ENEMIES){
+				if(leek==_SELF) continue;
+				var toCell = getCell(leek);
+				for(var from in getLazerFromCellsToTargetCell(toCell,minrange,maxrange)){
+					var targets = getLazerTargetsFromCell(from, toCell, minrange, maxrange);
+					if(count(targets)>0){
+						interest=0;
+						for(var t in targets) interest+=_COEF_DMG[t];
+						if(interest>0) addActionToMAPS(w, from, toCell, targets);
+						else if(interest<0 && w==WEAPON_B_LASER) addActionToMAPS(w, from, toCell, targets);
+					}
+				}
+			}
+        }else{// cas des aoe AREA_CIRCLE_X (1, 2, 3)
+        	var cells;
+			if(weaponArea==AREA_CIRCLE_1) cells = @atkCellsArea1;
+			else if(weaponArea==AREA_CIRCLE_2) cells = @atkCellsArea2;
+			else if(weaponArea==AREA_CIRCLE_3) cells = @atkCellsArea3;
+            for(var i in cells){
+                if(_OBSTACLES[i]==null){
+                    var targets = getWeaponTargets(w, i);
+                    if(count(targets)>0){
+                        interest=0;
+                        for(var t in targets)
+                            interest+=_COEF_DMG[t]*getDamagePercentage(i, getCell(t), weaponArea)/100;
+                        if(interest>0) for(var from in _getCellsToUseWeapChipOnCell(w, i)){
+                            addActionToMAPS(w, from, i, targets);
+                        }
+                    }
+                }
+            }
+        }
+    }// end for weapons
+    for(var c in getChips()){
+        if(getCooldown(c)!=0) continue;
+        // pour le moment on gère pas les special chip
+        var chipArea = _ITEM_AREA[c];
+        // cannot be lazer_line
+        if(isSpecialChip(c)){
+			// TODO handle resu, inversion & teleport..
+			self_action_array[c] = c;
+		}else if(chipArea==AREA_POINT){
+            var targets;
+			if(c==CHIP_LIBERATION){
+				targets = _ALIVE_ALLIES+_ALIVE_ENEMIES;
+			}else if(_CHIP_ISPOSITIV[c]){
+				var isOnlyBulb = _CHIP_ISONLYBULB[c];
+				if(isOnlyBulb) targets = _ALIVE_ALLIES_BULBS;
+				else if(isOnlyBulb===null) targets = _ALIVE_ALLIES_LEEKS;
+				else targets = _ALIVE_ALLIES;
+			}else{
+				targets = _ALIVE_ENEMIES;
+			}
+			for(var target in targets){
+				// self_actions !
+                if(target==_SELF && _ITEM_MINRANGE[c]==0 && self_action_array[c]==null){
+					self_action_array[c] = c;
+				}else if(target!=_SELF){	// others.
+					var toCell = getCell(target);
+					for(var from in _getCellsToUseWeapChipOnCell(c, toCell)){
+						addActionToMAPS(c, from, toCell, [target]);
+					}
+				}
+            }
+        }else if(chipArea==AREA_LASER_LINE){
+            debugE("CHIP LAZERLINE ?!?");
+        }else{// cas des aoe AREA_CIRCLE_X (1, 2, 3)
+        // TODO maybe opti en faisant qu'une fois les calcs par area pour weapon & chip
+            var isPositiv = isPositivChip(c);
+			var cells;
+			if(isPositiv){
+				if(chipArea==AREA_CIRCLE_1) cells = @defCellsArea1;
+				else if(chipArea==AREA_CIRCLE_2) cells = @defCellsArea2;
+				else if(chipArea==AREA_CIRCLE_3) cells = @defCellsArea3;
+			}else{
+				if(chipArea==AREA_CIRCLE_1) cells = @atkCellsArea1;
+				else if(chipArea==AREA_CIRCLE_2) cells = @atkCellsArea2;
+				else if(chipArea==AREA_CIRCLE_3) cells = @atkCellsArea3;
+			}
+            for(var i in cells){
+                if(_OBSTACLES[i]==null){
+                    var targets = getChipTargets(c, i);
+                    if(count(targets)>0){
+						interest=0;
+                        for(var t in targets){
+						// FIXME DMG ???? est-ce que je prend pas en fonction de l'effet de la puce ? mais ça va couté un bras ?
+                            if(isPositiv)interest -= _COEF_DMG[t]* getDamagePercentage(i, getCell(t), chipArea)/100;
+                            else interest += _COEF_DMG[t]* getDamagePercentage(i, getCell(t), chipArea)/100;
+                        }
+                        if(interest>0) for(var from in _getCellsToUseWeapChipOnCell(c, i)){
+                            addActionToMAPS(c, from, i, targets);
+                        }
+                    }
+                }
+            }
+        }
+    }//end for chips
+}
+
+// fonction dédié à l'opti de la génération de setMapActions()
+function prepareSetMapActions(){
+	atkCellsPoint = [];
+	atkCellsArea1 = [];
+	atkCellsArea2 = [];
+	atkCellsArea3 = [];
+	defCellsPoint = [];
+	defCellsArea1 = [];
+	defCellsArea2 = [];
+	defCellsArea3 = []; // raz
+	for(var e in _ALIVE_ENEMIES){
+		var cell = getCell(e);
+		atkCellsPoint[cell]=cell;
+		atkCellsArea1[cell]=cell;
+		atkCellsArea2[cell]=cell;
+		atkCellsArea3[cell]=cell;
+		for(var c in _areaCells1[cell]){
+			atkCellsArea1[c]=c;
+			atkCellsArea2[c]=c;
+			atkCellsArea3[c]=c;
+		}
+		for(var c in _areaCells2[cell]){
+			atkCellsArea2[c]=c;
+			atkCellsArea3[c]=c;
+		}
+		for(var c in _areaCells3[cell]){
+			atkCellsArea3[c]=c;
+		}
+	}
+	for(var e in _ALIVE_ALLIES){
+		var cell = getCell(e);
+		defCellsPoint[cell]=cell;
+		defCellsArea1[cell]=cell;
+		defCellsArea2[cell]=cell;
+		defCellsArea3[cell]=cell;
+		for(var c in _areaCells1[cell]){
+			defCellsArea1[c]=c;
+			defCellsArea2[c]=c;
+			defCellsArea3[c]=c;
+		}
+		for(var c in _areaCells2[cell]){
+			defCellsArea2[c]=c;
+			defCellsArea3[c]=c;
+		}
+		for(var c in _areaCells3[cell]){
+			defCellsArea3[c]=c;
+		}
+	}
+}

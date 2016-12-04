@@ -6,71 +6,80 @@ resetBench();
 // init turn 1
 if(getTurn()==1){
 	for(var i=0;i<=_MAX_CELL;i++){
-		if(isObstacle(i)) _OBSTACLES[i]=true;
-		else _CELLS_NO_OBSTACLES[i] = i;
-		_areaCells1[i] = prepareCellArea(i, false);
-		_areaCells1Obstacle[i] = prepareCellArea(i, true);
-		_areaCells2[i] = prepareCellArea2(i, false);
-		_areaCells3[i] = prepareCellArea3(i, false);
+		if(isObstacle(i))	_OBSTACLES[i]=true;
+		else				_CELLS_NO_OBSTACLES[i] = i;
+		
+		_areaCells1[i]			= prepareCellArea(i, false);
+		_areaCells1Obstacle[i]	= prepareCellArea(i, true);
+		_areaCells2[i]			= prepareCellArea2(i, false);
+		_areaCells3[i]			= prepareCellArea3(i, false);
 	}
 	for(var i=0; i <= _MAX_ITEM_ID; i++){ // reminder: idmax à 110 @janvier2016
 		_CACHE_ITEM_FROMCELL_TARGETCELLS[i] = [];
 		if(isWeapon(i)){
-			_ITEM_ISWEAP[i]=true;
-			_ITEM_HAVECD[i]=false;
-			if(i==WEAPON_GAZOR) _ITEM_MINRANGE[i]=4; // on se tire pas dessus !
-			else _ITEM_MINRANGE[i]=getWeaponMinRange(i);
-			_ITEM_MAXRANGE[i]=getWeaponMaxRange(i);
-			_ITEM_INLINE[i]=isInlineWeapon(i);
-			_ITEM_NEEDLOS[i]=weaponNeedLos(i);
-			_ITEM_COST[i]=getWeaponCost(i);
-			_ITEM_AREA[i]=getWeaponArea(i);
-			_ITEM_EFFECTS[i]=getWeaponEffects(i);
+			_ITEM_ISWEAP[i]		= true;
+			_ITEM_HAVECD[i]		= false;
+			_ITEM_MINRANGE[i]	= getWeaponMinRange(i);
+			_ITEM_MAXRANGE[i]	= getWeaponMaxRange(i);
+			_ITEM_INLINE[i]		= isInlineWeapon(i);
+			_ITEM_NEEDLOS[i]	= weaponNeedLos(i);
+			_ITEM_COST[i]		= getWeaponCost(i);
+			_ITEM_AREA[i]		= getWeaponArea(i);
+			_ITEM_EFFECTS[i]	= getWeaponEffects(i);
 		}else if(isChip(i)){
-			_ITEM_ISWEAP[i]=false;
-			_ITEM_HAVECD[i]= getChipCooldown(i)!=0;
-			if(i==CHIP_PLAGUE) _ITEM_MINRANGE[i]=4; // on se tire pas dessus !
-			else if(i==CHIP_TOXIN) _ITEM_MINRANGE[i]=2;
-			else if(i==CHIP_SOPORIFIC) _ITEM_MINRANGE[i]=3;
-			else if(i==CHIP_BALL_AND_CHAIN) _ITEM_MINRANGE[i]=3;
-			else _ITEM_MINRANGE[i]=getChipMinRange(i);
-			if(i==CHIP_MOTIVATION||i==CHIP_RAGE) _ITEM_MAXRANGE[i]=0;
-			else _ITEM_MAXRANGE[i]=getChipMaxRange(i);
-			_ITEM_INLINE[i]=isInlineChip(i);
-			_ITEM_NEEDLOS[i]=chipNeedLos(i);
-			if(i==CHIP_MOTIVATION) _ITEM_COST[i]=getChipCost(i)-floor(0.4*(1+getScience()/100));
-			else if(i==CHIP_RAGE) _ITEM_COST[i]=getChipCost(i)-floor(0.5*(1+getScience()/100));
-			else _ITEM_COST[i]=getChipCost(i);
-			_ITEM_AREA[i]=getChipArea(i);
-			_ITEM_EFFECTS[i]=getChipEffects(i);
+			_ITEM_ISWEAP[i]		= false;
+			_ITEM_HAVECD[i]		= getChipCooldown(i)!=0;
+			_ITEM_MINRANGE[i]	= getChipMinRange(i);
+			_ITEM_MAXRANGE[i]	= getChipMaxRange(i);
+			_ITEM_INLINE[i]		= isInlineChip(i);
+			_ITEM_NEEDLOS[i]	= chipNeedLos(i);
+			_ITEM_COST[i]		= getChipCost(i);
+			_ITEM_AREA[i]		= getChipArea(i);
+			_ITEM_EFFECTS[i]	= getChipEffects(i);
 		}
 	}
+	
+	_ITEM_MINRANGE[WEAPON_GAZOR]		= 4; // on se tire pas dessus !
+	_ITEM_MINRANGE[CHIP_PLAGUE]			= 4;
+	_ITEM_MINRANGE[CHIP_TOXIN]			= 2;
+	_ITEM_MINRANGE[CHIP_SOPORIFIC]		= 3;
+	_ITEM_MINRANGE[CHIP_BALL_AND_CHAIN]	= 3;
+	
+	// config de gestion spécifique :
+	_ITEM_MAXRANGE[CHIP_MOTIVATION]		= 0;
+	_ITEM_MAXRANGE[CHIP_RAGE]			= 0;
+	
+	_ITEM_COST[CHIP_MOTIVATION]			=
+		getChipCost(CHIP_MOTIVATION)-floor(0.4*(1+getScience()/100));
+	_ITEM_COST[CHIP_RAGE]				=
+		getChipCost(CHIP_RAGE)-floor(0.5*(1+getScience()/100));
+	
 }
 
 function refreshLeeksCellsAndAliveStatus(){
-	_SELF = getLeek();
+	_SELF 					= getLeek();
 	// refresh leek cells & alive allies/enemies
-	_ALIVE_ALLIES = getAliveAllies();
-	_ALIVE_ENEMIES = getAliveEnemies();
-	_ALIVE_ALLIES_LEEKS = [];
-	_ALIVE_ALLIES_BULBS = [];
-	_ALIVE_ENEMIES_LEEKS = [];
-	_ALIVE_ENEMIES_BULBS = [];
-	_ALIVE_ENEMIES_DANGER = [];
-	_COUNT_PUNY = 0;
-	_COUNT_ROCKY = 0;
-	_COUNT_ICED = 0;
-	_COUNT_HEALER = 0;
-	_COUNT_METAL = 0;
-	_COUNT_FIRE = 0;
-	_COUNT_LIGHTNING = 0;
+	_ALIVE_ALLIES 			= getAliveAllies();
+	_ALIVE_ENEMIES 			= getAliveEnemies();
+	_ALIVE_ALLIES_LEEKS 	= [];
+	_ALIVE_ALLIES_BULBS 	= [];
+	_ALIVE_ENEMIES_LEEKS 	= [];
+	_ALIVE_ENEMIES_BULBS 	= [];
+	_ALIVE_ENEMIES_DANGER 	= [];
+	_COUNT_PUNY 			= 0;
+	_COUNT_ROCKY 			= 0;
+	_COUNT_ICED 			= 0;
+	_COUNT_HEALER 			= 0;
+	_COUNT_METAL 			= 0;
+	_COUNT_FIRE 			= 0;
+	_COUNT_LIGHTNING 		= 0;
 	
 	_CACHE_CELLS_NO_TELEPORT=null;
 	_CACHE_REACHABLE_DANGER = [];
-	_CACHE_REACHABLE_SIZE = [];
-	_SCORE_ITEM = [];
+	_CACHE_REACHABLE_SIZE	= [];
+	_SCORE_ITEM				= [];
 
-	_LEEKS_CELL=[];
+	_LEEKS_CELL				= [];
 	for(var leek in _ALIVE_ALLIES+_ALIVE_ENEMIES){
 		if(_SELF!=leek) _LEEKS_CELL[getCell(leek)] = leek;
 		if(isAlly(leek)){
@@ -100,7 +109,7 @@ function refreshLeeksCellsAndAliveStatus(){
 	_NEAREST_ENEMY_LEEK = getNearestEnemyLeek();
 	_NEARE_FULLMAP_PATH_DIST=getReachableCells([getCell(_NEAREST_ENEMY_LEEK):0], 200, [getCell()]);
 	
-	_SELF_FULLMAP_PATH_DIST=getReachableCells([getCell():0], 200, _EMPTYARRAY);
+	_SELF_FULLMAP_PATH_DIST=getReachableCells([getCell():0], 200, []);
 
 	if(_IS_RESURECT){
 		_RESU_TARGET = null;
@@ -251,4 +260,32 @@ function getLibeScore(@type, @value, @duration){
 		debugE("Unknown effect type: " + type);
 	}
 	return @scoreLibe;
+}
+
+function refreshGravityCells(@distToEnemy){
+	_GRAVITY_CELLS = [];
+	for(var al in _ALIVE_ALLIES_LEEKS){
+		if(al!=_SELF){
+			var cell = getCell(al);
+			_GRAVITY_CELLS[cell] = 4;
+			if(getScience(al) >= 400){
+				for(var c in _areaCells1[cell]) _GRAVITY_CELLS[cell] = 3;
+			}
+			if(getScience(al) >= 600){
+				for(var c in _areaCells2[cell]) _GRAVITY_CELLS[cell] = 2;
+			}
+		}
+	}
+	for(var al in _ALIVE_ALLIES_BULBS){
+		if(al!=_SELF){
+			var cell = getCell(al), type = getEntityType(al);
+			if(type==ENTITY_METALLIC_BULB){
+				_GRAVITY_CELLS[cell] = 3;
+				for(var c in _areaCells1[cell]) _GRAVITY_CELLS[cell] = 3;
+			}else if(type==ENTITY_HEALER_BULB){
+				_GRAVITY_CELLS[cell] = 1;
+			}
+		}
+	}
+	for(var en in _ALIVE_ENEMIES_LEEKS) _GRAVITY_CELLS[getCell(en)] = distToEnemy;
 }

@@ -1,0 +1,113 @@
+include('auto');
+
+/////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////
+//====================================== BULB =====================================//
+/////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////
+
+function findBestSingleAction(@stuff){
+	var reachable = getReachableCells([getCell():0], getMP(), []);
+	var bestScore = 0, bestAction;
+	for(var item in stuff){
+		if(_ITEM_COST[item] <= getTP() && getCooldown(item)==0){
+			var area = _ITEM_AREA[item];
+			// reminder : simplification du test car aucun bulb n'a de puce onlyBulb
+			var targetCells = @(
+				area == AREA_POINT 
+					?(_CHIP_ISPOSITIV[item] 
+						?(_CHIP_ISONLYBULB[item]===null 
+							? getCellsFromLeeks(_ALIVE_ALLIES_LEEKS)
+							: defCellsPoint)
+						: atkCellsPoint)
+				: (area == AREA_CIRCLE_1
+					? (_CHIP_ISPOSITIV[item] ? defCellsArea1 : atkCellsArea1)
+				: (area == AREA_CIRCLE_2
+					? (_CHIP_ISPOSITIV[item] ? defCellsArea2 : atkCellsArea2)  
+				: (area == AREA_CIRCLE_3
+					? (_CHIP_ISPOSITIV[item] ? defCellsArea3 : atkCellsArea3)
+				: debugE("Cas impossible dans 009_BULB:findBestSingleAction(stuff)")))));
+			
+			for(var targetCell in targetCells){
+				var cell = _getNearCellToUseItemOnCell(item, targetCell, reachable);
+				if(cell!=null){
+					var action = @[_from: cell, _to: targetCell, _item: item,
+								   _targets: getChipTargets(item, targetCell)];
+					var score = getScoreOfAction(action, [], []);
+					if(score > 0 && score > bestScore){
+						bestScore = score;
+						bestAction = @action;
+					}
+				}
+			}
+			if(bestAction != null && area == AREA_POINT) break;
+		}
+	}
+	return @bestAction;
+}
+
+function ia_bulb_main(){ startOp();
+	// init
+	_SELF = getLeek();//refreshLeeksCellsAndAliveStatus();
+	refreshLeeksEffectsAndStates();
+	stopOpkW("refresh");
+	startOp();
+	prepareSetMapActions(); // 2k op pour ré-init les positions de tout le monde (bug selfcast)
+	if(getTurn()==getBirthTurn()) updateCoef(getLeek());
+	
+	var type = getEntityType(getLeek()), stuff;
+	if(type==ENTITY_PUNY_BULB)
+		stuff =@[CHIP_PROTEIN, CHIP_HELMET, CHIP_BANDAGE, CHIP_PEBBLE];
+	else if(type==ENTITY_ROCKY_BULB)
+		stuff =@[CHIP_ROCKFALL, CHIP_ROCK, CHIP_PEBBLE, CHIP_HELMET];
+	else if(type==ENTITY_ICED_BULB)
+		stuff =@[CHIP_ICEBERG, CHIP_STALACTITE, CHIP_ICE, CHIP_REFLEXES];
+	else if(type==ENTITY_HEALER_BULB)
+		stuff =@[CHIP_CURE, CHIP_DRIP, CHIP_VACCINE, CHIP_BANDAGE];
+	else if(type==ENTITY_METALLIC_BULB)
+		stuff =@[CHIP_ARMOR, CHIP_SHIELD, CHIP_WALL, CHIP_SEVEN_LEAGUE_BOOTS];
+	else if(type==ENTITY_FIRE_BULB)
+		stuff =@[CHIP_METEORITE, CHIP_DEVIL_STRIKE, CHIP_FLAME, CHIP_SPARK];
+	else if(type==ENTITY_LIGHTNING_BULB)
+		stuff =@[CHIP_LIGHTNING, CHIP_FLASH, CHIP_SHOCK, CHIP_DOPING];
+	// playing
+	while(true){
+		var move = findBestSingleAction(stuff);
+		if(move==null) break;
+		else{
+			moveTowardCell(move[_from]);
+			useChipOnCell(move[_item], move[_to]);
+		}
+	}
+	// find end cell
+	moveTowardCell(findFinalCell());
+	say("Bonjour, moi c'est Fab.");
+	stopOpkW("IA_Bulb: " + getName(getLeek()));
+}
+
+function findFinalCell(){
+	var minDanger = 9999999;
+	var bestScore = -9999999;
+	var selfLife = getLife();
+	var reachable = getReachableCells([getCell():0], getMP(), []);
+	var safestCell;
+	for(var sCell:var mpused in reachable){
+		var danger = getCellDanger(sCell, [], [])[_danger];
+		if(count(_ALIVE_ALLIES_BULBS)>5) danger = 0;
+		var tmpScore = 0;
+		if(danger > selfLife*0.5) tmpScore-= danger*_RATIO_DANGER;
+		if(danger >= selfLife) tmpScore-=_SCORE_DEATH;
+		for(var cell in _areaCells1[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=500;
+		for(var cell in _areaCells2[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=300;
+		for(var cell in _areaCells3[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=100;
+		for(var cell:var dist in _GRAVITY_CELLS){
+			tmpScore -= abs(dist-getCellDistance(cell, sCell));
+		}
+		if(safestCell==null || tmpScore > bestScore){
+			safestCell = sCell;
+			minDanger = danger;
+			bestScore = tmpScore;
+		}
+	}
+	return @safestCell;
+}

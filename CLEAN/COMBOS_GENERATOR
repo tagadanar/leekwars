@@ -280,16 +280,22 @@ function getSpecialScore(@item){
 	return _ITEM_COST[item]*10;
 }
 
-global _listedsortedID = [];
+global _listedsortedID = [], scoredCombosOff = [], scoredCombosDef = [];
 function getSortedCombosSet(@combos){
+	_listedsortedID = []; scoredCombosOff = []; scoredCombosDef = [];
+	for(var combo in combos){
+		var id = getBinFromCombo(combo);
+		scoredCombosOff[id] = getOffCombo(combo) - getSimilarityCombo(combo);
+		scoredCombosDef[id] = getDefCombo(combo) - getSimilarityCombo(combo);
+	}
 	var arraySortedOff = arraySort(combos, function(combo1, combo2){
-		var score1 = getOffCombo(combo1) - getSimilarityCombo(combo1);
-		var score2 = getOffCombo(combo2) - getSimilarityCombo(combo2);
+		var score1 = scoredCombosOff[getBinFromCombo(combo1)];
+		var score2 = scoredCombosOff[getBinFromCombo(combo2)];
 		return score1 <= score2 ? (score1 == score2 ? 0 : 1) : -1;
 	});
 	var arraySortedDef = arraySort(combos, function(combo1, combo2){
-		var score1 = getDefCombo(combo1) - getSimilarityCombo(combo1);
-		var score2 = getDefCombo(combo2) - getSimilarityCombo(combo2);
+		var score1 = scoredCombosDef[getBinFromCombo(combo1)];
+		var score2 = scoredCombosDef[getBinFromCombo(combo2)];
 		return score1 <= score2 ? (score1 == score2 ? 0 : 1) : -1;
 	});
 	

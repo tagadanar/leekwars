@@ -1,0 +1,145 @@
+include('auto');
+
+function findBestMove(@allComboz){
+	// filtre les combos dont un item n'a pas le CD
+	var allCombos = [];
+	for(var name:var combo in allComboz){
+		var ok = true;
+		for(var item in combo){
+			if(_ITEM_HAVECD[item] && getCooldown(item)!=0){
+				ok=false;
+				break;
+			}
+		}
+		if(ok) push(allCombos, combo);
+	}
+	
+	//raz du cache.
+	_CACHE_SCORE_SAFECELL = [];
+	_CACHE_SCORE_ACTION = [];
+	var _OP_LIMIT = OPERATIONS_LIMIT*0.95;
+	if(_IS_SUMMONER) _OP_LIMIT-= _OPERATION_BULB*(_LEEKS[_SELF][_nbBulbs]+1);
+	var _BESTMOVE=null;
+	var selfCell = getCell();
+	var selfMP = getMP();
+	var selfLife = getLife();
+	var lifePercent = selfLife/getTotalLife();
+	var cntCombo = count(allCombos);
+	
+	//var __DEBUG_STRINGINFO = "";
+	
+	for(var combo in allCombos){
+		var canAlterDanger = false;
+		for(var item in combo) if(_ITEM_CAN_ALTER_DANGER[item]) {canAlterDanger=true; break;}
+		cntCombo--;
+		var fromArray = [];
+		// find cells where every part of combo can be done.
+		if(count(combo)==0){ // special case empty combo for safe play.
+			push(fromArray, getCell());
+		}else{	
+			for(var c:var d in reachableCells){
+				if(_OBSTACLES[c]!=null) continue;
+				var ok = true, isOnlySelf = true;
+				for(var item in combo){
+					if(assoc_from_item_actions[c][item]==null){
+						if(self_action_array[item]==null){
+							ok = false;
+							break;
+						}
+					}else{
+						isOnlySelf = false;
+					}
+				}
+				if(ok){
+					if(isOnlySelf){ if(c==selfCell) { push(fromArray, c); }
+					}else{ push(fromArray, c); }
+				}
+			}
+		}
+		// DEBUG
+		//for(var item in combo) __DEBUG_STRINGINFO += "-" + _ITEMID_TOSTRING[item];
+		//__DEBUG_STRINGINFO += ": " + count(fromArray) + "\n";
+		// END DEBUG
+		for(var aCell in fromArray){
+			var mpMove1 = reachableCells[aCell];
+			var mpLeft = selfMP - mpMove1;
+			if(mpMove1 != null && mpLeft >= 0){
+				var score = 0, tmpScore = 0, best = [], total;
+				var stack = [], dead = [];
+				// calcul du score de la meilleure combo depuis cette case.
+				for(var item in combo){
+					// meilleure score pour chaque item
+					var actions = @assoc_from_item_actions[aCell][item];
+					var aScore = 0, aBest, aStack, aDead;
+					if(actions!=null){
+						for(var action in actions){
+							var tmpstack=stack, tmpdead=dead;
+							tmpScore=getScoreOfAction(action, tmpstack, tmpdead);
+							if(aBest == null || aScore < tmpScore){
+								aScore = tmpScore;
+								aBest = action;
+								aStack = tmpstack;
+								aDead = tmpdead;
+							}
+						}
+					}//si actions est null, alors self_action ne peut pas être null.
+					if(self_action_array[item]!=null){
+						var tmpstack=stack, tmpdead=dead;
+						//creation d'une action self sur cette case.
+						var action= [_item:item, _from:aCell, _to:aCell, _targets:[_SELF]];
+						tmpScore=getScoreOfAction(action, tmpstack, tmpdead);
+						if(aBest == null || aScore < tmpScore){
+							aScore = tmpScore;
+							aBest = action;
+							aStack = tmpstack;
+							aDead = tmpdead;
+						}
+					}
+					if(aBest != null && aScore>0){
+						aBest[_score] = aScore; // pour le debug
+						push(best, aBest);
+						stack = aStack;
+						dead = aDead;
+						score += aScore;
+					}else{
+						//l'action n'a pas été push car inutile, les TP restant sont libre pour lancer un buff
+						//mayeb faire autrement, je laisse le commentaire ici.
+					}
+				}
+				// si je me suis boost les mp, on les prend en compte pour la suite
+				if(stack[_SELF][_mp]!=null) mpLeft+=round(stack[_SELF][_mp]);
+				// à partir du score de la meilleure combo depuis aCell, recherche de la meilleure case safe.
+				
+				var bestSafeMove = getBestSafeCellScore(canAlterDanger, aCell, dead, stack, selfLife, lifePercent, mpLeft, selfCell);
+				
+				var safestCell = bestSafeMove[_sCell];
+				var safeScore = bestSafeMove[_score];
+				var minDanger = bestSafeMove[_danger];
+				var mpUsed = bestSafeMove[_mpused];
+				
+				var finalScore = score + safeScore; // cumul des actions
+
+				if(_BESTMOVE==null || _BESTMOVE[_score]<finalScore) _BESTMOVE = [
+					_score:finalScore,
+					_actions:best,
+					_sCell:safestCell,
+					_danger:minDanger,
+					_mpused: mpUsed,
+					_stack:stack,//pour le debuging
+					_dead:dead//pour le debuging
+				];
+				if(getOperations()>_OP_LIMIT){
+					debugE("Turn"+getTurn()+" breaked ! Combos left: "+ cntCombo +"/"+count(allCombos));
+					// DEBUG
+					//debug(__DEBUG_STRINGINFO);
+					// END DEBUG
+					return @_BESTMOVE;
+				}
+			}
+		}
+	}
+	// DEBUG
+	//debug(__DEBUG_STRINGINFO);
+	// END DEBUG
+	return @_BESTMOVE;
+}

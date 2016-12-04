@@ -1,0 +1,45 @@
+include('auto');
+
+function playBestMove(bestMove){
+	debug("danger: "+ bestMove[_danger]);
+	debug("mpused: "+ bestMove[_mpused]);
+	debug("kill: "+ bestMove[_dead]);
+	var delayedSummon = [];
+	for(var action in bestMove[_actions]){
+		var item = action[_item], from = action[_from], to = action[_to];
+		moveTowardCell(from);
+		if(isSpecialChip(item)){ // GESTION SUMMON
+			push(delayedSummon, item);
+		}else if(_ITEM_ISWEAP[item]){
+			if(getWeapon()!=item) setWeapon(item);
+			useWeaponOnCell(to);
+		}
+		else useChipOnCell(item, to);
+		debug(_ITEMID_TOSTRING[item]+": "+action[_score]);
+		
+		// on compte les utilisations :
+		if(!isSummon(getLeek())){
+			var reg = getRegister(_ITEMID_TOSTRING[item]);
+			if(reg==null)setRegister(_ITEMID_TOSTRING[item],1);
+			else setRegister(_ITEMID_TOSTRING[item],number(reg)+1);
+		}
+	}
+	if(bestMove[_sCell]!=null){
+		moveTowardCell(bestMove[_sCell]);
+	}
+	for(var item in delayedSummon){
+		if(item == CHIP_RESURRECTION){
+			var cell = findSafestCellToRez(_RESU_TARGET, getCell());
+			resurrect(_RESU_TARGET, cell);
+		}else{
+			summon(item, getCellToUseChip(item, _SELF), ia_bulb_main);
+		}
+	}
+	if(getTP()>=15 && getCooldown(CHIP_RESURRECTION)==0 && _RESU_TARGET!=null && !isSummon(_RESU_TARGET)){
+		var cell = findSafestCellToRez(_RESU_TARGET, getCell());
+		resurrect(_RESU_TARGET, cell);
+	}
+	var _MAINWEAPON = getMainWeapon();
+	if(_SHOULD_KEEP_MAINWEAP_INHAND && getWeapon()!= _MAINWEAPON) setWeapon(_MAINWEAPON);
+	else if(_MAINWEAPON != null && getWeapon()==null) setWeapon(_MAINWEAPON);
+}
