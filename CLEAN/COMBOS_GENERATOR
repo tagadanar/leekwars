@@ -277,7 +277,7 @@ function needSpecialScore(@item){
 }
 
 function getSpecialScore(@item){
-	return _ITEM_COST[item]*10;
+	return _ITEM_COST[item]*15;
 }
 
 global _listedsortedID = [], scoredCombosOff = [], scoredCombosDef = [];

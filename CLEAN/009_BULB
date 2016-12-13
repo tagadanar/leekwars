@@ -6,9 +6,9 @@ include('auto');
 /////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////
 
-function findBestSingleAction(@stuff){
+function findBestSingleAction(@stuff, @dead){
 	var reachable = getReachableCells([getCell():0], getMP(), []);
-	var bestScore = 0, bestAction;
+	var bestScore = 0, bestAction, bestDead;
 	for(var item in stuff){
 		if(_ITEM_COST[item] <= getTP() && getCooldown(item)==0){
 			var area = _ITEM_AREA[item];
@@ -31,24 +31,27 @@ function findBestSingleAction(@stuff){
 			for(var targetCell in targetCells){
 				var cell = _getNearCellToUseItemOnCell(item, targetCell, reachable);
 				if(cell!=null){
-					var action = @[_from: cell, _to: targetCell, _item: item,
-								   _targets: getChipTargets(item, targetCell)];
-					var score = getScoreOfAction(action, [], []);
+					var actionBin = getBinFromAction_(cell, targetCell, item);
+					if(map_action_targets[actionBin]==null)
+						map_action_targets[actionBin] = getChipTargets(item, targetCell);
+					var death = [], score = getScoreOfAction(actionBin, [], death);
 					if(score > 0 && score > bestScore){
 						bestScore = score;
-						bestAction = @action;
+						bestAction = actionBin;
+						bestDead = @death;
 					}
 				}
 			}
 			if(bestAction != null && area == AREA_POINT) break;
 		}
 	}
-	return @bestAction;
+	pushAll(dead, bestDead);
+	return bestAction;
 }
 
 function ia_bulb_main(){ startOp();
 	// init
-	_SELF = getLeek();//refreshLeeksCellsAndAliveStatus();
+	refreshLeeksCellsAndAliveStatus();
 	refreshLeeksEffectsAndStates();
 	stopOpkW("refresh");
 	startOp();
@@ -71,43 +74,71 @@ function ia_bulb_main(){ startOp();
 	else if(type==ENTITY_LIGHTNING_BULB)
 		stuff =@[CHIP_LIGHTNING, CHIP_FLASH, CHIP_SHOCK, CHIP_DOPING];
 	// playing
+	var dead = [];
 	while(true){
-		var move = findBestSingleAction(stuff);
-		if(move==null) break;
+		var bin = findBestSingleAction(stuff, dead);
+		if(bin==null) break;
 		else{
-			moveTowardCell(move[_from]);
-			useChipOnCell(move[_item], move[_to]);
+			var action = getActionFromBin(bin);
+			debugW(getItemName(action[_item]));
+			
+			moveTowardCell(action[_from]);
+			useChipOnCell(action[_item], action[_to]);
 		}
 	}
 	// find end cell
-	moveTowardCell(findFinalCell());
+	var final = findFinalCell(dead);
+	debug("danger: "+ final[_danger]);
+	moveTowardCell(final[_sCell]);
 	say("Bonjour, moi c'est Fab.");
-	stopOpkW("IA_Bulb: " + getName(getLeek()));
+	stopOpkW("IA_Bulb:" + getName(getLeek()));
 }
 
-function findFinalCell(){
-	var minDanger = 9999999;
-	var bestScore = -9999999;
-	var selfLife = getLife();
-	var reachable = getReachableCells([getCell():0], getMP(), []);
-	var safestCell;
-	for(var sCell:var mpused in reachable){
-		var danger = getCellDanger(sCell, [], [])[_danger];
-		if(count(_ALIVE_ALLIES_BULBS)>5) danger = 0;
-		var tmpScore = 0;
-		if(danger > selfLife*0.5) tmpScore-= danger*_RATIO_DANGER;
-		if(danger >= selfLife) tmpScore-=_SCORE_DEATH;
-		for(var cell in _areaCells1[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=500;
-		for(var cell in _areaCells2[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=300;
-		for(var cell in _areaCells3[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=100;
-		for(var cell:var dist in _GRAVITY_CELLS){
-			tmpScore -= abs(dist-getCellDistance(cell, sCell));
+// new safe cell
+function findFinalCell(@dead){
+	var fromC = getCell(), mp = getMP(), life = getLife();
+	var minDanger = _MAX_INT, score = _MIN_INT, safeCell = -1, mpUsed = -1;
+	var nearECell = getCell(_NEAREST_ENEMY_LEEK);
+	var reachable = getCachedReachableCells(fromC, mp, dead);
+	for(var sCell:var mpused in reachable){ if(mpused > mp) break;
+		// gestion du danger
+		var cellDanger = getCellDanger(sCell, dead, []);
+		var danger = cellDanger[_danger], eMpUsed = cellDanger[_mpused], tmpScore=0;
+		tmpScore -= danger < life*_RATIO_IGNORE_DANGER ? 0 
+			: danger < life*_RATIO_RISK_DEATH ? 
+				danger*_RATIO_DANGER
+				: danger*_RATIO_DANGER + _SCORE_DEATH;
+		// enemy mp used
+		tmpScore += tmpScore == 0 ? 0 : eMpUsed*_RATIO_MP_USED;
+		// espacement entre les leeks
+		for(var cell in _areaCells1[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=150;
+		for(var cell in _areaCells2[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=20;
+		// gravityCells
+		for(var cell:var dist in _GRAVITY_CELLS){				
+			if(cell==nearECell){
+				if(_NEARE_FULLMAP_PATH_DIST!=null){
+					var pathDist = _NEARE_FULLMAP_PATH_DIST[sCell];
+					if(pathDist==null){
+						tmpScore -= abs(dist-getCellDistance(cell, sCell))*_GRAVITY_COEFS[cell];
+					}else{
+						tmpScore -= abs(dist-pathDist)*_GRAVITY_COEFS[cell]*2;
+					}
+				}else tmpScore -= abs(dist-getCellDistance(cell, sCell))*2*_GRAVITY_COEFS[cell];
+			}else tmpScore -= abs(dist-getCellDistance(cell, sCell))*_GRAVITY_COEFS[cell];
 		}
-		if(safestCell==null || tmpScore > bestScore){
-			safestCell = sCell;
+		// blocking
+		if(count(@_areaCells1[nearECell])==1){
+			for(var cell in _areaCells1[nearECell]){
+				if(cell==sCell) tmpScore+= 3000;
+			}
+		}
+		// validation du meilleure coup
+		if(safeCell==null || tmpScore > score){
+			safeCell = sCell;
 			minDanger = danger;
-			bestScore = tmpScore;
+			score = tmpScore;
+			mpUsed = eMpUsed;
 		}
-	}
-	return @safestCell;
+	} // caching de l'objet résultat.
+	return @[_sCell: safeCell, _danger: minDanger, _score: score, _mpused: mpUsed];
 }

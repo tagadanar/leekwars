@@ -21,6 +21,14 @@ function getItemName(@item){
 	return @(getWeaponName(item)+getChipName(item));
 }
 
+// génère un id unique pour une cell et un array d'id, sous la forme d'un int
+// on suppose 612 cases (10bit) + des id inférieur à 32 (5bit) et pas plus de 4 morts pour 30bits max.
+function getUniqIdCellDead(@cell, @dead){
+	var uniqId = cell;
+	for(var key:var d in dead) uniqId |= dead << (10 + 5*key);
+	return @uniqId;
+}
+
 // return un id unique pour une weap/chip & un array d'idleek peu importe l'ordre.
 // ainsi que la case cible pour les armes à aoe (mettre null sinon pour les lazer !)
 function getUniqueID_safeCell(@cell, @ids, @stack){
@@ -48,6 +56,26 @@ function getReachableCells(@cells, mp, @ignoreCells){
 		next = [];
 	}
 	return @stack;
+}
+
+// return une version en cache des cases accessibles, et rajoute les mp manquants si besoin.
+// ATTENTION : le tableau retourné par cette fonction peut inclure des mp au delà de @mp
+// penser à check les mp dans le code avec un for(var c:var dist in reach) if(dist>mp)break;
+function getCachedReachableCells(@fromCell, @mp, @dead){
+	var uniqId = getUniqIdCellDead(fromCell, dead);
+	var result = @_CACHE_REACHABLE_DANGER[uniqId];
+	if(result==null){
+		var ignored = [getCell()];for(var d in dead) push(ignored, getCell(d));
+		result = getReachableCells([fromCell:0], mp, ignored);
+		_CACHE_REACHABLE_SIZE[uniqId] = mp;
+		_CACHE_REACHABLE_DANGER[uniqId] = @result;
+	}else if(_CACHE_REACHABLE_SIZE[uniqId] < mp){
+		var ignored = [getCell()];for(var d in dead) push(ignored, getCell(d));
+		result = getReachableCells(_CACHE_REACHABLE_DANGER[uniqId], mp-_CACHE_REACHABLE_SIZE[uniqId], ignored);
+		_CACHE_REACHABLE_SIZE[uniqId] = mp;
+		_CACHE_REACHABLE_DANGER[uniqId] = @result;
+	}
+	return @result;
 }
 
 function getNearestEnemyLeek(){
@@ -137,6 +165,7 @@ function prepareCellArea3(@c, @obstacle){
     return @result;
 }
 
+// retourne un tableau de cells à partir d'un tableau de leeks
 function getCellsFromLeeks(@leeks){
 	var cells = [];
 	for(var l in leeks) push(cells, getCell(l));
@@ -180,8 +209,7 @@ function convertBinariesToCombos(@binaries){
 
 function getComboFromBin(@binary){
 	var combo = [];
-	var mask = createMask(0, 3);
-	var cnt = binary & mask;	
+	var cnt = binary & _MASK_0_3;	
 	for(var i = 0; i < cnt; i++){
 		var key = (binary & createMask(4+i*4, 7+i*4)) >> (4+i*4);
 		var item = _DECODING_STUFF[key];
@@ -193,14 +221,46 @@ function getComboFromBin(@binary){
 function getBinFromCombo(@combo){
 	if(count(combo)>7) debugE("TROP D'ITEM DANS LA COMBO POUR EN FAIRE UN BINARY");
 	var id = 0;
-	var mask = createMask(0, 3);
-	id |= mask & count(combo);
+	id |= _MASK_0_3 & count(combo);
 	for(var i = 0; i < count(combo); i++){
 		id |= (_ENCODING_STUFF[combo[i]] << (4+4*i));
 	}
 	return @id;
 }
 
+function getActionFromBin(@binary){
+	var action = [];
+	action[_item] = _DECODING_STUFF[(binary & _MASK_0_3)];
+	action[_from] = (binary & _MASK_4_13) >> 4;
+	action[_to] = (binary & _MASK_14_23) >> 14;
+	return @action;
+}
+
+function getBinFromAction(@action){
+	var id = 0;
+	id |= _MASK_0_3 & _ENCODING_STUFF[action[_item]];
+	id |= (action[_from] << 4);
+	id |= (action[_to] << 14);
+	return @id;
+}
+
+function getActionFromBin_(@binary, @from, @to, @item){
+	item = _DECODING_STUFF[(binary & _MASK_0_3)];
+	from = (binary & _MASK_4_13) >> 4;
+	to = (binary & _MASK_14_23) >> 14;
+}
+
+function getBinFromAction_(@from, @to, @item){
+	var id = 0;
+	id |= _MASK_0_3 & _ENCODING_STUFF[item];
+	id |= (from << 4);
+	id |= (to << 14);
+	return @id;
+}
+
+global _MASK_0_3 = createMask(0, 3);
+global _MASK_4_13 = createMask(4, 13);
+global _MASK_14_23 = createMask(14, 23);
 function createMask(@a, @b){
    var r = 0;
    for(var i=a; i<=b; i++) r |= 1 << i;

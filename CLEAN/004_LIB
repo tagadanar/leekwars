@@ -26,7 +26,7 @@ function sayCupidon(){
 		,"Je vais le tuer, Sire ! Je vais tellement si tant y taper sa gueule qu'il va décéder !"
 		,"Non mais vous croyez pas qu'j'marche au sifflet ! Mais qu'est-ce que j'en ai à foutre de vos horaires ? J'arrive quand j'arrive et puis c'est tout."
 		,"Si il y a un mot plus haut que l'autre, je vous mets toute la tartine dans la gueule et je rentre chez moi, j'ai pas que ça à glander."
-		,"Commencez pas à noyer la peau de l’ours avant d’avoir vendu le poisson."
+		,"Commencez pas à noyer la peau de l’ours avant d'avoir vendu le poisson."
 		,"Ah bah non ! On va leur foutre deux, trois pierres dans la gueule et on va allumer des incendies... Mais faut pas déconner, ils y sont pour rien."
 		,"Je dirais également que le genou peut partir dans les noix de manière assez soudaine et que ça pourrait éventuellement vous faire sortir les baloches par les oreilles. N'y voyez aucune malice !"
 		,"Ben ils m'ont dit d'aller me faire mettre. Après, ils m'ont jeté des gadins et une marmite avec un restant de soupe de poisson."
@@ -52,7 +52,11 @@ function getComboSet(@entity){
 	var eType = getEntityType(entity), TP = getTP(), combos = [];
 	if(eType==ENTITY_LEEK_){
 		// liste des combos à tester
-		var comboz = jsonDecode(getFullRegister(getTP()));
+		var comboz = jsonDecode(getFullRegister(TP));
+		if(comboz==null){
+			debugE("NO JSON FOR "+TP+" TP !");
+			while(comboz==null) comboz = jsonDecode(getFullRegister(--TP));
+		}
 		// choix du set de combo en fonction de mon état
 		if(getWeapon()==null) combos = @comboz["EMPTY"];
 		else combos = @comboz[string(getWeapon())];
@@ -510,7 +514,7 @@ function _getNearCellToUseItemOnCell(@item, @cell, @mapPathDist){
 			var fromCell = getCellFromXY(x1, y1);
 			if(fromCell!=null 
 			&& _OBSTACLES[fromCell]==null 
-			&& _LEEKS_CELL[fromCell]==null){
+			&& (_LEEKS_CELL[fromCell]==null || (fromCell==cell && minrange==0))){
 				var dist = getCellDistance(fromCell,cell);
 				if(dist >= minrange && dist <= maxrange
 				&& (!needlos || lineOfSight(fromCell, cell, leekToIgnore))

@@ -8,11 +8,16 @@ if(getTurn()==1){
 	for(var i=0;i<=_MAX_CELL;i++){
 		if(isObstacle(i))	_OBSTACLES[i]=true;
 		else				_CELLS_NO_OBSTACLES[i] = i;
-		
+	}
+	for(var i=0;i<=_MAX_CELL;i++){
 		_areaCells1[i]			= prepareCellArea(i, false);
 		_areaCells1Obstacle[i]	= prepareCellArea(i, true);
 		_areaCells2[i]			= prepareCellArea2(i, false);
 		_areaCells3[i]			= prepareCellArea3(i, false);
+		/*if(_areaCells1[i] != null && count(_areaCells1[i])==1){
+			mark(i, COLOR_BLUE);
+			mark(_areaCells1[i][0], COLOR_RED);
+		}*/
 	}
 	for(var i=0; i <= _MAX_ITEM_ID; i++){ // reminder: idmax à 110 @janvier2016
 		_CACHE_ITEM_FROMCELL_TARGETCELLS[i] = [];
@@ -57,6 +62,7 @@ if(getTurn()==1){
 }
 
 function refreshLeeksCellsAndAliveStatus(){
+	refreshStuff();
 	_SELF 					= getLeek();
 	// refresh leek cells & alive allies/enemies
 	_ALIVE_ALLIES 			= getAliveAllies();
@@ -128,15 +134,15 @@ function refreshLeeksCellsAndAliveStatus(){
 		}
 	}
 
-	_SCN_STR_100 = false;
-	_SCN_STR_200 = false;
-	_SCN_STR_300 = false;
+	_STR_100 = false;
+	_STR_300 = false;
+	_SNC_400 = false;
 	for(var e in _ALIVE_ENEMIES){
-		if(getStrength(e)>=100 || getScience(e)>=100) _SCN_STR_100 = true;
-		if(getStrength(e)>=200 || getScience(e)>=200) _SCN_STR_200 = true;
-		if(getStrength(e)>=300 || getScience(e)>=300) _SCN_STR_300 = true;
+		if(getStrength(e)>100) _STR_100 = true;
+		if(getStrength(e)>300) _STR_300 = true;
+		if(getScience(e)>=400) _SNC_400 = true;
 	}
-	if(getLevel()<30) _SCN_STR_100 = true;
+	if(getLevel()<30) _STR_100 = true;
 }
 
 function refreshLeeksEffectsAndStates(){
@@ -160,6 +166,7 @@ function refreshLeeksEffectsAndStates(){
 		var leekInfo = [
 			_totallife: getTotalLife(leek)
 			,_life: getLife(leek)
+			,_lifeMissing: getTotalLife(leek)-getLife(leek)
 			,_psnlife: getLife(leek)-psnDmgTurn
 			,_psnTurn: psnDmgTurn
 			,_psnTotal: psnDmgTotal
@@ -245,7 +252,7 @@ function getLibeScore(@type, @value, @duration){
 	}else if(type == EFFECT_RELATIVE_SHIELD){
 		scoreLibe += value*_SCORE_REL_SHIELD*duration*2;
 	}else if(type == EFFECT_BUFF_STRENGTH){
-		scoreLibe += value*duration*3;
+		scoreLibe += value*duration;
 	}else if(type == EFFECT_BUFF_AGILITY){
 		scoreLibe += value*duration;
 	}else if(type == EFFECT_BUFF_MP){
@@ -264,16 +271,15 @@ function getLibeScore(@type, @value, @duration){
 
 function refreshGravityCells(@distToEnemy){
 	_GRAVITY_CELLS = [];
+	_GRAVITY_COEFS = [];
 	for(var al in _ALIVE_ALLIES_LEEKS){
 		if(al!=_SELF){
 			var cell = getCell(al);
 			_GRAVITY_CELLS[cell] = 4;
-			if(getScience(al) >= 400){
-				for(var c in _areaCells1[cell]) _GRAVITY_CELLS[cell] = 3;
-			}
-			if(getScience(al) >= 600){
-				for(var c in _areaCells2[cell]) _GRAVITY_CELLS[cell] = 2;
-			}
+			if(getScience(al) >= 600) 		_GRAVITY_COEFS[cell] = 10;
+			else if(getScience(al) >= 400) 	_GRAVITY_COEFS[cell] = 4;
+			else if(getResistance(al) >=200)_GRAVITY_COEFS[cell] = 3;
+			else 							_GRAVITY_COEFS[cell] = 1;
 		}
 	}
 	for(var al in _ALIVE_ALLIES_BULBS){
@@ -281,11 +287,23 @@ function refreshGravityCells(@distToEnemy){
 			var cell = getCell(al), type = getEntityType(al);
 			if(type==ENTITY_METALLIC_BULB){
 				_GRAVITY_CELLS[cell] = 3;
-				for(var c in _areaCells1[cell]) _GRAVITY_CELLS[cell] = 3;
+				_GRAVITY_COEFS[cell] = 4;
 			}else if(type==ENTITY_HEALER_BULB){
 				_GRAVITY_CELLS[cell] = 1;
+				_GRAVITY_COEFS[cell] = 3;
 			}
 		}
 	}
-	for(var en in _ALIVE_ENEMIES_LEEKS) _GRAVITY_CELLS[getCell(en)] = distToEnemy;
+	for(var en in _ALIVE_ENEMIES_LEEKS){
+		_GRAVITY_CELLS[getCell(en)] = distToEnemy;
+		_GRAVITY_COEFS[getCell(en)] = 1;
+	}
+	
+	_GRAVITY_CELLS[306] = 3;
+	_GRAVITY_COEFS[306] = 1;
+}
+
+function refreshStuff(){
+	_DECODING_STUFF = getWeapons()+getChips();
+	for(var id : var item in _DECODING_STUFF) _ENCODING_STUFF[item] = id;
 }

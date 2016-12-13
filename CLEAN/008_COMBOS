@@ -17,7 +17,7 @@ function findBestMove(@allComboz){
 	//raz du cache.
 	_CACHE_SCORE_SAFECELL = [];
 	_CACHE_SCORE_ACTION = [];
-	var _OP_LIMIT = OPERATIONS_LIMIT*0.95;
+	var _OP_LIMIT = OPERATIONS_LIMIT*0.98;
 	if(_IS_SUMMONER) _OP_LIMIT-= _OPERATION_BULB*(_LEEKS[_SELF][_nbBulbs]+1);
 	var _BESTMOVE=null;
 	var selfCell = getCell();
@@ -41,7 +41,7 @@ function findBestMove(@allComboz){
 				if(_OBSTACLES[c]!=null) continue;
 				var ok = true, isOnlySelf = true;
 				for(var item in combo){
-					if(assoc_from_item_actions[c][item]==null){
+					if(map_from_item_actions[c][item]==null){
 						if(self_action_array[item]==null){
 							ok = false;
 							break;
@@ -69,7 +69,7 @@ function findBestMove(@allComboz){
 				// calcul du score de la meilleure combo depuis cette case.
 				for(var item in combo){
 					// meilleure score pour chaque item
-					var actions = @assoc_from_item_actions[aCell][item];
+					var actions = @map_from_item_actions[aCell][item];
 					var aScore = 0, aBest, aStack, aDead;
 					if(actions!=null){
 						for(var action in actions){
@@ -86,7 +86,7 @@ function findBestMove(@allComboz){
 					if(self_action_array[item]!=null){
 						var tmpstack=stack, tmpdead=dead;
 						//creation d'une action self sur cette case.
-						var action= [_item:item, _from:aCell, _to:aCell, _targets:[_SELF]];
+						var action= map_from_item_actions[_action_SELFCELL][item][0];
 						tmpScore=getScoreOfAction(action, tmpstack, tmpdead);
 						if(aBest == null || aScore < tmpScore){
 							aScore = tmpScore;
@@ -142,4 +142,83 @@ function findBestMove(@allComboz){
 	//debug(__DEBUG_STRINGINFO);
 	// END DEBUG
 	return @_BESTMOVE;
+}
+
+///////////////////////////////////////////
+///////////////////////////////////////////
+//				NEW STUFF
+///////////////////////////////////////////
+///////////////////////////////////////////
+
+function generateRandomMoves(){ var n="generateRandomMoves"; startBenchFunction(n);
+	var _BESTMOVE, fromCell = getCell(), totalMp = getMP(), totalTp = getTP(), nbTry = 0;
+	
+	while(nbTry++>-1){
+		var move = [], score = 0, stack = [], dead = [], inCd = [];
+		var action, from = fromCell, mp = totalMp, tp = totalTp;
+		while(true){
+			action = tryAddAction(from, mp, tp, inCd, dead);
+			if(action!=null){
+				score += getScoreOfAction(action, stack, dead);
+				push(move, action); // getBinFromAction(action)
+			} else break;
+		}
+		var final = getSafeScore(from, mp, dead, stack);
+		score+= final[_score];
+		
+		if(_BESTMOVE==null || _BESTMOVE[_score]<score) _BESTMOVE = [
+			_score:		score
+			,_actions:	@move
+			,_sCell:	final[_sCell]
+			,_mpused: 	final[_mpused]
+			,_danger:	final[_danger]
+			//,_stack:null
+			//,_dead:null
+		];
+		if(getOperations()>OPERATIONS_LIMIT*0.95){
+			debugE("Nombre de move: " + nbTry);
+			break;
+		}
+	}
+	stopBenchFunction(n); return @_BESTMOVE;
+}
+
+function tryAddAction(@from, @mp, @tp, @inCd, @dead){ var n="tryAddAction"; startBenchFunction(n);
+	var reachable = getCachedReachableCells(from, mp, dead);
+	var size = 0, randArray = [];
+	for(var cell:var dist in reachable){
+		if(dist>mp)break;
+		for(var item in map_fromC_items[cell]){
+			if(_ITEM_COST[item]>tp) break;
+			else if(inCd[item]==null){
+				for(var action in map_from_item_actions[cell][item]){
+					randArray[size++] = action;
+				}
+			}
+		}
+	}
+	// action où je me cible moi même
+	for(var item in map_fromC_items[_action_SELFCELL]){
+		if(_ITEM_COST[item]>tp) break;
+		else if(inCd[item]==null){
+			for(var action in map_from_item_actions[_action_SELFCELL][item]){
+				randArray[size++] = action;
+			}
+		}
+	}
+	
+	if(size > 0){
+		var action = randArray[randInt(0, size)];
+		var item = action[_item], cell = action[_from];
+		//gestion autocast
+		if(cell==_action_SELFCELL){
+			action[_from] = from;
+			action[_to] = from;
+		}else{
+			mp = mp - reachable[cell];
+		}
+		tp = tp - _ITEM_COST[item];
+		if(_ITEM_HAVECD[item]) inCd[item]=item;
+		stopBenchFunction(n); return @action;
+	} else return null;
 }

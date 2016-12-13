@@ -255,9 +255,9 @@ function getItemDmg(@item, @eMgc, @eStr, @absShield, @relShield, @ratio){
         else if(type == EFFECT_POISON){
 			var duration = e[3];
 			duration = duration == 0 ? 1 : // 0 => 1
-				(duration == 2 ? 1.5 : // 2 => 1
-				(duration == 3 ? 2 : // 3 => 1.25
-				(duration == 4 ? 2 : // 4 => 1.5
+				(duration == 2 ? 1 : // 2 => 1
+				(duration == 3 ? 1.5 : // 3 => 1.25
+				(duration == 4 ? 1.5 : // 4 => 1.5
 				duration))); // 1 => 1
             dmg += optiMoy*(1+(eMgc/100)) *ratio *duration;
         }

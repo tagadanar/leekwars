@@ -2,21 +2,24 @@ include('auto');
 
 function addActionToMAPS(@item, @from, @to, @targets){
 	var dist = reachableCells[from];
-    if(dist==null )return; // filtering all action I can't reach
-	if(assoc_weap_from[item]==null) assoc_weap_from[item] = [];
-	push(assoc_weap_from[item], from);
+    if(dist==null && from!=_action_SELFCELL)return; // filtering all action I can't reach
+	//if(assoc_weap_from[item]==null) assoc_weap_from[item] = [];
+	//push(assoc_weap_from[item], from);
+	if(map_fromC_items[from]==null) map_fromC_items[from] = [];
+	push(map_fromC_items[from], item);
 	
-	if(assoc_from_item_actions[from]==null) assoc_from_item_actions[from] = [];
-	if(assoc_from_item_actions[from][item]==null) assoc_from_item_actions[from][item] = [];
+	if(map_from_item_actions[from]==null) map_from_item_actions[from] = [];
+	if(map_from_item_actions[from][item]==null) map_from_item_actions[from][item] = [];
 	
-	var action = [_item:item, _from:from, _to:to, _targets:targets];
-	push(assoc_from_item_actions[from][item], action);
+	var action = getBinFromAction_(from, to, item);
+	map_action_targets[action] = targets;
+	push(map_from_item_actions[from][item], action);
 }
 function setMapActions(){
 	prepareSetMapActions();
 	self_action_array = []; // clear
-	assoc_weap_from = []; // clear
-	assoc_from_item_actions = [];//clear
+	map_fromC_items = []; // clear
+	map_from_item_actions = [];//clear
     var interest;
     for(var w in getWeapons()){
         var weaponArea = _ITEM_AREA[w];    
@@ -72,6 +75,7 @@ function setMapActions(){
         if(isSpecialChip(c)){
 			// TODO handle resu, inversion & teleport..
 			self_action_array[c] = c;
+			addActionToMAPS(c, _action_SELFCELL, _action_SELFCELL, []);
 		}else if(chipArea==AREA_POINT){
             var targets;
 			if(c==CHIP_LIBERATION){
@@ -88,6 +92,7 @@ function setMapActions(){
 				// self_actions !
                 if(target==_SELF && _ITEM_MINRANGE[c]==0 && self_action_array[c]==null){
 					self_action_array[c] = c;
+					addActionToMAPS(c, _action_SELFCELL, _action_SELFCELL, [_SELF]);
 				}else if(target!=_SELF){	// others.
 					var toCell = getCell(target);
 					for(var from in _getCellsToUseWeapChipOnCell(c, toCell)){

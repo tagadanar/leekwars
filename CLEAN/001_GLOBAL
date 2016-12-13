@@ -2,17 +2,19 @@
 // Fichier de déclaration des globales
 ///////////////////////////////////////////
 
-global _totallife=0, _life=1, _psnlife=2,_psnTurn=3, _psnTotal=4, _effects=5, _alterateStr=6, _alterateMgc=7, _alterateTP=8, _alterateMP=9, _str=10, _mgc=11, _wsd=12, _rst=13, _agi=14, _snc=15, _tp=16, _mp=17, _relShield=18, _absShield=19, _dmgReturn=20, _scoreLibe=21, _nbBulbs=22, _bulbs=23, _map=24, _debuff=25, _shackleStr=26, _shackleMgc=27, _shackleTP=28, _shackleMP=29, _danger=30, _mpused=31, _item=32, _items=33, _minItemCost=34, _damage=35, _antidote=36, _dmg=37, _psn=38, _heal=39, _stackOfResult=40, _stackOfDeath=41, _score=42, _from=43, _to=44, _targets=45, _sCell=46, _stack=47, _actions=48, _dead=49;
+global _totallife=0, _life=1, _psnlife=2,_psnTurn=3, _psnTotal=4, _effects=5, _alterateStr=6, _alterateMgc=7, _alterateTP=8, _alterateMP=9, _str=10, _mgc=11, _wsd=12, _rst=13, _agi=14, _snc=15, _tp=16, _mp=17, _relShield=18, _absShield=19, _dmgReturn=20, _scoreLibe=21, _nbBulbs=22, _bulbs=23, _map=24, _debuff=25, _shackleStr=26, _shackleMgc=27, _shackleTP=28, _shackleMP=29, _danger=30, _mpused=31, _item=32, _items=33, _minItemCost=34, _damage=35, _antidote=36, _dmg=37, _psn=38, _heal=39, _stackOfResult=40, _stackOfDeath=41, _score=42, _from=43, _to=44, _targets=45, _sCell=46, _stack=47, _actions=48, _dead=49, _lifeMissing=50;
 
 
 global __DEBUG_ON = true;
 global __DDD_ON = false;
 global ___ = "-";
-global _OPERATION_MAP_DANGER = 1500000; // ratio + mp
+global _OPERATION_MAP_DANGER = 2000000; // ratio + mp
+if(getTurn()==3) _OPERATION_MAP_DANGER = 1500000;
+if(getTurn()==5) _OPERATION_MAP_DANGER = 1000000;
 global _OPERATION_BULB = 600000;
 
 global _MAX_ITEM_ID = 150; //110 @2016
-global _MAX_CELL = 612; 
+global _MAX_CELL = 612;
 global _MIN_INT = -2147483648, _MAX_INT = 2147483647;
 global _SCORE_KILL_DMG = 2000;
 global _SCORE_KILL_PSN = 100;
@@ -27,8 +29,8 @@ global _SCORE_MP = 30;
 global _SCORE_TP = 30;
 global _SCORE_REL_SHIELD = 4;
 
-global _DECODING_STUFF = getWeapons()+getChips(), _ENCODING_STUFF = [];
-if(getTurn()==1)for(var id : var item in _DECODING_STUFF) _ENCODING_STUFF[item] = id;
+global _DECODING_STUFF, _ENCODING_STUFF = [];
+
 // ========================
 // INFOS LEEKS
 // ========================
@@ -37,6 +39,7 @@ if(getTurn()==1)for(var id : var item in _DECODING_STUFF) _ENCODING_STUFF[item] 
 global _SELF = getLeek();
 global _NEAREST_ENEMY_LEEK;
 global _GRAVITY_CELLS = [];
+global _GRAVITY_COEFS = [];
 global _SHOULD_KEEP_MAINWEAP_INHAND = false;
 global _CANT_HEAL = getWisdom()<=0 && _ENCODING_STUFF[CHIP_HEALER_BULB]==null;
 global _IS_TELEPORT = _ENCODING_STUFF[CHIP_TELEPORTATION]!=null;
@@ -104,6 +107,10 @@ global _COEF_RETURN_DMG;
 global _RESU_TARGET;
 global _RESU_SCORE;
 
+global _STR_100;
+global _STR_300;
+global _SNC_400;
+
 global _SCORE_ITEM = [];
 global _MOY_COEF = [];
 
@@ -131,18 +138,21 @@ global reachableCells; //[cell:mp]
 global map_danger; // [cell:dmg]
 global map_leek_weap_danger; // [leek: [weap: [map_danger]]]
 
-global _SCN_STR_100;
-global _SCN_STR_200;
-global _SCN_STR_300;
+// actions !
+global _action_SELFCELL = 1023;
+global map_action_targets = [];
+global self_action_array = []; // [chip:chip]
+global map_fromC_items = []; // [cellFrom:[itemId]]
+global map_from_item_actions = []; // [cellFrom:[itemId:[actions]]]
+
 
 // pour baisser le coût de setMapActions();
 global atkCellsPoint = [], atkCellsArea1 = [], atkCellsArea2 = [], atkCellsArea3 = [],
 	   defCellsPoint = [], defCellsArea1 = [], defCellsArea2 = [], defCellsArea3 = [];
-global map_actions; // ["id":w, "from":fromCell, "to":toCell, "targets":targets]
-// autre global de la map actions (used in findBestMove):
-global self_action_array = []; // [chip:chip]
-global assoc_weap_from = []; // [itemId:cellFrom]
-global assoc_from_item_actions = []; // [cellFrom:[itemId:[actions]]]
+ // ["id":w, "from":fromCell, "to":toCell, "targets":targets]
+
+
+
 
 // cache
 global _INDEX_DANGER;
@@ -294,6 +304,9 @@ global _CHIP_ISPOSITIV = [
     CHIP_WINGED_BOOTS:true
 ];
 
+// true = onlybulb
+// false = everyone
+// null = onlyleek
 global _CHIP_ISONLYBULB = [
     CHIP_ACCELERATION:true,
     CHIP_ADRENALINE:false,
@@ -336,7 +349,7 @@ global _CHIP_ISONLYBULB = [
     CHIP_PLAGUE:false,
     CHIP_PROTEIN:false,
     CHIP_PUNY_BULB:false,//specialCHIP
-    CHIP_RAGE:false,
+    CHIP_RAGE:null,
     CHIP_RAMPART:false,
     CHIP_REFLEXES:false,
     CHIP_REGENERATION:false, 

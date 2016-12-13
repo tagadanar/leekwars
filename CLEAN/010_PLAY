@@ -5,8 +5,13 @@ function playBestMove(bestMove){
 	debug("mpused: "+ bestMove[_mpused]);
 	debug("kill: "+ bestMove[_dead]);
 	var delayedSummon = [];
-	for(var action in bestMove[_actions]){
+	for(var actionBin in bestMove[_actions]){
+		var action = getActionFromBin(actionBin);
 		var item = action[_item], from = action[_from], to = action[_to];
+		if(from == _action_SELFCELL){
+			from = getCell();
+			to = getCell();
+		}
 		moveTowardCell(from);
 		if(isSpecialChip(item)){ // GESTION SUMMON
 			push(delayedSummon, item);
