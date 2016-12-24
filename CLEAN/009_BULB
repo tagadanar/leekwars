@@ -8,7 +8,7 @@ include('auto');
 
 function findBestSingleAction(@stuff, @dead){
 	var reachable = getReachableCells([getCell():0], getMP(), []);
-	var bestScore = 0, bestAction, bestDead;
+	var bestScore = 0, bestAction, bestDead = [];
 	for(var item in stuff){
 		if(_ITEM_COST[item] <= getTP() && getCooldown(item)==0){
 			var area = _ITEM_AREA[item];
@@ -58,21 +58,25 @@ function ia_bulb_main(){ startOp();
 	prepareSetMapActions(); // 2k op pour ré-init les positions de tout le monde (bug selfcast)
 	if(getTurn()==getBirthTurn()) updateCoef(getLeek());
 	
-	var type = getEntityType(getLeek()), stuff;
-	if(type==ENTITY_PUNY_BULB)
+	var type = getEntityType(getLeek()), stuff, distToE = 0;
+	if(type==ENTITY_PUNY_BULB){
 		stuff =@[CHIP_PROTEIN, CHIP_HELMET, CHIP_BANDAGE, CHIP_PEBBLE];
-	else if(type==ENTITY_ROCKY_BULB)
+	}else if(type==ENTITY_ROCKY_BULB){
 		stuff =@[CHIP_ROCKFALL, CHIP_ROCK, CHIP_PEBBLE, CHIP_HELMET];
-	else if(type==ENTITY_ICED_BULB)
+	}else if(type==ENTITY_ICED_BULB){
 		stuff =@[CHIP_ICEBERG, CHIP_STALACTITE, CHIP_ICE, CHIP_REFLEXES];
-	else if(type==ENTITY_HEALER_BULB)
+	}else if(type==ENTITY_HEALER_BULB){
+		distToE = 20;
 		stuff =@[CHIP_CURE, CHIP_DRIP, CHIP_VACCINE, CHIP_BANDAGE];
-	else if(type==ENTITY_METALLIC_BULB)
+	}else if(type==ENTITY_METALLIC_BULB){
+		distToE = 20;
 		stuff =@[CHIP_ARMOR, CHIP_SHIELD, CHIP_WALL, CHIP_SEVEN_LEAGUE_BOOTS];
-	else if(type==ENTITY_FIRE_BULB)
+	}else if(type==ENTITY_FIRE_BULB){
 		stuff =@[CHIP_METEORITE, CHIP_DEVIL_STRIKE, CHIP_FLAME, CHIP_SPARK];
-	else if(type==ENTITY_LIGHTNING_BULB)
+	}else if(type==ENTITY_LIGHTNING_BULB){
 		stuff =@[CHIP_LIGHTNING, CHIP_FLASH, CHIP_SHOCK, CHIP_DOPING];
+	}
+	refreshGravityCells(distToE);
 	// playing
 	var dead = [];
 	while(true){
@@ -104,32 +108,29 @@ function findFinalCell(@dead){
 		// gestion du danger
 		var cellDanger = getCellDanger(sCell, dead, []);
 		var danger = cellDanger[_danger], eMpUsed = cellDanger[_mpused], tmpScore=0;
+		//debuging color
+		//var color = danger > life 	? getColor(0, 0, 0) : 
+		//		   (danger==0 		? getColor(255, 255, 255) : 
+		//							getColor(round(danger/life*255), 0, 0));
+		//mark(sCell, color);
+		//end debuging color
 		tmpScore -= danger < life*_RATIO_IGNORE_DANGER ? 0 
 			: danger < life*_RATIO_RISK_DEATH ? 
 				danger*_RATIO_DANGER
 				: danger*_RATIO_DANGER + _SCORE_DEATH;
 		// enemy mp used
-		tmpScore += tmpScore == 0 ? 0 : eMpUsed*_RATIO_MP_USED;
+		tmpScore += tmpScore == 0 ? 50 : eMpUsed*_RATIO_MP_USED;
 		// espacement entre les leeks
-		for(var cell in _areaCells1[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=150;
-		for(var cell in _areaCells2[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=20;
+		for(var cell in _areaCells1[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=1000;
+		for(var cell in _areaCells2[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=200;
 		// gravityCells
 		for(var cell:var dist in _GRAVITY_CELLS){				
-			if(cell==nearECell){
-				if(_NEARE_FULLMAP_PATH_DIST!=null){
-					var pathDist = _NEARE_FULLMAP_PATH_DIST[sCell];
-					if(pathDist==null){
-						tmpScore -= abs(dist-getCellDistance(cell, sCell))*_GRAVITY_COEFS[cell];
-					}else{
-						tmpScore -= abs(dist-pathDist)*_GRAVITY_COEFS[cell]*2;
-					}
-				}else tmpScore -= abs(dist-getCellDistance(cell, sCell))*2*_GRAVITY_COEFS[cell];
-			}else tmpScore -= abs(dist-getCellDistance(cell, sCell))*_GRAVITY_COEFS[cell];
+			tmpScore -= abs(dist-getCellDistance(cell, sCell))*_GRAVITY_COEFS[cell];
 		}
 		// blocking
 		if(count(@_areaCells1[nearECell])==1){
 			for(var cell in _areaCells1[nearECell]){
-				if(cell==sCell) tmpScore+= 3000;
+				if(cell==sCell) tmpScore+= 100000;
 			}
 		}
 		// validation du meilleure coup

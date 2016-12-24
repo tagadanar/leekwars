@@ -279,24 +279,27 @@ function refreshGravityCells(@distToEnemy){
 			if(getScience(al) >= 600) 		_GRAVITY_COEFS[cell] = 10;
 			else if(getScience(al) >= 400) 	_GRAVITY_COEFS[cell] = 4;
 			else if(getResistance(al) >=200)_GRAVITY_COEFS[cell] = 3;
+			else if(getWisdom(al) >200)_GRAVITY_COEFS[cell] = 3;
 			else 							_GRAVITY_COEFS[cell] = 1;
 		}
 	}
-	for(var al in _ALIVE_ALLIES_BULBS){
-		if(al!=_SELF){
+	if(!isSummon(getLeek())) for(var al in _ALIVE_ALLIES_BULBS){
+		//if(al!=_SELF){ useless si je fais le test de isSummon. je garde pour pas oublier si jamais je change d'avis plus tard
 			var cell = getCell(al), type = getEntityType(al);
 			if(type==ENTITY_METALLIC_BULB){
+				_GRAVITY_CELLS[cell] = 1;
+				_GRAVITY_COEFS[cell] = 5;
+			}else if(type==ENTITY_HEALER_BULB){
 				_GRAVITY_CELLS[cell] = 3;
 				_GRAVITY_COEFS[cell] = 4;
-			}else if(type==ENTITY_HEALER_BULB){
-				_GRAVITY_CELLS[cell] = 1;
-				_GRAVITY_COEFS[cell] = 3;
 			}
-		}
+		//}
 	}
+	var coef = count(_ALIVE_ALLIES) - count(_ALIVE_ENEMIES)+1;
+	if(coef<1)coef=1;
 	for(var en in _ALIVE_ENEMIES_LEEKS){
 		_GRAVITY_CELLS[getCell(en)] = distToEnemy;
-		_GRAVITY_COEFS[getCell(en)] = 1;
+		_GRAVITY_COEFS[getCell(en)] = coef;
 	}
 	
 	_GRAVITY_CELLS[306] = 3;

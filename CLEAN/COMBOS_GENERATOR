@@ -24,7 +24,7 @@ while(_COMBOS_TP<=_MAX_TP +20){
 	while(_ITEM_INDEX <= _MAX_INDEX){
 		fillComboArray(_CURRENT_COMBO_ARRAY, inHands[_ITEM_INDEX]);
 		_ITEM_INDEX++;
-		if(getOperations()>= OPERATIONS_LIMIT*0.3) {
+		if(getOperations()>= OPERATIONS_LIMIT*0.8) {
 			debugW("break @"+(getOperations()/1000)+"k opés");
 			return;
 		}
@@ -277,7 +277,7 @@ function needSpecialScore(@item){
 }
 
 function getSpecialScore(@item){
-	return _ITEM_COST[item]*15;
+	return _ITEM_COST[item]*10;
 }
 
 global _listedsortedID = [], scoredCombosOff = [], scoredCombosDef = [];

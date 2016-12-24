@@ -20,7 +20,6 @@ function playBestMove(bestMove){
 			useWeaponOnCell(to);
 		}
 		else useChipOnCell(item, to);
-		debug(_ITEMID_TOSTRING[item]+": "+action[_score]);
 		
 		// on compte les utilisations :
 		if(!isSummon(getLeek())){

@@ -17,19 +17,21 @@ global _MAX_ITEM_ID = 150; //110 @2016
 global _MAX_CELL = 612;
 global _MIN_INT = -2147483648, _MAX_INT = 2147483647;
 global _SCORE_KILL_DMG = 2000;
-global _SCORE_KILL_PSN = 100;
-global _SCORE_DEATH = 15000;
+global _SCORE_KILL_PSN = 500;
+global _SCORE_DEATH = 10000;
 
-global _RATIO_RISK_DEATH = 0.8; // un danger > à 80% de ma vie total est risky
+global _RATIO_RISK_DEATH = 0.7; // un danger > à 70% de ma vie total est risky
 global _RATIO_IGNORE_DANGER = 0.25;
 global _RATIO_DANGER = 1;
 global _RATIO_MP_USED = 5;
 
-global _SCORE_MP = 30;
-global _SCORE_TP = 30;
+global _SCORE_MP = 40;
+global _SCORE_TP = 40;
 global _SCORE_REL_SHIELD = 4;
 
 global _DECODING_STUFF, _ENCODING_STUFF = [];
+_DECODING_STUFF = @(getWeapons()+getChips());
+for(var id : var item in _DECODING_STUFF) _ENCODING_STUFF[item] = id;
 
 // ========================
 // INFOS LEEKS
@@ -51,35 +53,7 @@ global _IS_SUMMONER = _ENCODING_STUFF[CHIP_LIGHTNING_BULB]!=null
 				   || _ENCODING_STUFF[CHIP_ICED_BULB]!=null
 				   || _ENCODING_STUFF[CHIP_ROCKY_BULB]!=null
 				   || _ENCODING_STUFF[CHIP_PUNY_BULB]!=null;
-global _IS_CAC = !(_ENCODING_STUFF[WEAPON_M_LASER]!=null
-				|| _ENCODING_STUFF[WEAPON_ELECTRISOR]!=null
-				|| _ENCODING_STUFF[WEAPON_GRENADE_LAUNCHER]!=null
-				|| _ENCODING_STUFF[WEAPON_GAZOR]!=null
-				|| _ENCODING_STUFF[WEAPON_DESTROYER]!=null
-				|| _ENCODING_STUFF[WEAPON_B_LASER]!=null
-				|| _ENCODING_STUFF[WEAPON_FLAME_THROWER]!=null
-				|| _ENCODING_STUFF[WEAPON_LASER]!=null
-				|| _ENCODING_STUFF[WEAPON_MAGNUM]!=null
-				|| _ENCODING_STUFF[WEAPON_SHOTGUN]!=null
-				|| _ENCODING_STUFF[WEAPON_DOUBLE_GUN]!=null
-				|| _ENCODING_STUFF[WEAPON_PISTOL]!=null
-				|| _ENCODING_STUFF[WEAPON_MACHINE_GUN]!=null
-				|| _ENCODING_STUFF[CHIP_METEORITE]!=null
-				|| _ENCODING_STUFF[CHIP_LIGHTNING]!=null
-				|| _ENCODING_STUFF[CHIP_PLAGUE]!=null
-				|| _ENCODING_STUFF[CHIP_ICEBERG]!=null
-				|| _ENCODING_STUFF[CHIP_STALACTITE]!=null
-				|| _ENCODING_STUFF[CHIP_ROCKFALL]!=null
-				|| _ENCODING_STUFF[CHIP_TOXIN]!=null
-				|| _ENCODING_STUFF[CHIP_VENOM]!=null
-				|| _ENCODING_STUFF[CHIP_FLASH]!=null
-				|| _ENCODING_STUFF[CHIP_SPARK]!=null
-				|| _ENCODING_STUFF[CHIP_SHOCK]!=null
-				|| _ENCODING_STUFF[CHIP_ROCK]!=null
-				|| _ENCODING_STUFF[CHIP_PEBBLE]!=null
-				|| _ENCODING_STUFF[CHIP_ICE]!=null
-				|| _ENCODING_STUFF[CHIP_FLAME]!=null
-				|| _ENCODING_STUFF[CHIP_BURNING]!=null);
+global _IS_CAC; _IS_CAC = getWeapon()==null ? false : _ITEM_MAXRANGE[getWeapon()]==1;
 
 // fonction
 global getMainWeapon;

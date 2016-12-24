@@ -9,6 +9,12 @@ function findBestMove(@allComboz){
 			if(_ITEM_HAVECD[item] && getCooldown(item)!=0){
 				ok=false;
 				break;
+			}else if(count(_ALIVE_ALLIES_LEEKS)==1 && getName()=="HappyHalloween"){
+				// astuce pour limiter les opés en solo
+				if(item==WEAPON_B_LASER){
+					ok=false;
+					break;
+				}
 			}
 		}
 		if(ok) push(allCombos, combo);
@@ -17,7 +23,7 @@ function findBestMove(@allComboz){
 	//raz du cache.
 	_CACHE_SCORE_SAFECELL = [];
 	_CACHE_SCORE_ACTION = [];
-	var _OP_LIMIT = OPERATIONS_LIMIT*0.98;
+	var _OP_LIMIT = OPERATIONS_LIMIT*0.97;
 	if(_IS_SUMMONER) _OP_LIMIT-= _OPERATION_BULB*(_LEEKS[_SELF][_nbBulbs]+1);
 	var _BESTMOVE=null;
 	var selfCell = getCell();

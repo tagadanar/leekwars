@@ -174,7 +174,7 @@ function getCellsFromLeeks(@leeks){
 
 // retourne le type de l'entity
 function getEntityType(@entity){
-	if(!isSummon(entity)) return @ENTITY_LEEK_;
+	if(!isSummon(entity)) return ENTITY_LEEK_;
 	else{
 		var name = getName(entity);
 		return	 name == "metallic_bulb"	? ENTITY_METALLIC_BULB :
