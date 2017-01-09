@@ -272,15 +272,27 @@ function getLibeScore(@type, @value, @duration){
 function refreshGravityCells(@distToEnemy){
 	_GRAVITY_CELLS = [];
 	_GRAVITY_COEFS = [];
+	var coefAlly = 0;
 	for(var al in _ALIVE_ALLIES_LEEKS){
 		if(al!=_SELF){
 			var cell = getCell(al);
 			_GRAVITY_CELLS[cell] = 4;
-			if(getScience(al) >= 600) 		_GRAVITY_COEFS[cell] = 10;
-			else if(getScience(al) >= 400) 	_GRAVITY_COEFS[cell] = 4;
-			else if(getResistance(al) >=200)_GRAVITY_COEFS[cell] = 3;
-			else if(getWisdom(al) >200)_GRAVITY_COEFS[cell] = 3;
-			else 							_GRAVITY_COEFS[cell] = 1;
+			if(getScience(al) >= 600){
+				_GRAVITY_COEFS[cell] = 10;
+				coefAlly+=10;
+			}else if(getScience(al) >= 400){
+				_GRAVITY_COEFS[cell] = 4;
+				coefAlly+=4;
+			}else if(getResistance(al) >=200){
+				_GRAVITY_COEFS[cell] = 3;
+				coefAlly+=3;
+			}else if(getWisdom(al) >200){
+				_GRAVITY_COEFS[cell] = 3;
+				coefAlly+=3;
+			}else{
+				_GRAVITY_COEFS[cell] = 1;
+				coefAlly+=1;
+			}
 		}
 	}
 	if(!isSummon(getLeek())) for(var al in _ALIVE_ALLIES_BULBS){
@@ -289,13 +301,16 @@ function refreshGravityCells(@distToEnemy){
 			if(type==ENTITY_METALLIC_BULB){
 				_GRAVITY_CELLS[cell] = 1;
 				_GRAVITY_COEFS[cell] = 5;
+				coefAlly+=5;
 			}else if(type==ENTITY_HEALER_BULB){
 				_GRAVITY_CELLS[cell] = 3;
 				_GRAVITY_COEFS[cell] = 4;
+				coefAlly+=4;
 			}
 		//}
 	}
-	var coef = count(_ALIVE_ALLIES) - count(_ALIVE_ENEMIES)+1;
+	var coef = getTurn()>32	? ceil(coefAlly/count(_ALIVE_ALLIES_LEEKS)) 
+							: floor(coefAlly/count(_ALIVE_ENEMIES_LEEKS));
 	if(coef<1)coef=1;
 	for(var en in _ALIVE_ENEMIES_LEEKS){
 		_GRAVITY_CELLS[getCell(en)] = distToEnemy;

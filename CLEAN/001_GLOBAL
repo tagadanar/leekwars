@@ -11,7 +11,7 @@ global ___ = "-";
 global _OPERATION_MAP_DANGER = 2000000; // ratio + mp
 if(getTurn()==3) _OPERATION_MAP_DANGER = 1500000;
 if(getTurn()==5) _OPERATION_MAP_DANGER = 1000000;
-global _OPERATION_BULB = 600000;
+global _OPERATION_BULB = 400000;
 
 global _MAX_ITEM_ID = 150; //110 @2016
 global _MAX_CELL = 612;

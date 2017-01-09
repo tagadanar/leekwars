@@ -115,7 +115,7 @@ function updateCoef(idbulb){
 				_COEF_TP_BOOST[target] = -2.7;
 				_COEF_AGI_BOOST[target] = -1-(getAgility(target)/200);
 				_COEF_WSD_BOOST[target] = -2;
-				_COEF_RST_BOOST[target] = -(getResistance(target)/100);
+				_COEF_RST_BOOST[target] = -(getResistance(target)/67);
 				_COEF_SHACKLE_TP[target] = -2;
 				_COEF_SHACKLE_MP[target] = -2;
 				_COEF_SHACKLE_STR[target] = -2;
@@ -176,7 +176,7 @@ function updateCoef(idbulb){
 				_COEF_SHACKLE_MP[target] = -1;
 				_COEF_SHACKLE_STR[target] = -1;
 				_COEF_SHACKLE_MGC[target] = -1;
-				_COEF_LIBERATE[target] = -0.5;
+				_COEF_LIBERATE[target] = -0.3;
 				_COEF_RETURN_DMG[target] = -2;
 			}
 		}else{//enemy
@@ -207,9 +207,15 @@ function updateCoef(idbulb){
 				_COEF_HEAL[target] = _COEF_DMG[target];
 				_COEF_SHACKLE_TP[target] = 6;
 				_COEF_SHACKLE_MP[target] = 6;
-				_COEF_SHACKLE_STR[target] = 6;
-				if(infos[_str]<100) _COEF_SHACKLE_STR[target] = 0.5;
+				_COEF_SHACKLE_STR[target] = 7;
 				_COEF_SHACKLE_MGC[target] = 5;
+				if(getAgility()>100){
+					_COEF_SHACKLE_TP[target] += 2;
+					_COEF_SHACKLE_MP[target] += 2;
+					_COEF_SHACKLE_STR[target] += 2;
+					_COEF_SHACKLE_MGC[target] += 2;
+				}
+				if(infos[_str]<100) _COEF_SHACKLE_STR[target] = 0.5;
 				if(infos[_mgc]<100) _COEF_SHACKLE_MGC[target] = 0.5;
 				_COEF_LIBERATE[target] = 1.5;
 			}
@@ -329,7 +335,7 @@ function getSpecialChipScore(@item){
 		}else if(count(_ALIVE_ALLIES_BULBS)-_COUNT_HEALER-_COUNT_METAL<=2){
 			cost+=2;
 		} 
-		score += cost*(150-(count(_ALIVE_ALLIES_BULBS)*4)); // TODO ???
+		score += cost*(160-(count(_ALIVE_ALLIES_BULBS)*4)); // TODO ???
 		if(_COUNT_HEALER>=2 && item == CHIP_HEALER_BULB) score/=5;
 		if(_COUNT_METAL>=1 && item == CHIP_METALLIC_BULB) score/=5;
 	}
@@ -440,20 +446,20 @@ function getScoreOfAction(@actionBin, @stackOfResult, @stackOfDeath){
 				boostResValue = moy*(1+(mySnc/100))*(dmgRatio/100)*duration;
 			}
 			else if(type == EFFECT_BUFF_MP){
-				boostMPValue = round(moy*(1+(mySnc/100))*(dmgRatio/100))*duration;
+				boostMPValue = floor(moy*(1+(mySnc/100))*(dmgRatio/100))*duration;
 			}
 			else if(type == EFFECT_BUFF_TP){
-				boostTPValue = round(moy*(1+(mySnc/100))*(dmgRatio/100))*duration;
+				boostTPValue = floor(moy*(1+(mySnc/100))*(dmgRatio/100))*duration;
 			}
 			else if(type == EFFECT_SHACKLE_TP){
 				var mgcReduced = myMgc-virtualTargetState[_snc];
 				mgcReduced = mgcReduced < 0 ? 0 : mgcReduced;
-				shackleTPValue = round(pessimistmoy*(1+mgcReduced/100)*(dmgRatio/100))*duration;
+				shackleTPValue = floor(pessimistmoy*(1+mgcReduced/100)*(dmgRatio/100))*duration;
 			}
 			else if(type == EFFECT_SHACKLE_MP){
 				var mgcReduced = myMgc-virtualTargetState[_snc];
 				mgcReduced = mgcReduced < 0 ? 0 : mgcReduced;
-				shackleMPValue = round(pessimistmoy*(1+mgcReduced/100)*(dmgRatio/100))*duration;
+				shackleMPValue = floor(pessimistmoy*(1+mgcReduced/100)*(dmgRatio/100))*duration;
 			}
 			else if(type == EFFECT_SHACKLE_STRENGTH){
 				var mgcReduced = myMgc-virtualTargetState[_snc];
@@ -506,7 +512,7 @@ function getScoreOfAction(@actionBin, @stackOfResult, @stackOfDeath){
 			minDmgValue=virtualTargetState[_life];
             score+=minDmgValue*_COEF_DMG[target];
             stackOfDeath[target]=target;
-			var isBulb = isSummon(target) ? 0.3 : 1;
+			var isBulb = isSummon(target) ? (_SNC_400 ? 0.8 : 0.3) : 1;
 			score+=_SCORE_KILL_DMG*_COEF_DMG[target]*isBulb;
 			// mort de ses bulbes
 			for(var bulb in virtualTargetState[_bulbs]){

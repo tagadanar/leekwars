@@ -236,6 +236,7 @@ function getOffDmg(@item){
 			dmg+= (e[1]+e[2])/2;
 		}
 	}
+	if(item==CHIP_FRACTURE)dmg =45;
 	return dmg;
 }
 
@@ -277,7 +278,7 @@ function needSpecialScore(@item){
 }
 
 function getSpecialScore(@item){
-	return _ITEM_COST[item]*10;
+	return _ITEM_COST[item]*16;
 }
 
 global _listedsortedID = [], scoredCombosOff = [], scoredCombosDef = [];

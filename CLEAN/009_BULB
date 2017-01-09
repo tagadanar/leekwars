@@ -104,6 +104,10 @@ function findFinalCell(@dead){
 	var minDanger = _MAX_INT, score = _MIN_INT, safeCell = -1, mpUsed = -1;
 	var nearECell = getCell(_NEAREST_ENEMY_LEEK);
 	var reachable = getCachedReachableCells(fromC, mp, dead);
+	var countBulb = _COUNT_PUNY+_COUNT_ROCKY+_COUNT_ICED+_COUNT_HEALER
+					+_COUNT_METAL+_COUNT_FIRE+_COUNT_LIGHTNING;
+	var shouldIgnoreDanger = countBulb > 4 
+		&&  getEntityType(getLeek())!=ENTITY_HEALER_BULB;
 	for(var sCell:var mpused in reachable){ if(mpused > mp) break;
 		// gestion du danger
 		var cellDanger = getCellDanger(sCell, dead, []);
@@ -114,12 +118,13 @@ function findFinalCell(@dead){
 		//							getColor(round(danger/life*255), 0, 0));
 		//mark(sCell, color);
 		//end debuging color
-		tmpScore -= danger < life*_RATIO_IGNORE_DANGER ? 0 
+		if(!shouldIgnoreDanger)tmpScore -= danger < life*_RATIO_IGNORE_DANGER ? 0 
 			: danger < life*_RATIO_RISK_DEATH ? 
 				danger*_RATIO_DANGER
 				: danger*_RATIO_DANGER + _SCORE_DEATH;
 		// enemy mp used
-		tmpScore += tmpScore == 0 ? 50 : eMpUsed*_RATIO_MP_USED;
+		if(!shouldIgnoreDanger)tmpScore += tmpScore == 0 ? 50
+													: eMpUsed*_RATIO_MP_USED;
 		// espacement entre les leeks
 		for(var cell in _areaCells1[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=1000;
 		for(var cell in _areaCells2[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=200;
