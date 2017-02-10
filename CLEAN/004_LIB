@@ -48,6 +48,41 @@ function sayCupidon(){
 	say(stupidSay[randInt(0, count(stupidSay))]);
 }
 
+function filterCooldownedCombos(@allCombos){
+	var filteredCombos = [];
+	for(var name:var combo in allCombos){
+		var ok = true;
+		for(var item in combo){
+			if(_ITEM_HAVECD[item] && getCooldown(item)!=0){
+				ok=false;
+				break;
+			}
+		}
+		if(ok) push(filteredCombos, combo);
+	}
+	return @filteredCombos;
+}
+
+// filter sur offensiv pour le moment.
+function getTeleportComboSet(){
+	var combos = [], toFilter = [];
+	var tmp = jsonDecode(getFullRegister(getTP()-_ITEM_COST[CHIP_TELEPORTATION]));
+	if(getWeapon()==null) combos = @tmp["EMPTY"];
+	else combos = @tmp[string(getWeapon())];
+	combos = convertBinariesToCombos(combos);
+	for(var key: var combo in combos){
+		for(var item in combo){
+			if(!_ITEM_ISWEAP[item] &&
+			(_CHIP_ISPOSITIV[item] || getCooldown(item) > 0)){
+				push(toFilter, key);
+			}
+		}
+	}
+	for(var key in toFilter) removeKey(combos, key);
+	//unshift(combos, []); // ajout d'une combo vide au début
+	return @combos;
+}
+
 function getComboSet(@entity){
 	var eType = getEntityType(entity), TP = getTP(), combos = [];
 	if(eType==ENTITY_LEEK_){
@@ -521,6 +556,37 @@ function _getNearCellToUseItemOnCell(@item, @cell, @mapPathDist){
 				&& (!inline || isOnSameLine(fromCell,cell))){
 					if(mapPathDist[fromCell]!=null && mapPathDist[fromCell]<mpDist){
 						mpDist=mapPathDist[fromCell];
+						result=fromCell;
+					}
+				}
+			}
+		}
+	}
+	return @result;
+}
+
+// doit y avoir un bug, semble return null ou 0
+function simple_getNearCellToUseItemOnCell(@item, @cell){
+	var originCell = getCell();
+	var leekToIgnore =@[getLeek()],result, mpDist = 100,
+	x = getCellX(cell), y = getCellY(cell), isWeap = isWeapon(item),
+	minrange = isWeap ? getWeaponMinRange(item) : getChipMinRange(item),
+	maxrange = isWeap ? getWeaponMaxRange(item) : getChipMaxRange(item),
+	inline = isWeap ? isInlineWeapon(item) : isInlineChip(item),
+	needlos = isWeap ? weaponNeedLos(item) : chipNeedLos(item);
+	for(var x1 = x-maxrange; x1 <= x+maxrange; x1++){
+		for(var y1 = y-maxrange; y1 <= y+maxrange; y1++){
+			var fromCell = getCellFromXY(x1, y1);
+			if(fromCell!=null 
+			&& _OBSTACLES[fromCell]==null 
+			&& (_LEEKS_CELL[fromCell]==null || (fromCell==cell && minrange==0))){
+				var dist = getCellDistance(fromCell,cell);
+				if(dist >= minrange && dist <= maxrange
+				&& (!needlos || lineOfSight(fromCell, cell, leekToIgnore))
+				&& (!inline || isOnSameLine(fromCell,cell))){
+					var distToMe = getCellDistance(fromCell, originCell);
+					if(distToMe<mpDist){
+						mpDist=distToMe;
 						result=fromCell;
 					}
 				}

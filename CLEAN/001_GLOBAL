@@ -15,7 +15,7 @@ global _OPERATION_BULB = 400000;
 
 global _MAX_ITEM_ID = 150; //110 @2016
 global _MAX_CELL = 612;
-global _MIN_INT = -2147483648, _MAX_INT = 2147483647;
+global _MIN_INT = -2147483648; global _MAX_INT = 2147483647;
 global _SCORE_KILL_DMG = 2000;
 global _SCORE_KILL_PSN = 500;
 global _SCORE_DEATH = 10000;
@@ -31,6 +31,7 @@ global _SCORE_REL_SHIELD = 4;
 
 global _DECODING_STUFF, _ENCODING_STUFF = [];
 _DECODING_STUFF = @(getWeapons()+getChips());
+sort(_DECODING_STUFF);
 for(var id : var item in _DECODING_STUFF) _ENCODING_STUFF[item] = id;
 
 // ========================
@@ -154,6 +155,7 @@ global _LEEKS_CELL;
 
 // not used, utile pour getCellToUseWeapChipOnCell, pour avoir la plus proche en path
 global _SELF_FULLMAP_PATH_DIST;
+//global _SELF_FULLMAP_PATH_DIST_UNBLOCKED;
 global _NEARE_FULLMAP_PATH_DIST;
 
 // contient les AREA_CIRCLE_X de chaque cell non obstacle dans un array [cell1, cell2...]
@@ -364,7 +366,7 @@ global _CHIP_ISSPECIAL = [
     CHIP_METALLIC_BULB: true, // summoning
     CHIP_FIRE_BULB: true, // summoning
     CHIP_LIGHTNING_BULB: true, // summoning
-    CHIP_TELEPORTATION: true, // déplacement complexe, aucune idée
+    //CHIP_TELEPORTATION: true,
     CHIP_INVERSION:true // déplacement complexe, pareil...
 ];
 

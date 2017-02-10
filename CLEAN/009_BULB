@@ -66,10 +66,10 @@ function ia_bulb_main(){ startOp();
 	}else if(type==ENTITY_ICED_BULB){
 		stuff =@[CHIP_ICEBERG, CHIP_STALACTITE, CHIP_ICE, CHIP_REFLEXES];
 	}else if(type==ENTITY_HEALER_BULB){
-		distToE = 20;
+		distToE = 25;
 		stuff =@[CHIP_CURE, CHIP_DRIP, CHIP_VACCINE, CHIP_BANDAGE];
 	}else if(type==ENTITY_METALLIC_BULB){
-		distToE = 20;
+		distToE = 25;
 		stuff =@[CHIP_ARMOR, CHIP_SHIELD, CHIP_WALL, CHIP_SEVEN_LEAGUE_BOOTS];
 	}else if(type==ENTITY_FIRE_BULB){
 		stuff =@[CHIP_METEORITE, CHIP_DEVIL_STRIKE, CHIP_FLAME, CHIP_SPARK];

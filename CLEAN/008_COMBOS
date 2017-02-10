@@ -1,31 +1,101 @@
 include('auto');
 
-function findBestMove(@allComboz){
-	// filtre les combos dont un item n'a pas le CD
-	var allCombos = [];
-	for(var name:var combo in allComboz){
-		var ok = true;
-		for(var item in combo){
-			if(_ITEM_HAVECD[item] && getCooldown(item)!=0){
-				ok=false;
-				break;
-			}else if(count(_ALIVE_ALLIES_LEEKS)==1 && getName()=="HappyHalloween"){
-				// astuce pour limiter les opés en solo
-				if(item==WEAPON_B_LASER){
-					ok=false;
+global _CACHE_CLOSEST_ITEM = [];
+function getCellToUseItemWithTele(@enemy, @item){
+	if(_CACHE_CLOSEST_ITEM[enemy][item]==null){
+		var cell = _ITEM_ISWEAP[item]
+						? getCellToUseWeaponOnCell(item, getCell(enemy))
+						: getCellToUseChipOnCell(item, getCell(enemy));
+		//simple_getNearCellToUseItemOnCell(item, getCell(enemy));
+		_CACHE_CLOSEST_ITEM[enemy][item] = cell;
+	}
+	return _CACHE_CLOSEST_ITEM[enemy][item];
+}
+
+function findBestTeleMove(){var n="findBestTeleMove"; startBenchFunction(n);
+	if(!_IS_TELEPORT) return;
+	var maxDMG = (getTP()-_ITEM_COST[CHIP_TELEPORTATION]) * 10 * (getStrength()/100+1);
+	var _BESTMOVE=null, _BESTSCORE=_MIN_INT, maxmp = getMP();
+	for(var e in _ALIVE_ENEMIES_LEEKS) _CACHE_CLOSEST_ITEM[e] = [];
+	if(_ENCODING_STUFF[CHIP_TELEPORTATION] && getCooldown(CHIP_TELEPORTATION)==0){
+		var combos = getTeleportComboSet();
+		for(var e in _ALIVE_ENEMIES_LEEKS){
+			if(getLife(e) > maxDMG) continue;
+			var eCell = getCell(e);
+			// generation d'un move
+			for(var combo in combos){
+				// find items cell
+				var cellzItemz = [];
+				for(var item in combo){
+					var cell = getCellToUseItemWithTele(e, item);
+					cellzItemz[cell]=item;
+				}
+				//find tp cell
+				var cellTP = null;
+				for(var cell:var item in cellzItemz){
+					cellTP = _getNearCellToUseItemOnCell(CHIP_TELEPORTATION, cell, reachableCells);
 					break;
+				}
+				if(cellTP!=null){
+					var score = 0, stack = [], deads = [],
+						reach = [], from, actions = [];
+					
+					var mpleft = maxmp-reachableCells[cellTP];
+					var boolNoFirst = true; // ouais c'est moche ouais.
+					for(var cell: var item in cellzItemz){
+						if(boolNoFirst){
+							boolNoFirst = false;
+							push(actions, getBinFromAction_(cellTP, cell, CHIP_TELEPORTATION));
+						}
+						else mpleft-= reach[cell];
+						if(mpleft<0){
+							score = _MIN_INT;
+							break;
+						}
+						from = cell;
+						var action = getBinFromAction_(from, eCell, item);
+						map_action_targets[action] = _ITEM_ISWEAP[item] 
+							? getWeaponTargets(item, eCell) 
+							: getChipTargets(item, eCell);
+						push(actions, action);
+						score+= getScoreOfAction(action, stack, deads);
+						reach = getReachableCells([cell:0], mpleft, [getCell()]);
+					}
+					if(count(deads)==0)continue;
+					var final = getSafeScore(from, mpleft, deads, stack);
+					score+= final[_score];
+					if(_BESTMOVE==null || _BESTSCORE<score){
+						if(count(deads)>0){
+							_BESTMOVE = [
+								_score:score,
+								_actions:actions,
+								_sCell:final[_sCell],
+								_danger:final[_danger],
+								_mpused:final[_mpused],
+								_stack:stack,//pour le debuging
+								_dead:deads//pour le debuging
+							];
+							_BESTSCORE = score;
+						}
+					}
 				}
 			}
 		}
-		if(ok) push(allCombos, combo);
 	}
+	stopBenchFunction(n); return @_BESTMOVE;
+}
+
+
+function findBestMove(@allComboz){
+	// filtre les combos dont un item n'a pas le CD
+	var allCombos = filterCooldownedCombos(allComboz);
 	
 	//raz du cache.
 	_CACHE_SCORE_SAFECELL = [];
 	_CACHE_SCORE_ACTION = [];
 	var _OP_LIMIT = OPERATIONS_LIMIT*0.97;
 	if(_IS_SUMMONER) _OP_LIMIT-= _OPERATION_BULB*(_LEEKS[_SELF][_nbBulbs]+1);
-	var _BESTMOVE=null;
+	var _BESTMOVE = findBestTeleMove(); // return null si y'a pas tp
 	var selfCell = getCell();
 	var selfMP = getMP();
 	var selfLife = getLife();

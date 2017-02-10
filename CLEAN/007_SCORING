@@ -1,5 +1,5 @@
 include('auto');
-
+// TODO one day : http://www.mathe-fa.de/fr#result
 //debut de chaque tour après avoir init la map de danger
 function updateCoef(idbulb){
 	var somme_life_ally = 0;
@@ -65,7 +65,7 @@ function updateCoef(idbulb){
 				if(lifeRatio<0.9) _COEF_HEAL[target]+= -1;
 				if(lifeRatio<0.7) _COEF_HEAL[target]+= -1;
 				if(lifeRatio<0.5) _COEF_HEAL[target]+= -2;
-				if(canDie) _COEF_HEAL[target]=-30; // !!!!!!!!!!!!!!!!!!
+				if(canDie) _COEF_HEAL[target]=-40; // !!!!!!!!!!!!!!!!!!
 				else if(target==_SELF)_COEF_HEAL[target]+= -0.5;
 				if(getLevel(target)<getLevel()/2) _COEF_HEAL[target]/=2;
 				// reminder: doit être positif sinon les moins s'annulent !
@@ -90,7 +90,7 @@ function updateCoef(idbulb){
 				if(lifeRatio<0.4)_COEF_ABSSHIELD[target]+= -0.2;
 				if(lifeRatio<0.3)_COEF_ABSSHIELD[target]+= -0.2;
 				if(lifeRatio<0.2)_COEF_ABSSHIELD[target]+= -0.2;
-				if(canDie) _COEF_ABSSHIELD[target]=-30; // !!!!!!!!!!!!!!!!!!
+				if(canDie) _COEF_ABSSHIELD[target]=-40; // !!!!!!!!!!!!!!!!!!
 				else if(target==_SELF && _IS_CAC)_COEF_ABSSHIELD[target]+= -0.5;
 				else if(getScience(target)>500)_COEF_ABSSHIELD[target]+= -1;
 				_COEF_RELSHIELD[target] = -1.5;
@@ -103,11 +103,11 @@ function updateCoef(idbulb){
 				if(lifeRatio<0.4)_COEF_RELSHIELD[target]+= -0.2;
 				if(lifeRatio<0.3)_COEF_RELSHIELD[target]+= -0.2;
 				if(lifeRatio<0.2)_COEF_RELSHIELD[target]+= -0.2;
-				if(canDie) _COEF_RELSHIELD[target]=-30; // !!!!!!!!!!!!!!!!!!
+				if(canDie) _COEF_RELSHIELD[target]=-40; // !!!!!!!!!!!!!!!!!!
 				else if(target==_SELF && _IS_CAC)_COEF_RELSHIELD[target]+= -0.5;
 				else if(getScience(target)>500)_COEF_RELSHIELD[target]+= -1;
 				_COEF_STR_BOOST[target] = -(getStrength(target)*2/1000);
-				if(getStrength(target)>200) _COEF_STR_BOOST[target] += -3;
+				if(getStrength(target)>200) _COEF_STR_BOOST[target] += -2;
 				if(target!=_SELF && getStrength(target)>0) _COEF_STR_BOOST[target] += -0.1;
 				_COEF_MP_BOOST[target] = -2.7;
 				if(getMP(target)<9) _COEF_MP_BOOST[target]+= -0.2;
@@ -203,7 +203,7 @@ function updateCoef(idbulb){
 				if(lifeRatio<0.3)_COEF_DMG[target]+= 0.5;
 				if(lifeRatio<0.2)_COEF_DMG[target]+= 0.5;
 				if(getScience(target)>=400)_COEF_DMG[target]+= 1;
-				if(getLevel(target)<getLevel()/2) _COEF_DMG[target] -= 2;
+				if(getLevel(target)<getLevel()/1.5) _COEF_DMG[target] -= 2;
 				_COEF_HEAL[target] = _COEF_DMG[target];
 				_COEF_SHACKLE_TP[target] = 6;
 				_COEF_SHACKLE_MP[target] = 6;
@@ -316,12 +316,12 @@ function getSpecialChipScore(@item){
 			cost+=2;//avoid only summoning lightning.
 			score -=1;//but prefer lightning over firebulb
 		}else if(item==CHIP_HEALER_BULB && getLife()<getTotalLife()){
-			cost+=2;
+			cost+=8;
 		}else if(item==CHIP_HEALER_BULB){
-			cost+=1;
+			cost+=6;
 		}else if(item==CHIP_METALLIC_BULB){
 			if(_SNC_400 || _STR_300){
-				if(_COUNT_METAL==0) cost+=4;
+				if(_COUNT_METAL==0) cost+=10;
 			}else{
 				cost/=2;
 			}
@@ -336,8 +336,8 @@ function getSpecialChipScore(@item){
 			cost+=2;
 		} 
 		score += cost*(160-(count(_ALIVE_ALLIES_BULBS)*4)); // TODO ???
-		if(_COUNT_HEALER>=2 && item == CHIP_HEALER_BULB) score/=5;
-		if(_COUNT_METAL>=1 && item == CHIP_METALLIC_BULB) score/=5;
+		if(_COUNT_HEALER>=3 && item == CHIP_HEALER_BULB) score/=5;
+		if(_COUNT_METAL>=2 && item == CHIP_METALLIC_BULB) score/=5;
 	}
 	return score;
 }

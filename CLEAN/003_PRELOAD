@@ -19,7 +19,7 @@ if(getTurn()==1){
 			mark(_areaCells1[i][0], COLOR_RED);
 		}*/
 	}
-	for(var i=0; i <= _MAX_ITEM_ID; i++){ // reminder: idmax à 110 @janvier2016
+	for(var i=0; i <= _MAX_ITEM_ID; i++){ // reminder: idmax à 110 @janvier2017
 		_CACHE_ITEM_FROMCELL_TARGETCELLS[i] = [];
 		if(isWeapon(i)){
 			_ITEM_ISWEAP[i]		= true;
@@ -116,6 +116,12 @@ function refreshLeeksCellsAndAliveStatus(){
 	_NEARE_FULLMAP_PATH_DIST=getReachableCells([getCell(_NEAREST_ENEMY_LEEK):0], 200, [getCell()]);
 	
 	_SELF_FULLMAP_PATH_DIST=getReachableCells([getCell():0], 200, []);
+	
+	if(false && _IS_TELEPORT){
+		var ignoreCells = [];
+		for(var l in _ALIVE_ALLIES+_ALIVE_ENEMIES) push(ignoreCells, getCell(l));
+		//_SELF_FULLMAP_PATH_DIST_UNBLOCKED = getReachableCells([getCell():0], 200, ignoreCells);
+	}
 
 	if(_IS_RESURECT){
 		_RESU_TARGET = null;
@@ -248,9 +254,9 @@ function getLibeScore(@type, @value, @duration){
 	}else if(type == EFFECT_DAMAGE_RETURN){
 		scoreLibe += value*duration;
 	}else if(type == EFFECT_ABSOLUTE_SHIELD){
-		scoreLibe += value*duration*2;
+		scoreLibe += value*duration*3;
 	}else if(type == EFFECT_RELATIVE_SHIELD){
-		scoreLibe += value*_SCORE_REL_SHIELD*duration*2;
+		scoreLibe += value*_SCORE_REL_SHIELD*duration*3;
 	}else if(type == EFFECT_BUFF_STRENGTH){
 		scoreLibe += value*duration;
 	}else if(type == EFFECT_BUFF_AGILITY){
@@ -322,6 +328,7 @@ function refreshGravityCells(@distToEnemy){
 }
 
 function refreshStuff(){
-	_DECODING_STUFF = getWeapons()+getChips();
+	_DECODING_STUFF = @(getWeapons()+getChips());
+	sort(_DECODING_STUFF);
 	for(var id : var item in _DECODING_STUFF) _ENCODING_STUFF[item] = id;
 }
