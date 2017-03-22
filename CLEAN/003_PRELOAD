@@ -112,6 +112,17 @@ function refreshLeeksCellsAndAliveStatus(){
 		}
 	}
 	
+	// sort _ALIVE_ENEMIES_DANGER
+	var myTurnOrder = getEntityTurnOrder();
+	var totalPlayer = count(_ALIVE_ALLIES) + count(_ALIVE_ENEMIES);
+	_ALIVE_ENEMIES_DANGER = arraySort(_ALIVE_ENEMIES_DANGER, function(a, b){
+		var turnOrderA = getEntityTurnOrder(a);
+		var turnOrderB = getEntityTurnOrder(b);
+		if(turnOrderA < myTurnOrder) turnOrderA+= totalPlayer;
+		if(turnOrderB < myTurnOrder) turnOrderB+= totalPlayer;
+		return turnOrderA>turnOrderB ? 1 : turnOrderA==turnOrderB ? 0 : -1;
+	});
+	
 	_NEAREST_ENEMY_LEEK = getNearestEnemyLeek();
 	_NEARE_FULLMAP_PATH_DIST=getReachableCells([getCell(_NEAREST_ENEMY_LEEK):0], 200, [getCell()]);
 	
@@ -126,7 +137,10 @@ function refreshLeeksCellsAndAliveStatus(){
 	if(_IS_RESURECT){
 		_RESU_TARGET = null;
 		_RESU_SCORE = 0;
-		for(var al in getDeadAllies()){
+		var allies = getFightType() == FIGHT_TYPE_BATTLE_ROYALE 
+							? getDeadEnemies()
+							: getDeadAllies();
+		for(var al in allies){
 			var score = getTotalLife(al)*2+getStrength(al)+getWisdom(al)
 						+getScience(al)+getResistance(al)+getAgility(al);
 			if(isSummon(al)){
@@ -254,9 +268,9 @@ function getLibeScore(@type, @value, @duration){
 	}else if(type == EFFECT_DAMAGE_RETURN){
 		scoreLibe += value*duration;
 	}else if(type == EFFECT_ABSOLUTE_SHIELD){
-		scoreLibe += value*duration*3;
+		scoreLibe += value*duration*4;
 	}else if(type == EFFECT_RELATIVE_SHIELD){
-		scoreLibe += value*_SCORE_REL_SHIELD*duration*3;
+		scoreLibe += value*_SCORE_REL_SHIELD*duration*6;
 	}else if(type == EFFECT_BUFF_STRENGTH){
 		scoreLibe += value*duration;
 	}else if(type == EFFECT_BUFF_AGILITY){

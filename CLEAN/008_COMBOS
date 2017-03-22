@@ -13,8 +13,7 @@ function getCellToUseItemWithTele(@enemy, @item){
 }
 
 function findBestTeleMove(){var n="findBestTeleMove"; startBenchFunction(n);
-	if(!_IS_TELEPORT) return;
-	var maxDMG = (getTP()-_ITEM_COST[CHIP_TELEPORTATION]) * 10 * (getStrength()/100+1);
+	var maxDMG = (getTP()-_ITEM_COST[CHIP_TELEPORTATION]) * 12 * (getStrength()/100+1);
 	var _BESTMOVE=null, _BESTSCORE=_MIN_INT, maxmp = getMP();
 	for(var e in _ALIVE_ENEMIES_LEEKS) _CACHE_CLOSEST_ITEM[e] = [];
 	if(_ENCODING_STUFF[CHIP_TELEPORTATION] && getCooldown(CHIP_TELEPORTATION)==0){
@@ -95,7 +94,7 @@ function findBestMove(@allComboz){
 	_CACHE_SCORE_ACTION = [];
 	var _OP_LIMIT = OPERATIONS_LIMIT*0.97;
 	if(_IS_SUMMONER) _OP_LIMIT-= _OPERATION_BULB*(_LEEKS[_SELF][_nbBulbs]+1);
-	var _BESTMOVE = findBestTeleMove(); // return null si y'a pas tp
+	var _BESTMOVE = _IS_TELEPORT ? findBestTeleMove() : null;
 	var selfCell = getCell();
 	var selfMP = getMP();
 	var selfLife = getLife();

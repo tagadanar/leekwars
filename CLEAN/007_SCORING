@@ -65,7 +65,7 @@ function updateCoef(idbulb){
 				if(lifeRatio<0.9) _COEF_HEAL[target]+= -1;
 				if(lifeRatio<0.7) _COEF_HEAL[target]+= -1;
 				if(lifeRatio<0.5) _COEF_HEAL[target]+= -2;
-				if(canDie) _COEF_HEAL[target]=-40; // !!!!!!!!!!!!!!!!!!
+				if(canDie) _COEF_HEAL[target]=-50; // !!!!!!!!!!!!!!!!!!
 				else if(target==_SELF)_COEF_HEAL[target]+= -0.5;
 				if(getLevel(target)<getLevel()/2) _COEF_HEAL[target]/=2;
 				// reminder: doit être positif sinon les moins s'annulent !
@@ -90,7 +90,7 @@ function updateCoef(idbulb){
 				if(lifeRatio<0.4)_COEF_ABSSHIELD[target]+= -0.2;
 				if(lifeRatio<0.3)_COEF_ABSSHIELD[target]+= -0.2;
 				if(lifeRatio<0.2)_COEF_ABSSHIELD[target]+= -0.2;
-				if(canDie) _COEF_ABSSHIELD[target]=-40; // !!!!!!!!!!!!!!!!!!
+				if(canDie) _COEF_ABSSHIELD[target]=-50; // !!!!!!!!!!!!!!!!!!
 				else if(target==_SELF && _IS_CAC)_COEF_ABSSHIELD[target]+= -0.5;
 				else if(getScience(target)>500)_COEF_ABSSHIELD[target]+= -1;
 				_COEF_RELSHIELD[target] = -1.5;
@@ -103,7 +103,7 @@ function updateCoef(idbulb){
 				if(lifeRatio<0.4)_COEF_RELSHIELD[target]+= -0.2;
 				if(lifeRatio<0.3)_COEF_RELSHIELD[target]+= -0.2;
 				if(lifeRatio<0.2)_COEF_RELSHIELD[target]+= -0.2;
-				if(canDie) _COEF_RELSHIELD[target]=-40; // !!!!!!!!!!!!!!!!!!
+				if(canDie) _COEF_RELSHIELD[target]=-50; // !!!!!!!!!!!!!!!!!!
 				else if(target==_SELF && _IS_CAC)_COEF_RELSHIELD[target]+= -0.5;
 				else if(getScience(target)>500)_COEF_RELSHIELD[target]+= -1;
 				_COEF_STR_BOOST[target] = -(getStrength(target)*2/1000);
@@ -116,6 +116,8 @@ function updateCoef(idbulb){
 				_COEF_AGI_BOOST[target] = -1-(getAgility(target)/200);
 				_COEF_WSD_BOOST[target] = -2;
 				_COEF_RST_BOOST[target] = -(getResistance(target)/67);
+				if(getResistance(target)<400 && _COEF_RST_BOOST[target]!=0)
+					_COEF_RST_BOOST[target] += -2;
 				_COEF_SHACKLE_TP[target] = -2;
 				_COEF_SHACKLE_MP[target] = -2;
 				_COEF_SHACKLE_STR[target] = -2;

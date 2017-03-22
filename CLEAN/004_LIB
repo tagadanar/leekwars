@@ -34,17 +34,13 @@ function sayCupidon(){
 		,"Attention, attention… il va y arriver un moment où il y a des granges qui vont se mettre à flamber, faudra pas demander d’où ça vient !"
 		,"Je vais rentrer mes vaches, là, elles sont accessibles ou faut que je fasse monter un échafaudage ?"
 		,"Ce que je dis, tout le monde s'en tamponne ! Je gueule, je gueule, j'pourrais gueuler dans le cul d'un poney ce serait pareil !"
-		,"Je lui rembourse mes genoux, et si il a filé la vérole à mes bêtes, chuis chuis un marteau moi ! Je crame tout moi ! Ma ferme, la sienne, celles des autres, le château, j'vais flamber la moitié de la Bretagne."
-		,"Non mais est-ce que vous êtes pas un peu marteau, vous ? Parce que moi ça y est, j'ai les nerfs qui commencent à vriller ! Je vous montre : moi je bondis comme ça, et je vous arrive dessus en piqué diagonal. Et là c'est l'hymne à la cruauté, hein, un autel dressé au culte de la barbarie !"
+		,"Chuis un marteau moi ! Je crame tout moi ! Ma ferme, la sienne, celles des autres, le château, j'vais flamber la moitié de la Bretagne."
+		,"Je vous montre : moi je bondis comme ça, et je vous arrive dessus en piqué diagonal !"
 		,"Victoriae mundis et mundis lacrima. Bon, ça ne veut absolument rien dire, mais je trouve que c’est assez dans le ton."
-		,"Mais parce que votre existence est merdique mon pauvre ami, vous avez l'œil qui brille à chaque fois qu'un oiseau pète, c'est triste à voir. Ça fait des années que vous menez un train de vie de noix de St-Jacques, alors évidemment, un message qui annonce la visite d'un imbécile porteur de bonnes nouvelles, c'est déjà un petit festival pour vous ! J'suis sûr que vous vous êtes peigné pour l'occasion !"
+		,"Mais parce que votre existence est merdique mon pauvre ami, vous avez l'œil qui brille à chaque fois qu'un oiseau pète, c'est triste à voir."
 	];
 	if(!isSummon(getNearestEnemy())) push(stupidSay, getName(getNearestEnemy()) + " est un hérétique, je VEUX BRÛLER CETTE PERSONNE !");
-	
-	if(getName()=="JoeDalton") push(stupidSay, "Contrainte : Corps à corps only, pas de bulbes.");
-	if(getName()=="WilliamDalton") push(stupidSay, "Contrainte : Pas d'armes, pas de bulbes.");
-	if(getName()=="JackDalton") push(stupidSay, "Contrainte : Pas de puces.");
-	
+
 	say(stupidSay[randInt(0, count(stupidSay))]);
 }
 

@@ -16,9 +16,9 @@ global _OPERATION_BULB = 400000;
 global _MAX_ITEM_ID = 150; //110 @2016
 global _MAX_CELL = 612;
 global _MIN_INT = -2147483648; global _MAX_INT = 2147483647;
-global _SCORE_KILL_DMG = 2000;
+global _SCORE_KILL_DMG = 3000;
 global _SCORE_KILL_PSN = 500;
-global _SCORE_DEATH = 10000;
+global _SCORE_DEATH = 15000;
 
 global _RATIO_RISK_DEATH = 0.7; // un danger > à 70% de ma vie total est risky
 global _RATIO_IGNORE_DANGER = 0.25;
@@ -27,7 +27,7 @@ global _RATIO_MP_USED = 5;
 
 global _SCORE_MP = 40;
 global _SCORE_TP = 40;
-global _SCORE_REL_SHIELD = 4;
+global _SCORE_REL_SHIELD = 5;
 
 global _DECODING_STUFF, _ENCODING_STUFF = [];
 _DECODING_STUFF = @(getWeapons()+getChips());

@@ -193,8 +193,8 @@ function loadMapsDanger(maxOp){
 				if(e==_ALIVE_ENEMIES_DANGER[0]) debugE((index+1)+getItemName(item));
 			}
 		}
-		// on fait minimum 2 armes, on dépasse pas la limite, on fait pas plus de 7 armes.
-		if(index > 0 && (getOperations()-startOperation>maxOp || index > 6)){
+		// on fait minimum 3 (>=2) armes, on dépasse pas la limite, on fait pas plus de 7 armes.
+		if(index >= 2 && (getOperations()-startOperation>maxOp || index > 6)){
 			debugE('Turn'+getTurn()+' breaking loadMapsDanger at index: '+index);
 			_INDEX_DANGER=index;
 			break;
@@ -277,6 +277,7 @@ function getCellDanger(@cell, @ignoreLeeks, @stack){
 		}
 		var defendingState = getSimplifiedVirtualStateDef(id, stack);
 		var absShield = defendingState[_absShield], relShield = defendingState[_relShield];
+		var skipLibe = false;
 		var finalDanger = 0, sumMp = 0, nbItem = 0;
 		for(var enemy in _ALIVE_ENEMIES_DANGER){
 			if(inArray(ignoreLeeks, enemy)) continue;
@@ -289,6 +290,7 @@ function getCellDanger(@cell, @ignoreLeeks, @stack){
 			MP = offensivState[_mp];
 			var cnt=0, aoeItems = [];
 			for(var i in items){
+				if(skipLibe && i==CHIP_LIBERATION) continue;
 				if(_INDEX_DANGER < cnt++) break;
 				var item = i[_item];
 				var ratio, mpused;
@@ -309,7 +311,10 @@ function getCellDanger(@cell, @ignoreLeeks, @stack){
 					}
 					var damage = _CACHE_WEAPDMG[uniqIdDmg], cost = _ITEM_COST[item];
 					if(item==CHIP_LIBERATION && stack[_SELF][_scoreLibe] > 0){
-						damage += stack[_SELF][_scoreLibe];
+						//damage += stack[_SELF][_scoreLibe];
+						absShield=0;
+						relShield=0;
+						skipLibe=true;
 					}
 					while(cost<=TP){
 						finalDanger+= damage;
@@ -342,9 +347,6 @@ function getCellDanger(@cell, @ignoreLeeks, @stack){
 					_CACHE_WEAPDMG[uniqIdDmg] = getItemDmg(item, mgc, str, absShield, relShield, ratio);
 				}
 				var damage = _CACHE_WEAPDMG[uniqIdDmg], cost = _ITEM_COST[item];
-				if(item==CHIP_LIBERATION && stack[_SELF][_scoreLibe] > 0){
-					damage += stack[_SELF][_scoreLibe];
-				}
 				while(cost<=TP){
 					finalDanger+= damage;
 					sumMp+= mpused;
