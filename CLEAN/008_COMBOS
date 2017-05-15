@@ -37,7 +37,7 @@ function findBestTeleMove(){var n="findBestTeleMove"; startBenchFunction(n);
 				}
 				if(cellTP!=null){
 					var score = 0, stack = [], deads = [],
-						reach = [], from, actions = [];
+						reach = [], from, actions = [], scores = [];
 					
 					var mpleft = maxmp-reachableCells[cellTP];
 					var boolNoFirst = true; // ouais c'est moche ouais.
@@ -45,6 +45,7 @@ function findBestTeleMove(){var n="findBestTeleMove"; startBenchFunction(n);
 						if(boolNoFirst){
 							boolNoFirst = false;
 							push(actions, getBinFromAction_(cellTP, cell, CHIP_TELEPORTATION));
+							push(scores, 0);
 						}
 						else mpleft-= reach[cell];
 						if(mpleft<0){
@@ -57,10 +58,13 @@ function findBestTeleMove(){var n="findBestTeleMove"; startBenchFunction(n);
 							? getWeaponTargets(item, eCell) 
 							: getChipTargets(item, eCell);
 						push(actions, action);
-						score+= getScoreOfAction(action, stack, deads);
+						var scr = getScoreOfAction(action, stack, deads);
+						push(scores, scr);
+						score+= scr;
 						reach = getReachableCells([cell:0], mpleft, [getCell()]);
 					}
-					if(count(deads)==0)continue;
+					// garde que les kills, sauf si j'ai l'avantage (1.5*+depv)
+					if(count(deads)==0 && _STATE_RATIO_PV<1.5)continue;
 					var final = getSafeScore(from, mpleft, deads, stack);
 					score+= final[_score];
 					if(_BESTMOVE==null || _BESTSCORE<score){
@@ -68,9 +72,12 @@ function findBestTeleMove(){var n="findBestTeleMove"; startBenchFunction(n);
 							_BESTMOVE = [
 								_score:score,
 								_actions:actions,
+								_scores:scores,
+								_sScore:final[_score],
 								_sCell:final[_sCell],
 								_danger:final[_danger],
 								_mpused:final[_mpused],
+								_tpleft:final[_tpleft],
 								_stack:stack,//pour le debuging
 								_dead:deads//pour le debuging
 							];
@@ -139,7 +146,7 @@ function findBestMove(@allComboz){
 			var mpMove1 = reachableCells[aCell];
 			var mpLeft = selfMP - mpMove1;
 			if(mpMove1 != null && mpLeft >= 0){
-				var score = 0, tmpScore = 0, best = [], total;
+				var score = 0, tmpScore = 0, best = [], scores = [], total;
 				var stack = [], dead = [];
 				// calcul du score de la meilleure combo depuis cette case.
 				for(var item in combo){
@@ -171,8 +178,8 @@ function findBestMove(@allComboz){
 						}
 					}
 					if(aBest != null && aScore>0){
-						aBest[_score] = aScore; // pour le debug
 						push(best, aBest);
+						push(scores, aScore);
 						stack = aStack;
 						dead = aDead;
 						score += aScore;
@@ -186,20 +193,17 @@ function findBestMove(@allComboz){
 				// à partir du score de la meilleure combo depuis aCell, recherche de la meilleure case safe.
 				
 				var bestSafeMove = getBestSafeCellScore(canAlterDanger, aCell, dead, stack, selfLife, lifePercent, mpLeft, selfCell);
-				
-				var safestCell = bestSafeMove[_sCell];
-				var safeScore = bestSafeMove[_score];
-				var minDanger = bestSafeMove[_danger];
-				var mpUsed = bestSafeMove[_mpused];
-				
-				var finalScore = score + safeScore; // cumul des actions
+				var finalScore = score + bestSafeMove[_score]; // cumul des actions
 
 				if(_BESTMOVE==null || _BESTMOVE[_score]<finalScore) _BESTMOVE = [
 					_score:finalScore,
 					_actions:best,
-					_sCell:safestCell,
-					_danger:minDanger,
-					_mpused: mpUsed,
+					_scores:scores,
+					_sScore:bestSafeMove[_score],
+					_sCell:bestSafeMove[_sCell],
+					_danger:bestSafeMove[_danger],
+					_mpused: bestSafeMove[_mpused],
+					_tpleft: bestSafeMove[_tpleft],
 					_stack:stack,//pour le debuging
 					_dead:dead//pour le debuging
 				];

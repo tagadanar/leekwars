@@ -212,6 +212,8 @@ function getSimilarityScore(@item1, @item2){
 			var diffArea = abs(item1Aoe - item2Aoe);
 			score += diffArea*diffArea*5;
 		}
+	}else if(item1==WEAPON_M_LASER && item1==item2){
+		score=-40;
 	}
 	return score;
 }

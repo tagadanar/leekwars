@@ -126,17 +126,18 @@ function getOrderedWeapChipScore(@enemy, eStr, eMgc, eWsd){
 			continue;
 		}
 		if(isSpecialChip(item))continue;
-		if(_ITEM_HAVECD[item] && getCooldown(item, enemy)!=0) continue;
+		// reminder le cd est décrément au début du round, donc 1 est utilisable next rnd
+		if(_ITEM_HAVECD[item] && getCooldown(item, enemy)>1) continue;
         dmg=0;
 		effects = _ITEM_EFFECTS[item];
 		cost = _ITEM_COST[item];
         if(effects[0][0] == EFFECT_DAMAGE || effects[0][0] == EFFECT_POISON){
             for(var e in effects){
                 if(e[0] == EFFECT_DAMAGE ){
-                    dmg+= (e[2]*(1+(eStr/100))*(1-(relShield/100)))-absShield;
+                    dmg+= (((e[1]+e[2])/2)*(1+(eStr/100))*(1-(relShield/100)))-absShield;
                 }
                 else if(e[0] == EFFECT_POISON){
-                    dmg += e[1]*(1+(eMgc/100)) *e[3];
+                    dmg += ((e[1]+e[2])/2)*(1+(eMgc/100)) *e[3];
                 }
                 else if(e[0] == EFFECT_HEAL){
                     dmg -= ((e[1]+e[2])/2)*(1+(eWsd/100));
@@ -255,9 +256,9 @@ function getItemDmg(@item, @eMgc, @eStr, @absShield, @relShield, @ratio){
         else if(type == EFFECT_POISON){
 			var duration = e[3];
 			duration = duration == 0 ? 1 : // 0 => 1
-				(duration == 2 ? 1 : // 2 => 1
-				(duration == 3 ? 1.5 : // 3 => 1.25
-				(duration == 4 ? 1.5 : // 4 => 1.5
+				(duration == 2 ? 1.3 : // 2 => 1
+				(duration == 3 ? 1.8 : // 3 => 1.25
+				(duration == 4 ? 2 : // 4 => 1.5
 				duration))); // 1 => 1
             dmg += optiMoy*(1+(eMgc/100)) *ratio *duration;
         }
@@ -278,9 +279,10 @@ function getCellDanger(@cell, @ignoreLeeks, @stack){
 		var defendingState = getSimplifiedVirtualStateDef(id, stack);
 		var absShield = defendingState[_absShield], relShield = defendingState[_relShield];
 		var skipLibe = false;
-		var finalDanger = 0, sumMp = 0, nbItem = 0;
+		var finalDanger = 0, sumMp = 0, nbItem = 0, sumTpLeft = 0, nbEnemy = 0;
 		for(var enemy in _ALIVE_ENEMIES_DANGER){
 			if(inArray(ignoreLeeks, enemy)) continue;
+			nbEnemy++;
 			var offensivState = getSimplifiedVirtualStateAtk(enemy, stack);
 			var items = @_LEEKS[enemy][_items],
 			minItemCost = @_LEEKS[enemy][_minItemCost],
@@ -356,10 +358,15 @@ function getCellDanger(@cell, @ignoreLeeks, @stack){
 				}
 			}
 			if(TP<0) debugE("TP NOK §§§: " + TP);
+			else sumTpLeft+=TP;
 		}
 		if(nbItem==0)nbItem++;
-		_CACHE_DANGER[uniqId]=@[_danger:finalDanger, _mpused:sumMp/nbItem];
+		if(nbEnemy==0)nbEnemy++;
+		_CACHE_DANGER[uniqId]=@[_danger:finalDanger, _mpused:sumMp/nbItem, _tpleft:sumTpLeft/nbEnemy];
 	}
+	// COLORATION
+	if(isEmpty(stack)) colorCell(cell, _CACHE_DANGER[uniqId][_danger]);
+	// COLORATION
 	return @_CACHE_DANGER[uniqId];
 }
 

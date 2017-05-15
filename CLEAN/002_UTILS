@@ -355,6 +355,12 @@ function displayBench(){
 	}
 }
 
+function colorCell(cell, danger){
+	var max = _LEEKS[_SELF][_life];
+	if(danger>=max) mark(cell, _WHITE);
+	else mark(cell, getColor(danger/max*255, 255-(danger/max*255), 0));
+}
+
 function colorMap(){
 	var max=getLife();
 	var white = getColor(255, 255, 255);

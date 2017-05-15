@@ -42,8 +42,12 @@ function setMapActions(){
 					if(count(targets)>0){
 						interest=0;
 						for(var t in targets) interest+=_COEF_DMG[t];
-						if(interest>0) addActionToMAPS(w, from, toCell, targets);
-						else if(interest<0 && w==WEAPON_B_LASER) addActionToMAPS(w, from, toCell, targets);
+						if(w==WEAPON_B_LASER){
+							if(interest<0) addActionToMAPS(w, from, toCell, targets);
+							else{
+								for(var e in targets) if(isEnemy(e) && getLife(e) < 50*(getStrength()/100+1)){ addActionToMAPS(w, from, toCell, targets); break;}
+							}
+						}else if(interest>0) addActionToMAPS(w, from, toCell, targets);
 					}
 				}
 			}
@@ -88,6 +92,9 @@ function setMapActions(){
 			}else{
 				targets = _ALIVE_ENEMIES;
 			}
+			// Pour tester si ça smooth pas les combos de twogether, j'ajoute une action sur moi mm à 3tp (faut vraiment que je change la façon dont je m'y prend, je suis vraiment dans la limite de mon algo avec des tricks comme ça...)
+			if(c==CHIP_FRACTURE) targets+=_SELF;
+			//ENDTRICK
 			for(var target in targets){
 				// self_actions !
                 if(target==_SELF && _ITEM_MINRANGE[c]==0 && self_action_array[c]==null){

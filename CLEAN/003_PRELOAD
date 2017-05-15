@@ -54,6 +54,9 @@ if(getTurn()==1){
 	_ITEM_MAXRANGE[CHIP_MOTIVATION]		= 0;
 	_ITEM_MAXRANGE[CHIP_RAGE]			= 0;
 	
+	// trick test sur twogether pour opti des combos avec mon systeme naze
+	_ITEM_MINRANGE[CHIP_FRACTURE] = 0;
+	
 	_ITEM_COST[CHIP_MOTIVATION]			=
 		getChipCost(CHIP_MOTIVATION)-floor(0.4*(1+getScience()/100));
 	_ITEM_COST[CHIP_RAGE]				=
@@ -153,16 +156,6 @@ function refreshLeeksCellsAndAliveStatus(){
 			}
 		}
 	}
-
-	_STR_100 = false;
-	_STR_300 = false;
-	_SNC_400 = false;
-	for(var e in _ALIVE_ENEMIES){
-		if(getStrength(e)>100) _STR_100 = true;
-		if(getStrength(e)>300) _STR_300 = true;
-		if(getScience(e)>=400) _SNC_400 = true;
-	}
-	if(getLevel()<30) _STR_100 = true;
 }
 
 function refreshLeeksEffectsAndStates(){
@@ -212,6 +205,18 @@ function refreshLeeksEffectsAndStates(){
 		];
 		_LEEKS[leek] = @leekInfo;
 	}
+	
+	_STR_100 = false;
+	_STR_300 = false;
+	_SNC_200 = false;
+	_SNC_400 = false;
+	for(var e in _ALIVE_ENEMIES){
+		if(getStrength(e)>100 || _LEEKS[e][_alterateStr] < 0) _STR_100 = true;
+		if(getStrength(e)>300 || _LEEKS[e][_alterateStr] < 0) _STR_300 = true;
+		if(getScience(e)>=200 && !isSummon(e)) _SNC_200 = true;
+		if(getScience(e)>=400) _SNC_400 = true;
+	}
+	if(getLevel()<30) _STR_100 = true;
 }
 
 function setEffectsArray(@effects, @scoreLibe, @psnDmgTurn, @psnDmgTotal, @alterateStr, @alterateMgc, @alterateTP, @alterateMP, @e){
@@ -253,24 +258,24 @@ function setEffectsArray(@effects, @scoreLibe, @psnDmgTurn, @psnDmgTotal, @alter
 function getLibeScore(@type, @value, @duration){
 	var scoreLibe=0;
 	if(type==EFFECT_POISON){
-		scoreLibe -= value*duration;
+		scoreLibe -= value*duration*2;
 	}else if(type == EFFECT_SHACKLE_STRENGTH){
-		scoreLibe -= value*duration;
+		scoreLibe -= value*duration*3;
 	}else if(type == EFFECT_SHACKLE_MAGIC){
-		scoreLibe -= value*duration;
+		scoreLibe -= value*duration*3;
 	}else if(type == EFFECT_SHACKLE_MP){
-		scoreLibe -= value*_SCORE_MP*duration;
+		scoreLibe -= value*_SCORE_MP*duration*2;
 	}else if(type == EFFECT_SHACKLE_TP){
-		scoreLibe -= value*_SCORE_TP*duration;
+		scoreLibe -= value*_SCORE_TP*duration*2;
 	// A partir d'ici, effet positif, scoreLibe +=
 	}else if(type==EFFECT_HEAL){
 		scoreLibe += value*duration;
 	}else if(type == EFFECT_DAMAGE_RETURN){
 		scoreLibe += value*duration;
 	}else if(type == EFFECT_ABSOLUTE_SHIELD){
-		scoreLibe += value*duration*4;
+		scoreLibe += value*duration;
 	}else if(type == EFFECT_RELATIVE_SHIELD){
-		scoreLibe += value*_SCORE_REL_SHIELD*duration*6;
+		scoreLibe += value*_SCORE_REL_SHIELD*duration;
 	}else if(type == EFFECT_BUFF_STRENGTH){
 		scoreLibe += value*duration;
 	}else if(type == EFFECT_BUFF_AGILITY){
@@ -292,44 +297,41 @@ function getLibeScore(@type, @value, @duration){
 function refreshGravityCells(@distToEnemy){
 	_GRAVITY_CELLS = [];
 	_GRAVITY_COEFS = [];
-	var coefAlly = 0;
+	var coefAlly = 0, coefi;
 	for(var al in _ALIVE_ALLIES_LEEKS){
 		if(al!=_SELF){
+			if(isSummon(getLeek())) 			coefi = 80;
+			else if(getScience(al) >= 600) 		coefi = 30;
+			else if(getScience(al) >= 400) 		coefi = 20;
+			else if(getResistance(al) >=200)	coefi = 10;
+			else if(getWisdom(al) >200) 		coefi = 5;
+			else								coefi = 1;
+			
 			var cell = getCell(al);
-			_GRAVITY_CELLS[cell] = 4;
-			if(getScience(al) >= 600){
-				_GRAVITY_COEFS[cell] = 10;
-				coefAlly+=10;
-			}else if(getScience(al) >= 400){
-				_GRAVITY_COEFS[cell] = 4;
-				coefAlly+=4;
-			}else if(getResistance(al) >=200){
-				_GRAVITY_COEFS[cell] = 3;
-				coefAlly+=3;
-			}else if(getWisdom(al) >200){
-				_GRAVITY_COEFS[cell] = 3;
-				coefAlly+=3;
-			}else{
-				_GRAVITY_COEFS[cell] = 1;
-				coefAlly+=1;
-			}
+			_GRAVITY_CELLS[cell] = 3;
+			_GRAVITY_COEFS[cell] = coefi;
+			coefAlly+=coefi;
 		}
 	}
 	if(!isSummon(getLeek())) for(var al in _ALIVE_ALLIES_BULBS){
-		//if(al!=_SELF){ useless si je fais le test de isSummon. je garde pour pas oublier si jamais je change d'avis plus tard
 			var cell = getCell(al), type = getEntityType(al);
+			var ratioPV = getLife()/getTotalLife();
+			var haveArmor = getAbsoluteShield()>0 || getRelativeShield()>0;
 			if(type==ENTITY_METALLIC_BULB){
 				_GRAVITY_CELLS[cell] = 1;
-				_GRAVITY_COEFS[cell] = 5;
-				coefAlly+=5;
+				if(!haveArmor) coefi = 40;
+				else coefi = 10;
 			}else if(type==ENTITY_HEALER_BULB){
-				_GRAVITY_CELLS[cell] = 3;
-				_GRAVITY_COEFS[cell] = 4;
-				coefAlly+=4;
+				_GRAVITY_CELLS[cell] = 4;
+				if(ratioPV<0.9) coefi = 30;
+				else coefi = 9;
 			}
+			_GRAVITY_COEFS[cell] = coefi;
+			coefAlly+=coefi;
 		//}
 	}
-	var coef = getTurn()>32	? ceil(coefAlly/count(_ALIVE_ALLIES_LEEKS)) 
+	var coef = getTurn()>32 && !isSummon(getLeek())	
+							? ceil(coefAlly/count(_ALIVE_ENEMIES_LEEKS)) 
 							: floor(coefAlly/count(_ALIVE_ENEMIES_LEEKS));
 	if(coef<1)coef=1;
 	for(var en in _ALIVE_ENEMIES_LEEKS){

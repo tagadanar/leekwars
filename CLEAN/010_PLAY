@@ -2,12 +2,21 @@ include('auto');
 
 function playBestMove(bestMove){
 	debug("danger: "+ bestMove[_danger]);
+	debug("SafeScor: "+ bestMove[_sScore]);
 	debug("mpused: "+ bestMove[_mpused]);
+	debug("tpleft: "+ bestMove[_tpleft]);
 	debug("kill: "+ bestMove[_dead]);
-	var delayedSummon = [];
+	debug("totalscore: "+ bestMove[_score]);
+	/*
+	
+	_scores:scores,
+								*/
+	
+	var delayedSummon = [], i=0;
 	for(var actionBin in bestMove[_actions]){
 		var action = getActionFromBin(actionBin);
 		var item = action[_item], from = action[_from], to = action[_to];
+		debug("Using " + getItemName(item) + " | " + bestMove[_scores][i++]);
 		if(from == _action_SELFCELL){
 			from = getCell();
 			to = getCell();
