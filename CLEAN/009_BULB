@@ -66,12 +66,12 @@ function ia_bulb_main(){ startOp();
 	}else if(type==ENTITY_ICED_BULB){
 		stuff =@[CHIP_ICEBERG, CHIP_STALACTITE, CHIP_ICE, CHIP_REFLEXES];
 	}else if(type==ENTITY_HEALER_BULB){
-		distToE = 25;
+		distToE = 30;
 		stuff =@[CHIP_CURE, CHIP_DRIP, CHIP_VACCINE, CHIP_BANDAGE];
 	}else if(type==ENTITY_METALLIC_BULB){
-		_RATIO_IGNORE_DANGER = 0.9;
-		distToE = 20;
-		stuff =@[CHIP_ARMOR, CHIP_SHIELD, CHIP_WALL, CHIP_SEVEN_LEAGUE_BOOTS];
+		_RATIO_IGNORE_DANGER = 0.7;
+		distToE = 24;
+		stuff =@[CHIP_ARMOR, CHIP_SEVEN_LEAGUE_BOOTS, CHIP_SHIELD, CHIP_WALL];
 	}else if(type==ENTITY_FIRE_BULB){
 		stuff =@[CHIP_METEORITE, CHIP_DEVIL_STRIKE, CHIP_FLAME, CHIP_SPARK];
 	}else if(type==ENTITY_LIGHTNING_BULB){
@@ -107,17 +107,17 @@ function findFinalCell(@dead){
 	var reachable = getCachedReachableCells(fromC, mp, dead);
 	var countBulb = _COUNT_PUNY+_COUNT_ROCKY+_COUNT_ICED+_COUNT_HEALER
 					+_COUNT_METAL+_COUNT_FIRE+_COUNT_LIGHTNING;
-	var shouldIgnoreDanger = countBulb > 4;
+	var shouldIgnoreDanger = countBulb > 5;
 	var isHealer = getEntityType(getLeek())==ENTITY_HEALER_BULB;
 	for(var sCell:var mpused in reachable){ if(mpused > mp) break;
 		// gestion du danger
 		var cellDanger = getCellDanger(sCell, dead, []);
 		var danger = cellDanger[_danger], eMpUsed = cellDanger[_mpused], tmpScore=0;
 		//debuging color
-		//var color = danger > life 	? getColor(0, 0, 0) : 
-		//		   (danger==0 		? getColor(255, 255, 255) : 
-		//							getColor(round(danger/life*255), 0, 0));
-		//mark(sCell, color);
+		var color = danger > life 	? getColor(255, 255, 255) : 
+				   (danger==0 		? getColor(0, 255, 0) : 
+									getColor(round(danger/life*255), 0, 0));
+		mark(sCell, color);
 		//end debuging color
 		if(!shouldIgnoreDanger)tmpScore -= danger < life*_RATIO_IGNORE_DANGER ? 0 
 			: danger < life*_RATIO_RISK_DEATH ? 
@@ -129,7 +129,7 @@ function findFinalCell(@dead){
 													: eMpUsed*_RATIO_MP_USED;
 		// espacement entre les leeks
 		for(var cell in _areaCells1[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=1000;
-		for(var cell in _areaCells2[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=200;
+		for(var cell in _areaCells2[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=100;
 		// gravityCells
 		for(var cell:var dist in _GRAVITY_CELLS){				
 			tmpScore -= abs(dist-getCellDistance(cell, sCell))*_GRAVITY_COEFS[cell];

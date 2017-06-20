@@ -13,10 +13,10 @@ function getCellToUseItemWithTele(@enemy, @item){
 }
 
 function findBestTeleMove(){var n="findBestTeleMove"; startBenchFunction(n);
-	var maxDMG = (getTP()-_ITEM_COST[CHIP_TELEPORTATION]) * 12 * (getStrength()/100+1);
+	var maxDMG = (getTP()-_ITEM_COST[CHIP_TELEPORTATION]) * 15 * (getStrength()/100+1);
 	var _BESTMOVE=null, _BESTSCORE=_MIN_INT, maxmp = getMP();
 	for(var e in _ALIVE_ENEMIES_LEEKS) _CACHE_CLOSEST_ITEM[e] = [];
-	if(_ENCODING_STUFF[CHIP_TELEPORTATION] && getCooldown(CHIP_TELEPORTATION)==0){
+	if(getCooldown(CHIP_TELEPORTATION)==0){
 		var combos = getTeleportComboSet();
 		for(var e in _ALIVE_ENEMIES_LEEKS){
 			if(getLife(e) > maxDMG) continue;
@@ -64,7 +64,7 @@ function findBestTeleMove(){var n="findBestTeleMove"; startBenchFunction(n);
 						reach = getReachableCells([cell:0], mpleft, [getCell()]);
 					}
 					// garde que les kills, sauf si j'ai l'avantage (1.5*+depv)
-					if(count(deads)==0 && _STATE_RATIO_PV<1.5)continue;
+					//if(count(deads)==0 && _STATE_RATIO_PV<1.5)continue;
 					var final = getSafeScore(from, mpleft, deads, stack);
 					score+= final[_score];
 					if(_BESTMOVE==null || _BESTSCORE<score){
@@ -82,6 +82,7 @@ function findBestTeleMove(){var n="findBestTeleMove"; startBenchFunction(n);
 								_dead:deads//pour le debuging
 							];
 							_BESTSCORE = score;
+							if(_STATE_RATIO_PV>2 && getLife()>1500) _BESTSCORE*=1.8;
 						}
 					}
 				}

@@ -32,9 +32,7 @@ function playBestMove(bestMove){
 		
 		// on compte les utilisations :
 		if(!isSummon(getLeek())){
-			var reg = getRegister(_ITEMID_TOSTRING[item]);
-			if(reg==null)setRegister(_ITEMID_TOSTRING[item],1);
-			else setRegister(_ITEMID_TOSTRING[item],number(reg)+1);
+			countUsage(item);
 		}
 	}
 	if(bestMove[_sCell]!=null){
@@ -48,10 +46,9 @@ function playBestMove(bestMove){
 			summon(item, getCellToUseChip(item, _SELF), ia_bulb_main);
 		}
 	}
-	if(getTP()>=15 && getCooldown(CHIP_RESURRECTION)==0 && _RESU_TARGET!=null && !isSummon(_RESU_TARGET)){
-		var cell = findSafestCellToRez(_RESU_TARGET, getCell());
-		resurrect(_RESU_TARGET, cell);
-	}
+	// appel à la fonction failSafe défini dans le main, qui utilise les items dispos dans la limite des tps restant dispo
+	failSafe();
+	// ça permet de summon un bulbe si j'ai rien fait dans mon tour par manque d'opé au tour 1 d'un BR par exemple
 	var _MAINWEAPON = getMainWeapon();
 	if(_SHOULD_KEEP_MAINWEAP_INHAND && getWeapon()!= _MAINWEAPON) setWeapon(_MAINWEAPON);
 	else if(_MAINWEAPON != null && getWeapon()==null) setWeapon(_MAINWEAPON);

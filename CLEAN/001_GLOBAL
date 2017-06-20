@@ -11,7 +11,7 @@ global ___ = "-";
 global _OPERATION_MAP_DANGER = 2000000; // ratio + mp
 if(getTurn()==3) _OPERATION_MAP_DANGER = 1500000;
 if(getTurn()==5) _OPERATION_MAP_DANGER = 1000000;
-global _OPERATION_BULB = 350000; // sans boost, en moyenne 100k metalbulb, 850k healer
+global _OPERATION_BULB = 400000; // sans boost, en moyenne 100k metalbulb, 850k healer
 // un jour faire un truc par bulbe en fonction de ses stats TP/MP
 
 global _MAX_ITEM_ID = 150; //110 @2017
@@ -21,14 +21,15 @@ global _WHITE = getColor(255, 255, 255);
 global _SCORE_KILL_DMG = 5000;
 global _SCORE_KILL_PSN = 2000;
 global _SCORE_DEATH = 15000;
+global _SCORE_LOCK = 5000;
 
 global _RATIO_RISK_DEATH = 0.7; // un danger > à 70% de ma vie total est risky
 global _RATIO_IGNORE_DANGER = 0.25;
 global _RATIO_DANGER = 1;
 global _RATIO_MP_USED = 2;
 
-global _SCORE_MP = 40;
-global _SCORE_TP = 40;
+global _SCORE_MP = 80;
+global _SCORE_TP = 70;
 global _SCORE_REL_SHIELD = 4;
 
 global _STATE_RATIO_PV = 1;
@@ -36,6 +37,8 @@ global _STATE_RATIO_NB = 1;
 
 global _DECODING_STUFF, _ENCODING_STUFF = [];
 _DECODING_STUFF = @(getWeapons()+getChips());
+global _TO_REMOVE_STUFF = [CHIP_TELEPORTATION, CHIP_INVERSION, CHIP_ANTIDOTE, CHIP_LIGHTNING_BULB, CHIP_FIRE_BULB, CHIP_MOTIVATION, CHIP_RAGE];
+for(var e in _TO_REMOVE_STUFF) removeElement(_DECODING_STUFF, e);
 sort(_DECODING_STUFF);
 for(var id : var item in _DECODING_STUFF) _ENCODING_STUFF[item] = id;
 
@@ -50,7 +53,7 @@ global _GRAVITY_CELLS = [];
 global _GRAVITY_COEFS = [];
 global _SHOULD_KEEP_MAINWEAP_INHAND = false;
 global _CANT_HEAL = getWisdom()<=0 && _ENCODING_STUFF[CHIP_HEALER_BULB]==null;
-global _IS_TELEPORT = _ENCODING_STUFF[CHIP_TELEPORTATION]!=null;
+global _IS_TELEPORT = inArray(getChips(), CHIP_TELEPORTATION); //_ENCODING_STUFF[CHIP_TELEPORTATION]!=null;
 global _IS_RESURECT = _ENCODING_STUFF[CHIP_RESURRECTION]!=null;
 global _IS_SUMMONER = _ENCODING_STUFF[CHIP_LIGHTNING_BULB]!=null
 				   || _ENCODING_STUFF[CHIP_FIRE_BULB]!=null
@@ -63,6 +66,8 @@ global _IS_CAC; _IS_CAC = getWeapon()==null ? false : _ITEM_MAXRANGE[getWeapon()
 
 // fonction
 global getMainWeapon;
+global failSafe;
+global getTeleportComboSet;
 
 // les infos utilisés pour la prise de décision
 global _COEF_DMG;
@@ -91,6 +96,7 @@ global _STR_100;
 global _STR_300;
 global _SNC_200;
 global _SNC_400;
+global _SELF_AGI;
 
 global _SCORE_ITEM = [];
 global _MOY_COEF = [];
@@ -294,7 +300,7 @@ global _CHIP_ISONLYBULB = [
     CHIP_ADRENALINE:false,
     CHIP_ANTIDOTE:false,
     CHIP_ARMOR:false,
-    CHIP_ARMORING:false,
+    CHIP_ARMORING:null, // hem!
     CHIP_BALL_AND_CHAIN:false,
     CHIP_BANDAGE:false,
     CHIP_BARK:true,
@@ -334,8 +340,8 @@ global _CHIP_ISONLYBULB = [
     CHIP_RAGE:null,
     CHIP_RAMPART:false,
     CHIP_REFLEXES:false,
-    CHIP_REGENERATION:false, 
-    CHIP_REMISSION:true,
+    CHIP_REGENERATION:null, //hem !
+    CHIP_REMISSION:false,
     CHIP_RESURRECTION:false,//specialCHIP
     CHIP_ROCK:false,
     CHIP_ROCKFALL:false,

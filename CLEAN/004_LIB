@@ -5,41 +5,13 @@ include('auto');
 
 function sayCupidon(){
 	var stupidSay = [
-		"Je hais Lucky Luke ! Je hais Lucky Luke !"
-		,"Tagada, tagada, voilà les daltons !"
-		,"FREE HUGS !!"
-		,"MAGIE NOIRE ! MAGIE NOIRE ! Tais-toi, tais-toi, tais-toi la patte de poulet Satan hérétique !!"
-		,"Ah, non, pour moi les femmes, j'aime pas ça.. C'est de la saloperie !"
-		,"Simplet ! Le démon a vidé ton cerveau, y'a plus rien dedans. Tu périras par la main de Dieu, tu comprends ça ?"
-		,"Oh Regarde, Simplet, Regarde ! Il y a un morceau de charcuterie qui arrive ! Regarde le, Regarde ! ... AU BÛCHER !"
-		,"Qu'est-ce que j'apprends de manière inopinée ? La rumeur colporte que vous ne vous êtes jamais confessé !"
-		,"La confession ! Sans confession, point de salut ! Sans salut, point... point ne sert de... à rien qui ne sait partir."
-		,"En garde, fils d'unijambiste !"
-		,"Vous allez me montrer ce que vous avez dans le froc, ma mignonne !"
-		,"Aha sir ! Mon père était ptete unijambiste, mais moi ma femme a pas de moustache !"
-		,"En garde, ma biquette ! Je vais vous découper l'gras du cul, ça vous fera ça de moins à trimbaler !"
-		,"Mais allez-y bon sang, magnez-vous le fion, espèce de grosse dinde !"
-		,"Fort heureusement, l'incident n'a fait aucune victime."
-		,"Balancez-leur les radasses et qu'ils s'en aillent au diable !"
-		,"Fort heureusement, je tiens à préciser que l'incident n'a fait aucune victime."
-		,"En voilà une bonne chose, faisons la liste des cons, et puis ça me donnera l'occasion de gratter du papier."
-		,"Je vais le tuer, Sire ! Je vais tellement si tant y taper sa gueule qu'il va décéder !"
-		,"Non mais vous croyez pas qu'j'marche au sifflet ! Mais qu'est-ce que j'en ai à foutre de vos horaires ? J'arrive quand j'arrive et puis c'est tout."
-		,"Si il y a un mot plus haut que l'autre, je vous mets toute la tartine dans la gueule et je rentre chez moi, j'ai pas que ça à glander."
-		,"Commencez pas à noyer la peau de l’ours avant d'avoir vendu le poisson."
-		,"Ah bah non ! On va leur foutre deux, trois pierres dans la gueule et on va allumer des incendies... Mais faut pas déconner, ils y sont pour rien."
-		,"Je dirais également que le genou peut partir dans les noix de manière assez soudaine et que ça pourrait éventuellement vous faire sortir les baloches par les oreilles. N'y voyez aucune malice !"
-		,"Ben ils m'ont dit d'aller me faire mettre. Après, ils m'ont jeté des gadins et une marmite avec un restant de soupe de poisson."
-		,"J’ai pénétré leur lieu d'habitation de façon subrogative, en tapinant."
-		,"Attention, attention… il va y arriver un moment où il y a des granges qui vont se mettre à flamber, faudra pas demander d’où ça vient !"
-		,"Je vais rentrer mes vaches, là, elles sont accessibles ou faut que je fasse monter un échafaudage ?"
-		,"Ce que je dis, tout le monde s'en tamponne ! Je gueule, je gueule, j'pourrais gueuler dans le cul d'un poney ce serait pareil !"
-		,"Chuis un marteau moi ! Je crame tout moi ! Ma ferme, la sienne, celles des autres, le château, j'vais flamber la moitié de la Bretagne."
-		,"Je vous montre : moi je bondis comme ça, et je vous arrive dessus en piqué diagonal !"
-		,"Victoriae mundis et mundis lacrima. Bon, ça ne veut absolument rien dire, mais je trouve que c’est assez dans le ton."
-		,"Mais parce que votre existence est merdique mon pauvre ami, vous avez l'œil qui brille à chaque fois qu'un oiseau pète, c'est triste à voir."
+		"?"
+		,"!?"
+		,"!"
+		,".."
+		,"."
+		,"?!"
 	];
-	if(!isSummon(getNearestEnemy())) push(stupidSay, getName(getNearestEnemy()) + " est un hérétique, je VEUX BRÛLER CETTE PERSONNE !");
 
 	say(stupidSay[randInt(0, count(stupidSay))]);
 }
@@ -57,26 +29,6 @@ function filterCooldownedCombos(@allCombos){
 		if(ok) push(filteredCombos, combo);
 	}
 	return @filteredCombos;
-}
-
-// filter sur offensiv pour le moment.
-function getTeleportComboSet(){
-	var combos = [], toFilter = [];
-	var tmp = jsonDecode(getFullRegister(getTP()-_ITEM_COST[CHIP_TELEPORTATION]));
-	if(getWeapon()==null) combos = @tmp["EMPTY"];
-	else combos = @tmp[string(getWeapon())];
-	combos = convertBinariesToCombos(combos);
-	for(var key: var combo in combos){
-		for(var item in combo){
-			if(!_ITEM_ISWEAP[item] &&
-			(_CHIP_ISPOSITIV[item] || getCooldown(item) > 0)){
-				push(toFilter, key);
-			}
-		}
-	}
-	for(var key in toFilter) removeKey(combos, key);
-	//unshift(combos, []); // ajout d'une combo vide au début
-	return @combos;
 }
 
 function getComboSet(@entity){

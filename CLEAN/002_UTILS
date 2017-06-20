@@ -315,6 +315,14 @@ function clearAllRegisters(){
 	}
 }
 
+function countUsage(@item){
+	if(__DEBUG_ON){
+		var reg = getRegister(_ITEMID_TOSTRING[item]);
+		if(reg==null)setRegister(_ITEMID_TOSTRING[item],1);
+		else setRegister(_ITEMID_TOSTRING[item],number(reg)+1);
+	}
+}
+
 //////////////////////////
 // DEBUG
 //////////////////////////

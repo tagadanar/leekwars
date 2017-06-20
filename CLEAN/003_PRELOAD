@@ -203,9 +203,11 @@ function refreshLeeksEffectsAndStates(){
 			,_nbBulbs: count(bulbs)//todo check si ça vaut le coup de garder cette info..
 			,_bulbs: @bulbs
 		];
+		debug(getName(leek)+"_libe: "+scoreLibe);
 		_LEEKS[leek] = @leekInfo;
 	}
 	
+	_SELF_AGI = 1+(getAgility()/1000);
 	_STR_100 = false;
 	_STR_300 = false;
 	_SNC_200 = false;
@@ -258,15 +260,16 @@ function setEffectsArray(@effects, @scoreLibe, @psnDmgTurn, @psnDmgTotal, @alter
 function getLibeScore(@type, @value, @duration){
 	var scoreLibe=0;
 	if(type==EFFECT_POISON){
-		scoreLibe -= value*duration*2;
-	}else if(type == EFFECT_SHACKLE_STRENGTH){
 		scoreLibe -= value*duration*3;
-	}else if(type == EFFECT_SHACKLE_MAGIC){
-		scoreLibe -= value*duration*3;
-	}else if(type == EFFECT_SHACKLE_MP){
-		scoreLibe -= value*_SCORE_MP*duration*2;
-	}else if(type == EFFECT_SHACKLE_TP){
-		scoreLibe -= value*_SCORE_TP*duration*2;
+	}else if(type == EFFECT_SHACKLE_STRENGTH){ // /!\ ATTENTION c'est negatif dans getEffe
+		scoreLibe += value*duration*6;
+		//debug("SHACKLESTR:"+value);
+	}else if(type == EFFECT_SHACKLE_MAGIC){ // /!\ ATTENTION c'est negatif dans getEffe
+		scoreLibe += value*duration*6;
+	}else if(type == EFFECT_SHACKLE_MP){ // /!\ ATTENTION c'est negatif dans getEffe
+		scoreLibe += value*_SCORE_MP*duration*3;
+	}else if(type == EFFECT_SHACKLE_TP){ // /!\ ATTENTION c'est negatif dans getEffe
+		scoreLibe += value*_SCORE_TP*duration*3;
 	// A partir d'ici, effet positif, scoreLibe +=
 	}else if(type==EFFECT_HEAL){
 		scoreLibe += value*duration;
@@ -319,24 +322,30 @@ function refreshGravityCells(@distToEnemy){
 			var haveArmor = getAbsoluteShield()>0 || getRelativeShield()>0;
 			if(type==ENTITY_METALLIC_BULB){
 				_GRAVITY_CELLS[cell] = 1;
-				if(!haveArmor) coefi = 40;
-				else coefi = 10;
+				if(!haveArmor) coefi = 50;
+				else coefi = 6;
 			}else if(type==ENTITY_HEALER_BULB){
 				_GRAVITY_CELLS[cell] = 4;
-				if(ratioPV<0.9) coefi = 30;
-				else coefi = 9;
+				if(ratioPV<0.9) coefi = 40;
+				else coefi = 5;
 			}
 			_GRAVITY_COEFS[cell] = coefi;
 			coefAlly+=coefi;
 		//}
 	}
-	var coef = getTurn()>32 && !isSummon(getLeek())	
-							? ceil(coefAlly/count(_ALIVE_ENEMIES_LEEKS)) 
-							: floor(coefAlly/count(_ALIVE_ENEMIES_LEEKS));
+	var coef = /*getTurn()>20 &&*/ !isSummon(getLeek())	&& getLife()/getTotalLife()>0.8
+							? ceil(coefAlly/count(_ALIVE_ENEMIES)) 
+							: floor(coefAlly/count(_ALIVE_ENEMIES));
 	if(coef<1)coef=1;
 	for(var en in _ALIVE_ENEMIES_LEEKS){
 		_GRAVITY_CELLS[getCell(en)] = distToEnemy;
 		_GRAVITY_COEFS[getCell(en)] = coef;
+	}
+	for(var en in _ALIVE_ENEMIES_BULBS){
+		if(getEntityType(en)==ENTITY_HEALER_BULB){
+			_GRAVITY_CELLS[getCell(en)] = distToEnemy;
+			_GRAVITY_COEFS[getCell(en)] = coef;
+		}
 	}
 	
 	_GRAVITY_CELLS[306] = 3;
@@ -345,6 +354,7 @@ function refreshGravityCells(@distToEnemy){
 
 function refreshStuff(){
 	_DECODING_STUFF = @(getWeapons()+getChips());
+	for(var e in _TO_REMOVE_STUFF) removeElement(_DECODING_STUFF, e);
 	sort(_DECODING_STUFF);
 	for(var id : var item in _DECODING_STUFF) _ENCODING_STUFF[item] = id;
 }

@@ -4,8 +4,11 @@ include('auto');
 // NB je fais des blocks de 4999 char par registre pour contourner la limite de 5000char (ça bug à 5000 par bloc), utiliser la fonction getFullRegister(key) pour avoir le registre complêt après réassemblage.
 
 moveAwayFrom(getNearestEnemy());
-global _SHOULD_SORT_COMBOS_TO_ALTERNATE_OFF_DEF_MOVE = getScience() > 500 ? false : true;
-global _IGNORED_ITEM = [CHIP_MOTIVATION, CHIP_RAGE, CHIP_TELEPORTATION, CHIP_INVERSION];
+
+global ____debug = false;
+
+global _SHOULD_SORT_COMBOS_TO_ALTERNATE_OFF_DEF_MOVE = getScience() > 500 ? false : false;
+global _IGNORED_ITEM = [CHIP_ANTIDOTE, CHIP_MOTIVATION, CHIP_RAGE, CHIP_TELEPORTATION, CHIP_INVERSION, CHIP_LIGHTNING_BULB, CHIP_FIRE_BULB];
 global combossssss, knownCombos, combo_mincost, stuffstr ="";
 var inHands = getWeapons(); unshift(inHands, "EMPTY");
 global _STUFF = getWeapons()+getChips(), _CURRENT_COMBO_ARRAY = [], _ITEM_TO_ID = [];
@@ -20,7 +23,7 @@ if(getTurn()==1){
 global _COMBOS_TP = 0, _MAX_TP = getTP(), _ITEM_INDEX = 0, _MAX_INDEX = count(inHands);
 
 startOp();
-while(_COMBOS_TP<=_MAX_TP +20){
+while(_COMBOS_TP<=_MAX_TP +3){ //set max boost here
 	while(_ITEM_INDEX <= _MAX_INDEX){
 		fillComboArray(_CURRENT_COMBO_ARRAY, inHands[_ITEM_INDEX]);
 		_ITEM_INDEX++;
@@ -42,9 +45,37 @@ function fillComboArray(@result, @w){
 	var combosSet;
 	if(w=="EMPTY") combosSet = tools2Combo(_STUFF, _COMBOS_TP, null);
 	else combosSet = tools2Combo(_STUFF, _COMBOS_TP, w);
+
+// add debug
+	if(____debug) for(var combo in combosSet){
+		for(var item in combo){
+			if(item==CHIP_BALL_AND_CHAIN){
+				var str="";
+				for(var i in combo) str+= " "+getItemName(i);
+				debug(str);
+				break;
+			}
+		}
+	}
+// add debug
+	
 	if(_SHOULD_SORT_COMBOS_TO_ALTERNATE_OFF_DEF_MOVE){
 		combosSet = getSortedCombosSet(combosSet);
 	}
+	
+// add debug	
+	if(____debug) for(var combo in combosSet){
+		for(var item in combo){
+			if(item==CHIP_BALL_AND_CHAIN){
+				var str="";
+				for(var i in combo) str+= " "+getItemName(i);
+				debugW(str);
+				break;
+			}
+		}
+	}
+// add debug
+	
 	result[w] = @combosSet;
 }
 
@@ -212,9 +243,9 @@ function getSimilarityScore(@item1, @item2){
 			var diffArea = abs(item1Aoe - item2Aoe);
 			score += diffArea*diffArea*5;
 		}
-	}else if(item1==WEAPON_M_LASER && item1==item2){
-		score=-40;
-	}
+	}else if(item1==WEAPON_M_LASER && item1==item2)	score=-60;
+	else if(item1==WEAPON_KATANA && item1==item2)	score=-50;
+	
 	return score;
 }
 

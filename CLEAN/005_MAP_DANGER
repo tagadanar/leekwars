@@ -278,7 +278,7 @@ function getCellDanger(@cell, @ignoreLeeks, @stack){
 		}
 		var defendingState = getSimplifiedVirtualStateDef(id, stack);
 		var absShield = defendingState[_absShield], relShield = defendingState[_relShield];
-		var skipLibe = false;
+		var skipLibe = false; if(isSummon()) skipLibe = true;
 		var finalDanger = 0, sumMp = 0, nbItem = 0, sumTpLeft = 0, nbEnemy = 0;
 		for(var enemy in _ALIVE_ENEMIES_DANGER){
 			if(inArray(ignoreLeeks, enemy)) continue;
@@ -365,7 +365,7 @@ function getCellDanger(@cell, @ignoreLeeks, @stack){
 		_CACHE_DANGER[uniqId]=@[_danger:finalDanger, _mpused:sumMp/nbItem, _tpleft:sumTpLeft/nbEnemy];
 	}
 	// COLORATION
-	if(isEmpty(stack)) colorCell(cell, _CACHE_DANGER[uniqId][_danger]);
+	//if(isEmpty(stack)) colorCell(cell, _CACHE_DANGER[uniqId][_danger]);
 	// COLORATION
 	return @_CACHE_DANGER[uniqId];
 }
@@ -380,7 +380,7 @@ function getMapDanger(ignoreLeeks){
 }
 
 function findSafestCellToRez(@leek, @from){
-	var ignore = getListOfEnemyLeekWhoPlayAfter(leek);
+	var ignore = [];//getListOfEnemyLeekWhoPlayAfter(leek);
 	var maxrange = _ITEM_MAXRANGE[CHIP_RESURRECTION];
 	var nearEnemyCell=getCell(getNearestEnemy());
 	var safeCell, dangerCell, distToEnemy, x = getCellX(from), y = getCellY(from);
