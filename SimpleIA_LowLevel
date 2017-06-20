@@ -8,6 +8,10 @@ global sparkBeforeTurn = 10; // joue spark en kite avant le tour 10;
 global chargeAfterTurn = 40; // arrête de jouer à distance après le tour 40;
 global wait = 3; // attends jusqu'à 3 tours à 14 de range pour taper en premier avec spark.
 
+///////////////////////////////////////////
+// zone de déclaration de fonction
+///////////////////////////////////////////
+
 function saySomething(){
 	var stupidSay = [
 		"moh !"
@@ -18,7 +22,6 @@ function saySomething(){
 	];
 	say(stupidSay[randInt(0, count(stupidSay))]);
 }
-if(getWeapon()==null) inArray(getWeapons(), WEAPON_MAGNUM) ? setWeapon(WEAPON_MAGNUM) : setWeapon(WEAPON_PISTOL); 
 
 // exemple de kill avec un magnum (ne fait rien sans magnum)
 function testCanFinish(){
@@ -38,17 +41,26 @@ function testCanFinish(){
 		}
 	}
 }
-testCanFinish();
 
 function distentia(){
 	return getCellDistance(getCell(), getCell(getNearestEnemy()));
 }
+
 function launchForAllAlly(chip){
 	if(inArray(getChips(),chip)){
 		for(var a in getAliveAllies()) if(!isSummon(a) && a!=getLeek()) useChip(chip, a);
 		useChip(chip, getLeek());	
 	}
 }
+
+//////////////////////////
+// combat
+//////////////////////////
+
+if(getWeapon()==null) inArray(getWeapons(), WEAPON_MAGNUM) ? setWeapon(WEAPON_MAGNUM) : setWeapon(WEAPON_PISTOL); 
+
+testCanFinish(); // tente de kill l'adv
+
 //preboost si besoin
 if(inArray(getChips(), CHIP_CURE) && getLife()<getTotalLife()-(43+43*getWisdom()/100)) 
 	useChip(CHIP_CURE, getLeek());
