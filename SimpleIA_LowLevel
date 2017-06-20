@@ -54,6 +54,8 @@ if(inArray(getChips(), CHIP_CURE) && getLife()<getTotalLife()-(43+43*getWisdom()
 	useChip(CHIP_CURE, getLeek());
 if(inArray(getChips(), CHIP_SHIELD) && distentia()<17) useChip(CHIP_SHIELD, getLeek());
 if(inArray(getChips(), CHIP_HELMET) && distentia()<17) useChip(CHIP_HELMET, getLeek());
+if(inArray(getChips(), CHIP_HELMET) && distentia()<17) useChip(CHIP_WALL, getLeek());
+
 
 // déplacement
 // jeu spark
@@ -85,11 +87,11 @@ if((getCellDistance(getCell(), getCell(getNearestEnemy()))>10 && getCellDistance
 }
 
 // attack
-while(useWeapon(getNearestEnemy())>0);
-while(useChip(CHIP_SPARK, getNearestEnemy())>0);
+while(useWeapon(getNearestEnemy())>0); // useWeapon retourne une constante indiquant le succès du tir.
+while(useChip(CHIP_SPARK, getNearestEnemy())>0); // cf. doc
 
 //endturn
-if(inArray(getChips(), CHIP_BANDAGE) && getLife()<getTotalLife()) useChip(CHIP_BANDAGE, getLeek());
+if(inArray(getChips(), CHIP_BANDAGE) && getLife() < getTotalLife()) useChip(CHIP_BANDAGE, getLeek());
 
 if(!wait && distentia()!=14 && getTurn()<chargeAfterTurn)moveAwayFrom(getNearestEnemy());
 else moveToward(getNearestEnemy());
