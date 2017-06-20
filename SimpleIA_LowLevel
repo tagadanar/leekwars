@@ -18,8 +18,7 @@ function saySomething(){
 	];
 	say(stupidSay[randInt(0, count(stupidSay))]);
 }
-if(inArray(getWeapons(), WEAPON_MAGNUM) && getWeapon()==null) setWeapon(WEAPON_MAGNUM);
-else if(getWeapon() == null) setWeapon(WEAPON_PISTOL); 
+if(getWeapon()==null) inArray(getWeapons(), WEAPON_MAGNUM) ? setWeapon(WEAPON_MAGNUM) : setWeapon(WEAPON_PISTOL); 
 
 // exemple de kill avec un magnum (ne fait rien sans magnum)
 function testCanFinish(){
