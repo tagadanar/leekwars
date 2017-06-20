@@ -54,7 +54,7 @@ if(inArray(getChips(), CHIP_CURE) && getLife()<getTotalLife()-(43+43*getWisdom()
 	useChip(CHIP_CURE, getLeek());
 if(inArray(getChips(), CHIP_SHIELD) && distentia()<17) useChip(CHIP_SHIELD, getLeek());
 if(inArray(getChips(), CHIP_HELMET) && distentia()<17) useChip(CHIP_HELMET, getLeek());
-if(inArray(getChips(), CHIP_HELMET) && distentia()<17) useChip(CHIP_WALL, getLeek());
+if(inArray(getChips(), CHIP_WALL) && distentia()<17) useChip(CHIP_WALL, getLeek());
 
 
 // déplacement
