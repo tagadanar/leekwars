@@ -1,0 +1,97 @@
+// IA pour simple le bas lvl.
+// l'ia sait jouer avec pistol, magnum, spark, helmet, wall, shield, bandage, cure, stretching et protein
+// l'ia part du principe qu'on a 10tp 3mp
+// il est conseillé de monter au moins à 200 la force, puis la resist et un peu la sagesse
+
+// config
+global sparkBeforeTurn = 10; // joue spark en kite avant le tour 10;
+global chargeAfterTurn = 40; // arrête de jouer à distance après le tour 40;
+global wait = 3; // attends jusqu'à 3 tours à 14 de range pour taper en premier avec spark.
+
+function saySomething(){
+	var stupidSay = [
+		"moh !"
+		,"moh moh moh..."
+		,"meuh !"
+		," "
+		,"moh ?"
+	];
+	say(stupidSay[randInt(0, count(stupidSay))]);
+}
+if(inArray(getWeapons(), WEAPON_MAGNUM) && getWeapon()==null) setWeapon(WEAPON_MAGNUM);
+else if(getWeapon() == null) setWeapon(WEAPON_PISTOL); 
+
+// exemple de kill avec un magnum (ne fait rien sans magnum)
+function testCanFinish(){
+	if(getWeapon()!=WEAPON_MAGNUM) return false;
+	var e = getNearestEnemy();
+	var cell = getCellToUseWeapon(e);
+	var len = getPathLength(getCell(), cell);
+	if(len != null && len <= getMP()){
+		var tmp = 25*(1+(getStrength()/100));
+        tmp = (tmp *(1-(getRelativeShield(e)/100))) -getAbsoluteShield(e);
+		if(getLife(e)<=tmp){
+			moveTowardCell(cell);
+			useWeapon(e);
+			useWeapon(e);
+			debug("KILL");
+		}
+	}
+}
+testCanFinish();
+
+function distentia(){
+	return getCellDistance(getCell(), getCell(getNearestEnemy()));
+}
+function launchForAllAlly(chip){
+	if(inArray(getChips(),chip)){
+		for(var a in getAliveAllies()) if(!isSummon(a) && a!=getLeek()) useChip(chip, a);
+		useChip(chip, getLeek());	
+	}
+}
+//preboost si besoin
+if(inArray(getChips(), CHIP_CURE) && getLife()<getTotalLife()-(43+43*getWisdom()/100)) 
+	useChip(CHIP_CURE, getLeek());
+if(inArray(getChips(), CHIP_SHIELD) && distentia()<17) useChip(CHIP_SHIELD, getLeek());
+if(inArray(getChips(), CHIP_HELMET) && distentia()<17) useChip(CHIP_HELMET, getLeek());
+
+// déplacement
+// jeu spark
+if(getTurn()<sparkBeforeTurn && inArray(getChips(), CHIP_SPARK)){
+	// reprend l'attente si on se retrouve à plus de 14 de dist de l'adv
+	if(distentia()>14 && wait == 0) wait++;
+	// avance jusqu'à 14 et attend jusqu'à wait tours pour shooter en premier.
+	if(wait>0 && distentia() > 13){
+		while(distentia() > 14 && moveToward(getNearestEnemy(), 1)>0);
+	}else{ // sinon va à 10 de range pour spark
+		while(distentia()>10 && moveToward(getNearestEnemy(), 1)>0);
+		wait = 0;
+	} 
+	if(wait && distentia()==14){
+		debug("distentia: "+distentia());
+		debug("wait: "+wait);
+		wait--;
+		say("Come at me bro !");
+	}
+} else { // jeu classique avec pistol/magnum
+	var distGun = getWeapon() == WEAPON_MAGNUM ? 8 : 7;
+	while(getMP() && (distentia() > distGun || !lineOfSight(getCell(), getCell(getNearestEnemy())))) moveToward(getNearestEnemy(), 1);
+}
+
+//boost se boost soit même quand on est loin, tente de boost les allies en team
+if((getCellDistance(getCell(), getCell(getNearestEnemy()))>10 && getCellDistance(getCell(), getCell(getNearestEnemy())) < 16) || getFightType()!=FIGHT_TYPE_SOLO){
+	launchForAllAlly(CHIP_STRETCHING);
+	launchForAllAlly(CHIP_PROTEIN);
+}
+
+// attack
+while(useWeapon(getNearestEnemy())>0);
+while(useChip(CHIP_SPARK, getNearestEnemy())>0);
+
+//endturn
+if(inArray(getChips(), CHIP_BANDAGE) && getLife()<getTotalLife()) useChip(CHIP_BANDAGE, getLeek());
+
+if(!wait && distentia()!=14 && getTurn()<chargeAfterTurn)moveAwayFrom(getNearestEnemy());
+else moveToward(getNearestEnemy());
+
+saySomething();
