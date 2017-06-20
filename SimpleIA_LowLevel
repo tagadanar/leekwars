@@ -35,6 +35,7 @@ function testCanFinish(){
 			useWeapon(e);
 			useWeapon(e);
 			debug("KILL");
+			say("well well.");
 		}
 	}
 }
