@@ -1,6 +1,6 @@
 // IA pour simple le bas lvl.
 // l'ia sait jouer avec pistol, magnum, spark, helmet, wall, shield, bandage, cure, stretching et protein
-// l'ia part du principe qu'on a 10tp 3mp
+// l'ia part du principe qu'on a 10tp 3mp, et l'adversaire aussi.
 // il est conseillé de monter au moins à 200 la force, puis la resist et un peu la sagesse
 
 // config
