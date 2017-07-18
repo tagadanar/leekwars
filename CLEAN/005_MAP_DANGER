@@ -7,7 +7,7 @@ function getDmgMap(@enemy, @item){
 	minscope = _ITEM_MINRANGE[item],
 	inline = _ITEM_INLINE[item],
 	needlos = _ITEM_NEEDLOS[item];
-    // ignoring me cuz i move, him cuz he wont be block by himself & all that play before
+    // ignoring me cuz i move, him cuz he wont be blockd by himself & all that play before
 	var leekToIgnore = [getLeek(), enemy] + getListOfLeekWhoPlayBefore(enemy);
     var cellToIgnore = [];
     for(var l in leekToIgnore) push(cellToIgnore, getCell(l));
@@ -218,7 +218,7 @@ function getSimplifiedVirtualStateDef(@leek, @stackOfResult){
 }
 
 function getSimplifiedVirtualStateAtk(@leek, @stackOfResult){
-	var state = [], info = @_LEEKS[leek];;
+	var state = [], info = @_LEEKS[leek];
 	state[_str] = info[_str];
 	state[_mgc] = info[_mgc];
 	state[_tp] = info[_tp];
@@ -313,7 +313,6 @@ function getCellDanger(@cell, @ignoreLeeks, @stack){
 					}
 					var damage = _CACHE_WEAPDMG[uniqIdDmg], cost = _ITEM_COST[item];
 					if(item==CHIP_LIBERATION && stack[_SELF][_scoreLibe] > 0){
-						//damage += stack[_SELF][_scoreLibe];
 						absShield=0;
 						relShield=0;
 						skipLibe=true;

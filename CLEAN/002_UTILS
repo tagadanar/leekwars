@@ -110,7 +110,7 @@ function prepareCellArea(@c, @obstacle){
 function prepareCellArea2(@c, @obstacle){
     if(_OBSTACLES[c]!=null) return null; // c'est un obstacle, pas besoin de préparer
     var x = getCellX(c), y = getCellY(c), result = [];
-    // AREA_CIRCLE_1
+    // AREA_CIRCLE_2
     var cell = getCellFromXY(x, y-2);
     if(cell!=null && (_OBSTACLES[cell]==null || obstacle)) push(result, cell);
     cell = getCellFromXY(x, y+2);
@@ -135,7 +135,7 @@ function prepareCellArea2(@c, @obstacle){
 function prepareCellArea3(@c, @obstacle){
     if(_OBSTACLES[c]!=null) return null; // c'est un obstacle, pas besoin de préparer
     var x = getCellX(c), y = getCellY(c), result = [];
-    // AREA_CIRCLE_1
+    // AREA_CIRCLE_3
     var cell = getCellFromXY(x, y-3);
     if(cell!=null && (_OBSTACLES[cell]==null || obstacle)) push(result, cell);
     cell = getCellFromXY(x, y+3);

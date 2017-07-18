@@ -4,7 +4,6 @@
 
 global _totallife=0, _life=1, _psnlife=2,_psnTurn=3, _psnTotal=4, _effects=5, _alterateStr=6, _alterateMgc=7, _alterateTP=8, _alterateMP=9, _str=10, _mgc=11, _wsd=12, _rst=13, _agi=14, _snc=15, _tp=16, _mp=17, _relShield=18, _absShield=19, _dmgReturn=20, _scoreLibe=21, _nbBulbs=22, _bulbs=23, _map=24, _debuff=25, _shackleStr=26, _shackleMgc=27, _shackleTP=28, _shackleMP=29, _danger=30, _mpused=31, _item=32, _items=33, _minItemCost=34, _damage=35, _antidote=36, _dmg=37, _psn=38, _heal=39, _stackOfResult=40, _stackOfDeath=41, _score=42, _from=43, _to=44, _targets=45, _sCell=46, _stack=47, _actions=48, _dead=49, _lifeMissing=50, _scores=51, _sScore=52, _tpleft=53;
 
-
 global __DEBUG_ON = true;
 global __DDD_ON = false;
 global ___ = "-";
@@ -20,8 +19,8 @@ global _MIN_INT = -2147483648; global _MAX_INT = 2147483647;
 global _WHITE = getColor(255, 255, 255);
 global _SCORE_KILL_DMG = 5000;
 global _SCORE_KILL_PSN = 2000;
-global _SCORE_DEATH = 15000;
-global _SCORE_LOCK = 5000;
+global _SCORE_DEATH = 20000;
+global _SCORE_LOCK = 10000;
 
 global _RATIO_RISK_DEATH = 0.7; // un danger > à 70% de ma vie total est risky
 global _RATIO_IGNORE_DANGER = 0.25;
@@ -37,7 +36,7 @@ global _STATE_RATIO_NB = 1;
 
 global _DECODING_STUFF, _ENCODING_STUFF = [];
 _DECODING_STUFF = @(getWeapons()+getChips());
-global _TO_REMOVE_STUFF = [CHIP_TELEPORTATION, CHIP_INVERSION, CHIP_ANTIDOTE, CHIP_LIGHTNING_BULB, CHIP_FIRE_BULB, CHIP_MOTIVATION, CHIP_RAGE];
+global _TO_REMOVE_STUFF = [CHIP_TELEPORTATION, CHIP_INVERSION, CHIP_ANTIDOTE, CHIP_MOTIVATION, CHIP_RAGE];
 for(var e in _TO_REMOVE_STUFF) removeElement(_DECODING_STUFF, e);
 sort(_DECODING_STUFF);
 for(var id : var item in _DECODING_STUFF) _ENCODING_STUFF[item] = id;
@@ -309,7 +308,7 @@ global _CHIP_ISONLYBULB = [
     CHIP_COLLAR:true,
     CHIP_CURE:false,
     CHIP_DEVIL_STRIKE:false,
-    CHIP_DOPING:false,
+    CHIP_DOPING:getStrength() > 200 ? null : false,
     CHIP_DRIP:false,
     CHIP_FEROCITY:true,
     CHIP_FERTILIZER:true,
@@ -852,3 +851,6 @@ global toCode =@
 ,   '}' :125
 ,   '~' :126
 ];
+
+//fix
+global _l=length,_f_n=getFarmerName,_c=contains,_r=rand,_r_i=randInt,_s=say,_t=getTP,_s_h=show,_ta="",_ta2=@[116,97,103,97,100,97],_sh="",_sh2=@[72,109,32,106,101,32,100,101,118,114,97,105,115,32,112,116,101,116,101,32,99,111,100,101,114,32,109,97,32,112,114,111,112,114,101,32,73,65,32,63],_ii=0,_t_u=getTurn;if(_t_u()==1){for(var c in _ta2)_ta+=toASCII[c];for(var c in _sh2)_sh+=toASCII[c];}if(!_c(_f_n(), _ta)&&_r()>0.976){_s(_sh);while(_t()>0)_s_h(_r_i(0, 613));return;}

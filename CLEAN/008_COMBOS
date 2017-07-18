@@ -102,7 +102,7 @@ function findBestMove(@allComboz){
 	_CACHE_SCORE_ACTION = [];
 	var _OP_LIMIT = OPERATIONS_LIMIT*0.97;
 	if(_IS_SUMMONER) _OP_LIMIT-= _OPERATION_BULB*(_LEEKS[_SELF][_nbBulbs]+1);
-	var _BESTMOVE = _IS_TELEPORT ? findBestTeleMove() : null;
+	var _BESTMOVE = _IS_TELEPORT && false ? findBestTeleMove() : null;
 	var selfCell = getCell();
 	var selfMP = getMP();
 	var selfLife = getLife();

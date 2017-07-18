@@ -109,7 +109,7 @@ function refreshLeeksCellsAndAliveStatus(){
 			
 			if(getStrength(leek) >= 100 || getMagic(leek) >= 100){
 				push(_ALIVE_ENEMIES_DANGER, leek);
-			}else if(getLevel()<20){
+			}else if(getLevel()<30){
 				push(_ALIVE_ENEMIES_DANGER, leek);
 			}
 		}
@@ -160,7 +160,7 @@ function refreshLeeksCellsAndAliveStatus(){
 
 function refreshLeeksEffectsAndStates(){
 	// init de l'état des leeks
-	_LEEKS=[];
+	if(!isSummon()) _LEEKS=[];
 	for(var leek in _ALIVE_ALLIES+_ALIVE_ENEMIES){
 		var effects = [], bulbs = [], psnDmgTurn = 0, psnDmgTotal = 0, scoreLibe = 0, alterateStr = 0, alterateMgc = 0, alterateTP = 0, alterateMP = 0;
 		// gestion getEffects
@@ -204,7 +204,13 @@ function refreshLeeksEffectsAndStates(){
 			,_bulbs: @bulbs
 		];
 		debug(getName(leek)+"_libe: "+scoreLibe);
-		_LEEKS[leek] = @leekInfo;
+		if(isSummon()){
+			var items = @_LEEKS[leek][_items],	minItemCost = @_LEEKS[leek][_minItemCost];
+			_LEEKS[leek] = @leekInfo;
+			_LEEKS[leek][_items]= @items;
+			_LEEKS[leek][_minItemCost]= @minItemCost;
+			
+		}else _LEEKS[leek] = @leekInfo;
 	}
 	
 	_SELF_AGI = 1+(getAgility()/1000);
@@ -236,14 +242,14 @@ function setEffectsArray(@effects, @scoreLibe, @psnDmgTurn, @psnDmgTotal, @alter
 	}else if(type==EFFECT_HEAL){
 		psnDmgTurn -= value;
 		psnDmgTotal -= value*duration;
-	}else if(type == EFFECT_SHACKLE_STRENGTH){
-		alterateStr -= value;
-	}else if(type == EFFECT_SHACKLE_MAGIC){
-		alterateMgc -= value;
-	}else if(type == EFFECT_SHACKLE_TP){
-		alterateTP -= value;
-	}else if(type == EFFECT_SHACKLE_MP){
-		alterateMP -= value;
+	}else if(type == EFFECT_SHACKLE_STRENGTH){// /!\ ATTENTION c'est negatif dans getEffe
+		alterateStr += value;
+	}else if(type == EFFECT_SHACKLE_MAGIC){// /!\ ATTENTION c'est negatif dans getEffe
+		alterateMgc += value;
+	}else if(type == EFFECT_SHACKLE_TP){// /!\ ATTENTION c'est negatif dans getEffe
+		alterateTP += value;
+	}else if(type == EFFECT_SHACKLE_MP){// /!\ ATTENTION c'est negatif dans getEffe
+		alterateMP += value;
 	}else if(type == EFFECT_BUFF_STRENGTH){
 		alterateStr += value;
 	}else if(type == EFFECT_BUFF_TP){
@@ -276,9 +282,9 @@ function getLibeScore(@type, @value, @duration){
 	}else if(type == EFFECT_DAMAGE_RETURN){
 		scoreLibe += value*duration;
 	}else if(type == EFFECT_ABSOLUTE_SHIELD){
-		scoreLibe += value*duration;
+		scoreLibe += value*duration*5;
 	}else if(type == EFFECT_RELATIVE_SHIELD){
-		scoreLibe += value*_SCORE_REL_SHIELD*duration;
+		scoreLibe += value*_SCORE_REL_SHIELD*duration*5;
 	}else if(type == EFFECT_BUFF_STRENGTH){
 		scoreLibe += value*duration;
 	}else if(type == EFFECT_BUFF_AGILITY){
@@ -301,6 +307,9 @@ function refreshGravityCells(@distToEnemy){
 	_GRAVITY_CELLS = [];
 	_GRAVITY_COEFS = [];
 	var coefAlly = 0, coefi;
+	
+	var needArmor = (_STR_300 || _SNC_400) && (getAbsoluteShield()==0 || getRelativeShield()==0);
+	
 	for(var al in _ALIVE_ALLIES_LEEKS){
 		if(al!=_SELF){
 			if(isSummon(getLeek())) 			coefi = 80;
@@ -319,10 +328,9 @@ function refreshGravityCells(@distToEnemy){
 	if(!isSummon(getLeek())) for(var al in _ALIVE_ALLIES_BULBS){
 			var cell = getCell(al), type = getEntityType(al);
 			var ratioPV = getLife()/getTotalLife();
-			var haveArmor = getAbsoluteShield()>0 || getRelativeShield()>0;
 			if(type==ENTITY_METALLIC_BULB){
 				_GRAVITY_CELLS[cell] = 1;
-				if(!haveArmor) coefi = 50;
+				if(needArmor) coefi = 50;
 				else coefi = 6;
 			}else if(type==ENTITY_HEALER_BULB){
 				_GRAVITY_CELLS[cell] = 4;
@@ -333,23 +341,28 @@ function refreshGravityCells(@distToEnemy){
 			coefAlly+=coefi;
 		//}
 	}
-	var coef = /*getTurn()>20 &&*/ !isSummon(getLeek())	&& getLife()/getTotalLife()>0.8
+	var coef = !isSummon(getLeek())	&& getLife()/getTotalLife()>0.8 && !needArmor
 							? ceil(coefAlly/count(_ALIVE_ENEMIES)) 
 							: floor(coefAlly/count(_ALIVE_ENEMIES));
 	if(coef<1)coef=1;
+	if(distToEnemy==null) distToEnemy = 30; 
 	for(var en in _ALIVE_ENEMIES_LEEKS){
 		_GRAVITY_CELLS[getCell(en)] = distToEnemy;
 		_GRAVITY_COEFS[getCell(en)] = coef;
 	}
-	for(var en in _ALIVE_ENEMIES_BULBS){
-		if(getEntityType(en)==ENTITY_HEALER_BULB){
-			_GRAVITY_CELLS[getCell(en)] = distToEnemy;
-			_GRAVITY_COEFS[getCell(en)] = coef;
+	if(distToEnemy<20) for(var en in _ALIVE_ENEMIES_BULBS){
+		var eType = getEntityType(en);
+		if(eType==ENTITY_HEALER_BULB){
+			_GRAVITY_CELLS[getCell(en)] = 1;
+			_GRAVITY_COEFS[getCell(en)] = coef*2;
+		}else if(eType==ENTITY_METALLIC_BULB && getStrength()>300){
+			_GRAVITY_CELLS[getCell(en)] = 1;
+			_GRAVITY_COEFS[getCell(en)] = coef*0.5;
 		}
 	}
 	
 	_GRAVITY_CELLS[306] = 3;
-	_GRAVITY_COEFS[306] = 1;
+	_GRAVITY_COEFS[306] = 30;
 }
 
 function refreshStuff(){

@@ -44,6 +44,7 @@ function getComboSet(@entity){
 		if(getWeapon()==null) combos = @comboz["EMPTY"];
 		else combos = @comboz[string(getWeapon())];
 		combos = convertBinariesToCombos(combos);
+		if(TP>=17 && inArray(getWeapons(), WEAPON_M_LASER)) unshift(combos, [WEAPON_M_LASER, WEAPON_M_LASER]);
 		unshift(combos, []); // ajout d'une combo vide au début
 	}else if(eType==ENTITY_PUNY_BULB){
 		//TODO

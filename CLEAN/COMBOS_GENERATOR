@@ -2,19 +2,19 @@ include('auto');
 // INSTRUCTION: lancer un combat de test avec le leek et cette IA pour récupérer la liste des combos disponibles en dur dans le registre, en clé le nb de TP, en value les set de combos selon l'arme.
 // si pas d'arme en main, prendre la clé "EMPTY" sous forme de string.
 // NB je fais des blocks de 4999 char par registre pour contourner la limite de 5000char (ça bug à 5000 par bloc), utiliser la fonction getFullRegister(key) pour avoir le registre complêt après réassemblage.
+// NB² les items ignorés par le système de génération de combos sont ceux de la variable global _TO_REMOVE_STUFF dans les premières lignes du fichier 01_GLOBAL
 
 moveAwayFrom(getNearestEnemy());
 
 global ____debug = false;
 
 global _SHOULD_SORT_COMBOS_TO_ALTERNATE_OFF_DEF_MOVE = getScience() > 500 ? false : false;
-global _IGNORED_ITEM = [CHIP_ANTIDOTE, CHIP_MOTIVATION, CHIP_RAGE, CHIP_TELEPORTATION, CHIP_INVERSION, CHIP_LIGHTNING_BULB, CHIP_FIRE_BULB];
 global combossssss, knownCombos, combo_mincost, stuffstr ="";
 var inHands = getWeapons(); unshift(inHands, "EMPTY");
 global _STUFF = getWeapons()+getChips(), _CURRENT_COMBO_ARRAY = [], _ITEM_TO_ID = [];
 if(getTurn()==1){
 	clearAllRegisters();
-	for(var item in _IGNORED_ITEM) removeElement(_STUFF, item);
+	for(var item in _TO_REMOVE_STUFF) removeElement(_STUFF, item);
 	for(var id : var item in _STUFF){
 		_ITEM_TO_ID[item] = id;
 		stuffstr+=getItemName(item)+" ";
@@ -23,7 +23,7 @@ if(getTurn()==1){
 global _COMBOS_TP = 0, _MAX_TP = getTP(), _ITEM_INDEX = 0, _MAX_INDEX = count(inHands);
 
 startOp();
-while(_COMBOS_TP<=_MAX_TP +3){ //set max boost here
+while(_COMBOS_TP<=_MAX_TP +12){ //set max boost here
 	while(_ITEM_INDEX <= _MAX_INDEX){
 		fillComboArray(_CURRENT_COMBO_ARRAY, inHands[_ITEM_INDEX]);
 		_ITEM_INDEX++;

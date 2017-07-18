@@ -26,9 +26,11 @@ function playBestMove(bestMove){
 			push(delayedSummon, item);
 		}else if(_ITEM_ISWEAP[item]){
 			if(getWeapon()!=item) setWeapon(item);
-			useWeaponOnCell(to);
+			if(count(getWeaponTargets(to))>0) useWeaponOnCell(to);
+			else debug("No more targets :(");// ptete amélio ça pour pas switch weap
 		}
-		else useChipOnCell(item, to);
+		else if(count(getChipTargets(item, to))>0) useChipOnCell(item, to);
+		else debug("No more targets :(");
 		
 		// on compte les utilisations :
 		if(!isSummon(getLeek())){

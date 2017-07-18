@@ -7,7 +7,7 @@ include('auto');
 /////////////////////////////////////////////////////////////////////////////////////
 
 function findBestSingleAction(@stuff, @dead){
-	var reachable = getReachableCells([getCell():0], getMP(), []);
+	reachableCells = getReachableCells([getCell():0], getMP(), []);
 	var bestScore = 0, bestAction, bestDead = [];
 	for(var item in stuff){
 		if(_ITEM_COST[item] <= getTP() && getCooldown(item)==0){
@@ -29,7 +29,7 @@ function findBestSingleAction(@stuff, @dead){
 				: debugE("Cas impossible dans 009_BULB:findBestSingleAction(stuff)")))));
 			
 			for(var targetCell in targetCells){
-				var cell = _getNearCellToUseItemOnCell(item, targetCell, reachable);
+				var cell = _getNearCellToUseItemOnCell(item, targetCell, reachableCells);
 				if(cell!=null){
 					var actionBin = getBinFromAction_(cell, targetCell, item);
 					if(map_action_targets[actionBin]==null)
@@ -46,12 +46,14 @@ function findBestSingleAction(@stuff, @dead){
 		}
 	}
 	pushAll(dead, bestDead);
-	return bestAction;
+	return @bestAction;
 }
 
 function ia_bulb_main(){ startOp();
 	// init
-	refreshLeeksCellsAndAliveStatus();
+	_SELF 					= getLeek();
+	refreshStuff();
+	//refreshLeeksCellsAndAliveStatus();
 	refreshLeeksEffectsAndStates();
 	stopOpkW("refresh");
 	startOp();
@@ -62,20 +64,23 @@ function ia_bulb_main(){ startOp();
 	if(type==ENTITY_PUNY_BULB){
 		stuff =@[CHIP_PROTEIN, CHIP_HELMET, CHIP_BANDAGE, CHIP_PEBBLE];
 	}else if(type==ENTITY_ROCKY_BULB){
+		_RATIO_IGNORE_DANGER = 1;
 		stuff =@[CHIP_ROCKFALL, CHIP_ROCK, CHIP_PEBBLE, CHIP_HELMET];
 	}else if(type==ENTITY_ICED_BULB){
 		stuff =@[CHIP_ICEBERG, CHIP_STALACTITE, CHIP_ICE, CHIP_REFLEXES];
 	}else if(type==ENTITY_HEALER_BULB){
-		distToE = 30;
+		distToE = null;
 		stuff =@[CHIP_CURE, CHIP_DRIP, CHIP_VACCINE, CHIP_BANDAGE];
 	}else if(type==ENTITY_METALLIC_BULB){
 		_RATIO_IGNORE_DANGER = 0.7;
-		distToE = 24;
-		stuff =@[CHIP_ARMOR, CHIP_SEVEN_LEAGUE_BOOTS, CHIP_SHIELD, CHIP_WALL];
+		distToE = null;
+		stuff = _STR_300 || _SNC_400
+			? @[CHIP_ARMOR, CHIP_SHIELD, CHIP_WALL, CHIP_SEVEN_LEAGUE_BOOTS]
+			: @[CHIP_SEVEN_LEAGUE_BOOTS, CHIP_ARMOR, CHIP_SHIELD, CHIP_WALL];
 	}else if(type==ENTITY_FIRE_BULB){
 		stuff =@[CHIP_METEORITE, CHIP_DEVIL_STRIKE, CHIP_FLAME, CHIP_SPARK];
 	}else if(type==ENTITY_LIGHTNING_BULB){
-		stuff =@[CHIP_LIGHTNING, CHIP_FLASH, CHIP_SHOCK, CHIP_DOPING];
+		stuff =@[CHIP_LIGHTNING, /*CHIP_FLASH,*/ CHIP_SHOCK, CHIP_DOPING];
 	}
 	refreshGravityCells(distToE);
 	// playing
@@ -114,10 +119,12 @@ function findFinalCell(@dead){
 		var cellDanger = getCellDanger(sCell, dead, []);
 		var danger = cellDanger[_danger], eMpUsed = cellDanger[_mpused], tmpScore=0;
 		//debuging color
+		/*
 		var color = danger > life 	? getColor(255, 255, 255) : 
 				   (danger==0 		? getColor(0, 255, 0) : 
 									getColor(round(danger/life*255), 0, 0));
 		mark(sCell, color);
+		*/
 		//end debuging color
 		if(!shouldIgnoreDanger)tmpScore -= danger < life*_RATIO_IGNORE_DANGER ? 0 
 			: danger < life*_RATIO_RISK_DEATH ? 
@@ -130,6 +137,7 @@ function findFinalCell(@dead){
 		// espacement entre les leeks
 		for(var cell in _areaCells1[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=1000;
 		for(var cell in _areaCells2[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=100;
+		for(var cell in _areaCells3[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=10;
 		// gravityCells
 		for(var cell:var dist in _GRAVITY_CELLS){				
 			tmpScore -= abs(dist-getCellDistance(cell, sCell))*_GRAVITY_COEFS[cell];
