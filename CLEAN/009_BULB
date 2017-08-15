@@ -29,6 +29,7 @@ function findBestSingleAction(@stuff, @dead){
 				: debugE("Cas impossible dans 009_BULB:findBestSingleAction(stuff)")))));
 			
 			for(var targetCell in targetCells){
+				if(targetCell==null) continue;
 				var cell = _getNearCellToUseItemOnCell(item, targetCell, reachableCells);
 				if(cell!=null){
 					var actionBin = getBinFromAction_(cell, targetCell, item);
@@ -51,9 +52,7 @@ function findBestSingleAction(@stuff, @dead){
 
 function ia_bulb_main(){ startOp();
 	// init
-	_SELF 					= getLeek();
-	refreshStuff();
-	//refreshLeeksCellsAndAliveStatus();
+	refreshLeeksCellsAndAliveStatus();
 	refreshLeeksEffectsAndStates();
 	stopOpkW("refresh");
 	startOp();
@@ -64,15 +63,16 @@ function ia_bulb_main(){ startOp();
 	if(type==ENTITY_PUNY_BULB){
 		stuff =@[CHIP_PROTEIN, CHIP_HELMET, CHIP_BANDAGE, CHIP_PEBBLE];
 	}else if(type==ENTITY_ROCKY_BULB){
-		_RATIO_IGNORE_DANGER = 1;
-		stuff =@[CHIP_ROCKFALL, CHIP_ROCK, CHIP_PEBBLE, CHIP_HELMET];
+		_RATIO_IGNORE_DANGER = 10;
+		stuff =@[CHIP_ROCKFALL, CHIP_ROCK, CHIP_HELMET, CHIP_PEBBLE];
 	}else if(type==ENTITY_ICED_BULB){
 		stuff =@[CHIP_ICEBERG, CHIP_STALACTITE, CHIP_ICE, CHIP_REFLEXES];
 	}else if(type==ENTITY_HEALER_BULB){
+		_RATIO_IGNORE_DANGER = 0;
 		distToE = null;
 		stuff =@[CHIP_CURE, CHIP_DRIP, CHIP_VACCINE, CHIP_BANDAGE];
 	}else if(type==ENTITY_METALLIC_BULB){
-		_RATIO_IGNORE_DANGER = 0.7;
+		_RATIO_IGNORE_DANGER = 0.1;
 		distToE = null;
 		stuff = _STR_300 || _SNC_400
 			? @[CHIP_ARMOR, CHIP_SHIELD, CHIP_WALL, CHIP_SEVEN_LEAGUE_BOOTS]
@@ -80,8 +80,9 @@ function ia_bulb_main(){ startOp();
 	}else if(type==ENTITY_FIRE_BULB){
 		stuff =@[CHIP_METEORITE, CHIP_DEVIL_STRIKE, CHIP_FLAME, CHIP_SPARK];
 	}else if(type==ENTITY_LIGHTNING_BULB){
-		stuff =@[CHIP_LIGHTNING, /*CHIP_FLASH,*/ CHIP_SHOCK, CHIP_DOPING];
+		stuff =@[CHIP_LIGHTNING, CHIP_DOPING, CHIP_SHOCK, CHIP_FLASH];
 	}
+	if(_STATE_LEEK_MIGHT_DIE) _RATIO_IGNORE_DANGER = 1000;
 	refreshGravityCells(distToE);
 	// playing
 	var dead = [];
@@ -136,8 +137,8 @@ function findFinalCell(@dead){
 													: eMpUsed*_RATIO_MP_USED;
 		// espacement entre les leeks
 		for(var cell in _areaCells1[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=1000;
-		for(var cell in _areaCells2[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=100;
-		for(var cell in _areaCells3[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=10;
+		for(var cell in _areaCells2[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=300;
+		for(var cell in _areaCells3[sCell]) if(_LEEKS_CELL[cell]!=null) tmpScore-=100;
 		// gravityCells
 		for(var cell:var dist in _GRAVITY_CELLS){				
 			tmpScore -= abs(dist-getCellDistance(cell, sCell))*_GRAVITY_COEFS[cell];
@@ -145,7 +146,7 @@ function findFinalCell(@dead){
 		// blocking
 		if(count(@_areaCells1[nearECell])==1){
 			for(var cell in _areaCells1[nearECell]){
-				if(cell==sCell) tmpScore+= 100000;
+				if(cell==sCell) tmpScore+= _SCORE_LOCK*5;
 			}
 		}
 		// validation du meilleure coup

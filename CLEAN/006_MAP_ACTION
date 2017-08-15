@@ -110,6 +110,7 @@ function setMapActions(){
         }else if(chipArea==AREA_LASER_LINE){
             debugE("CHIP LAZERLINE ?!?");
         }else{// cas des aoe AREA_CIRCLE_X (1, 2, 3)
+			if(c==CHIP_DEVIL_STRIKE && !isSummon() && getAbsoluteShield()==0) continue;
         // TODO maybe opti en faisant qu'une fois les calcs par area pour weapon & chip
             var isPositiv = isPositivChip(c);
 			var cells;

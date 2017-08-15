@@ -117,12 +117,13 @@ function getOrderedWeapChipScore(@enemy, eStr, eMgc, eWsd){
     var dmg, cost, effects, allChipWeap = [], stuff = getWeapons(enemy)+getChips(enemy);
 	var absShield = getAbsoluteShield(), relShield = getRelativeShield();
     for(var item in stuff){
-        if(item == CHIP_BURNING || item == CHIP_DEVIL_STRIKE ){
+        if(item == CHIP_BURNING || item == CHIP_DEVIL_STRIKE || item == CHIP_STALACTITE){
 			continue;
 		}
 		//if(item == WEAPON_BROADSWORD || item == WEAPON_AXE || item == WEAPON_KATANA) continue;
 		else if(item == CHIP_LIBERATION){
-			allChipWeap[item] = _LEEKS[_SELF][_scoreLibe]/_ITEM_COST[item];
+			// pour le moment je traite plus libe
+			//allChipWeap[item] = _LEEKS[_SELF][_scoreLibe]/_ITEM_COST[item];
 			continue;
 		}
 		if(isSpecialChip(item))continue;
@@ -194,8 +195,8 @@ function loadMapsDanger(maxOp){
 				if(e==_ALIVE_ENEMIES_DANGER[0]) debugE((index+1)+getItemName(item));
 			}
 		}
-		// on fait minimum 3 (>=2) armes, on dépasse pas la limite, on fait pas plus de 7 armes.
-		if(index >= 2 && (getOperations()-startOperation>maxOp || index > 6)){
+		// on fait minimum 4 (>2) armes, on dépasse pas la limite, on fait pas plus de 6 armes.
+		if(index >2 && (getOperations()-startOperation>maxOp || index > 5)){
 			debugE('Turn'+getTurn()+' breaking loadMapsDanger at index: '+index);
 			_INDEX_DANGER=index;
 			break;
@@ -209,8 +210,8 @@ function getSimplifiedVirtualStateDef(@leek, @stackOfResult){
 	state[_relShield] = info[_relShield];
 	if(stackOfResult[leek]==null) return @state;
 	if(stackOfResult[leek][_debuff]==true){
-		state[_absShield]=0;
-		state[_relShield]=0;
+		state[_absShield]*=0.5;
+		state[_relShield]*=0.5;
 	}
 	state[_absShield]+=stackOfResult[leek][_absShield];
 	state[_relShield]+=stackOfResult[leek][_relShield];
@@ -225,10 +226,10 @@ function getSimplifiedVirtualStateAtk(@leek, @stackOfResult){
 	state[_mp] = info[_mp];
 	if(stackOfResult[leek]==null) return @state;
 	if(stackOfResult[leek][_debuff]==true){
-		state[_str]-= info[_alterateStr];
-		state[_mgc]-= info[_alterateMgc];
-		state[_tp]-= info[_alterateTP];
-		state[_mp]-= info[_alterateMP];
+		state[_str]-= info[_alterateStr]*0.5;
+		state[_mgc]-= info[_alterateMgc]*0.5;
+		state[_tp]-= info[_alterateTP]*0.5;
+		state[_mp]-= info[_alterateMP]*0.5;
 	}
 	state[_str]-= stackOfResult[_shackleStr];
 	state[_mgc]-= stackOfResult[_shackleMgc];
@@ -260,6 +261,7 @@ function getItemDmg(@item, @eMgc, @eStr, @absShield, @relShield, @ratio){
 				(duration == 3 ? 1.8 : // 3 => 1.25
 				(duration == 4 ? 2 : // 4 => 1.5
 				duration))); // 1 => 1
+			if(_CAN_ANTIDOTE) duration = 1;	
             dmg += optiMoy*(1+(eMgc/100)) *ratio *duration;
         }
     }
@@ -278,7 +280,8 @@ function getCellDanger(@cell, @ignoreLeeks, @stack){
 		}
 		var defendingState = getSimplifiedVirtualStateDef(id, stack);
 		var absShield = defendingState[_absShield], relShield = defendingState[_relShield];
-		var skipLibe = false; if(isSummon()) skipLibe = true;
+		var skipLibe = false; 
+		if(isSummon() || (absShield<1&&relShield<1)) skipLibe = true;
 		var finalDanger = 0, sumMp = 0, nbItem = 0, sumTpLeft = 0, nbEnemy = 0;
 		for(var enemy in _ALIVE_ENEMIES_DANGER){
 			if(inArray(ignoreLeeks, enemy)) continue;

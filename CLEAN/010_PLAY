@@ -7,6 +7,8 @@ function playBestMove(bestMove){
 	debug("tpleft: "+ bestMove[_tpleft]);
 	debug("kill: "+ bestMove[_dead]);
 	debug("totalscore: "+ bestMove[_score]);
+	if(bestMove[_danger]>=getLife()*_RATIO_RISK_DEATH
+	|| bestMove[_danger] > 500) _STATE_LEEK_MIGHT_DIE = true;
 	/*
 	
 	_scores:scores,
@@ -25,9 +27,13 @@ function playBestMove(bestMove){
 		if(isSpecialChip(item)){ // GESTION SUMMON
 			push(delayedSummon, item);
 		}else if(_ITEM_ISWEAP[item]){
-			if(getWeapon()!=item) setWeapon(item);
-			if(count(getWeaponTargets(to))>0) useWeaponOnCell(to);
-			else debug("No more targets :(");// ptete amélio ça pour pas switch weap
+			if(count(getWeaponTargets(item, to))>0){
+				if(getWeapon()!=item) setWeapon(item);
+				useWeaponOnCell(to);
+			}else {
+				debug("No more targets :(");
+				mark(to, COLOR_RED);
+			}
 		}
 		else if(count(getChipTargets(item, to))>0) useChipOnCell(item, to);
 		else debug("No more targets :(");
@@ -54,4 +60,111 @@ function playBestMove(bestMove){
 	var _MAINWEAPON = getMainWeapon();
 	if(_SHOULD_KEEP_MAINWEAP_INHAND && getWeapon()!= _MAINWEAPON) setWeapon(_MAINWEAPON);
 	else if(_MAINWEAPON != null && getWeapon()==null) setWeapon(_MAINWEAPON);
+}
+
+function getItemDamage(@item, @e, @inv){
+	if(item==WEAPON_KATANA) 
+		return 77*(1+getStrength()/100)*(1-getRelativeShield(e)/100)-getAbsoluteShield(e);
+	else if(item==CHIP_DEVIL_STRIKE)
+		return (25*0.83*(1+getStrength()/100)*(1-getRelativeShield(e)/100)-getAbsoluteShield(e))*5;
+	else if(item==CHIP_LIGHTNING)
+		return 35*(1+getStrength()/100)*(1-getRelativeShield(e)/100)-getAbsoluteShield(e);
+	else if(item==CHIP_METEORITE)
+		return 70*(1+getStrength()/100)*(1-getRelativeShield(e)/100)-getAbsoluteShield(e);
+	else if(item==WEAPON_ELECTRISOR)
+		return 70*(1+getStrength()/100)*(1-getRelativeShield(e)/100)-getAbsoluteShield(e);
+	else if(item==CHIP_STALACTITE)
+		return 64*(1+getStrength()/100)*(1-getRelativeShield(e)/100)-getAbsoluteShield(e);
+	else if(item==WEAPON_M_LASER)
+		return 90*(1+getStrength()/100)*(1-(getRelativeShield(e)-(inv?20:0))/100)-getAbsoluteShield(e);
+	else if(item==WEAPON_GAZOR)
+		return 28*(1+getMagic()/100);
+	else if(item==CHIP_PLAGUE)
+		return 40*(1+getMagic()/100);
+}
+
+function tryKillWithCombo(@combo, @e){
+	var dmg=0, needSwap=0, tpCost=0, inHand = getWeapon(),
+		maxCost=getTP(), inver=false, strDbg = "";
+	for(var item in combo){
+		if(_ITEM_ISWEAP[item] && item != inHand) needSwap = 1;
+		else if(!_ITEM_ISWEAP[item] && getCooldown(item)!=0) return false;
+		else if(item==CHIP_DEVIL_STRIKE && (getLife()<1000||getAbsoluteShield()<75))
+			return false;
+		if(item==WEAPON_M_LASER && getCooldown(CHIP_INVERSION)==0)
+			if(maxCost>=21 || (maxCost>=20 && inHand==WEAPON_M_LASER))
+				inver=true;
+		tpCost += _ITEM_COST[item];
+		dmg+= getItemDamage(item, e, inver);
+		strDbg+= getItemName(item)+":"+_ITEM_COST[item];
+	} 
+	tpCost += needSwap;
+	strDbg+="|swap:"+needSwap+"_cost:"+tpCost+'_maxc:'+maxCost;
+	debugE(strDbg);
+	if(tpCost<=maxCost && (dmg>=_LEEKS[e][_life] || dmg>=_LEEKS[e][_psnlife])){
+		var cellFrom = getCellToUseWeapon(combo[0], e);
+		if(reachableCells[cellFrom]!=null){
+			moveTowardCell(cellFrom);
+			for(var item in combo){
+				if(isAlive(e)){
+					if(inver&&getCooldown(CHIP_INVERSION)==0) useChip(CHIP_INVERSION, e);
+					if(_ITEM_ISWEAP[item] && getWeapon()!=item) setWeapon(item);
+					if(_ITEM_ISWEAP[item]) useWeapon(e);
+					else if(item==CHIP_DEVIL_STRIKE){
+						if(getTP()>=7) say(rand()>0.7?"Allah akbar !":"BOUMCHAKA");
+						useChip(item, getLeek());
+					}else useChip(item, e);
+				}
+			}
+			refreshLeeksCellsAndAliveStatus();
+			refreshLeeksEffectsAndStates();
+			reachableCells = getReachableCells([getCell():0], getMP(), []);
+			return true;
+		}
+	}
+	return false;
+}
+
+function tryTeleKillWithCombo(@combo, @e){
+	var dmg=0, needSwap=0, tpCost=0, inHand = getWeapon(),
+		maxCost=getTP()-_ITEM_COST[CHIP_TELEPORTATION], strDbg = "";
+	for(var item in combo){
+		if(_ITEM_ISWEAP[item] && item != inHand) needSwap = 1;
+		else if(!_ITEM_ISWEAP[item] && getCooldown(item)!=0) return false;
+		else if(item==CHIP_DEVIL_STRIKE && (getLife()<1000||getAbsoluteShield()<75))
+			return false;
+		tpCost += _ITEM_COST[item];
+		dmg+= getItemDamage(item, e, false);
+		strDbg+= getItemName(item)+":"+_ITEM_COST[item];
+	} 
+	tpCost += needSwap;
+	strDbg+="|swap:"+needSwap+"_cost:"+tpCost+'_maxc:'+maxCost;
+	debugE(strDbg);
+	if(tpCost<=maxCost && (dmg>=_LEEKS[e][_life] || dmg>=_LEEKS[e][_psnlife])){
+		var cellFrom = getCellToUseWeapon(combo[0], e);
+		if(reachableCells[cellFrom]==null){
+			var cellFromT = getCellToUseChipOnCell(CHIP_TELEPORTATION, cellFrom);
+			var dist = reachableCells[cellFromT];
+			if(dist!=null){
+				moveTowardCell(cellFromT);
+				useChipOnCell(CHIP_TELEPORTATION, cellFrom);
+				countUsage(CHIP_TELEPORTATION);
+				for(var item in combo){
+					if(isAlive(e)){
+						if(_ITEM_ISWEAP[item] && getWeapon()!=item) setWeapon(item);
+						if(_ITEM_ISWEAP[item]) useWeapon(e);
+						else if(item==CHIP_DEVIL_STRIKE){
+							if(getTP()>=7) say(rand()>0.7?"Allah akbar !":"BOUMCHAKA");
+							useChip(item, getLeek());
+						}else useChip(item, e);
+					}
+				}
+				refreshLeeksCellsAndAliveStatus();
+				refreshLeeksEffectsAndStates();
+				reachableCells = getReachableCells([getCell():0], getMP(), []);
+				return true;
+			}
+		}
+	}
+	return false;
 }

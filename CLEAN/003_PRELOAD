@@ -159,6 +159,7 @@ function refreshLeeksCellsAndAliveStatus(){
 }
 
 function refreshLeeksEffectsAndStates(){
+	var debugStr = "LibeScr=";
 	// init de l'état des leeks
 	if(!isSummon()) _LEEKS=[];
 	for(var leek in _ALIVE_ALLIES+_ALIVE_ENEMIES){
@@ -203,7 +204,7 @@ function refreshLeeksEffectsAndStates(){
 			,_nbBulbs: count(bulbs)//todo check si ça vaut le coup de garder cette info..
 			,_bulbs: @bulbs
 		];
-		debug(getName(leek)+"_libe: "+scoreLibe);
+		debugStr+=getName(leek)+":"+scoreLibe+"|";
 		if(isSummon()){
 			var items = @_LEEKS[leek][_items],	minItemCost = @_LEEKS[leek][_minItemCost];
 			_LEEKS[leek] = @leekInfo;
@@ -212,12 +213,16 @@ function refreshLeeksEffectsAndStates(){
 			
 		}else _LEEKS[leek] = @leekInfo;
 	}
-	
+	debug(debugStr);
 	_SELF_AGI = 1+(getAgility()/1000);
 	_STR_100 = false;
 	_STR_300 = false;
 	_SNC_200 = false;
 	_SNC_400 = false;
+	if(inArray(getChips(), CHIP_ANTIDOTE) && getCooldown(CHIP_ANTIDOTE)==0)
+			_CAN_ANTIDOTE = true;
+	else 	_CAN_ANTIDOTE = false;
+	
 	for(var e in _ALIVE_ENEMIES){
 		if(getStrength(e)>100 || _LEEKS[e][_alterateStr] < 0) _STR_100 = true;
 		if(getStrength(e)>300 || _LEEKS[e][_alterateStr] < 0) _STR_300 = true;
@@ -242,14 +247,14 @@ function setEffectsArray(@effects, @scoreLibe, @psnDmgTurn, @psnDmgTotal, @alter
 	}else if(type==EFFECT_HEAL){
 		psnDmgTurn -= value;
 		psnDmgTotal -= value*duration;
-	}else if(type == EFFECT_SHACKLE_STRENGTH){// /!\ ATTENTION c'est negatif dans getEffe
-		alterateStr += value;
-	}else if(type == EFFECT_SHACKLE_MAGIC){// /!\ ATTENTION c'est negatif dans getEffe
-		alterateMgc += value;
-	}else if(type == EFFECT_SHACKLE_TP){// /!\ ATTENTION c'est negatif dans getEffe
-		alterateTP += value;
-	}else if(type == EFFECT_SHACKLE_MP){// /!\ ATTENTION c'est negatif dans getEffe
-		alterateMP += value;
+	}else if(type == EFFECT_SHACKLE_STRENGTH){
+		alterateStr -= value;
+	}else if(type == EFFECT_SHACKLE_MAGIC){
+		alterateMgc -= value;
+	}else if(type == EFFECT_SHACKLE_TP){
+		alterateTP -= value;
+	}else if(type == EFFECT_SHACKLE_MP){
+		alterateMP -= value;
 	}else if(type == EFFECT_BUFF_STRENGTH){
 		alterateStr += value;
 	}else if(type == EFFECT_BUFF_TP){
@@ -266,27 +271,27 @@ function setEffectsArray(@effects, @scoreLibe, @psnDmgTurn, @psnDmgTotal, @alter
 function getLibeScore(@type, @value, @duration){
 	var scoreLibe=0;
 	if(type==EFFECT_POISON){
-		scoreLibe -= value*duration*3;
-	}else if(type == EFFECT_SHACKLE_STRENGTH){ // /!\ ATTENTION c'est negatif dans getEffe
-		scoreLibe += value*duration*6;
+		scoreLibe -= value*duration*4;
+	}else if(type == EFFECT_SHACKLE_STRENGTH){
+		scoreLibe -= value*duration*6;
 		//debug("SHACKLESTR:"+value);
-	}else if(type == EFFECT_SHACKLE_MAGIC){ // /!\ ATTENTION c'est negatif dans getEffe
-		scoreLibe += value*duration*6;
-	}else if(type == EFFECT_SHACKLE_MP){ // /!\ ATTENTION c'est negatif dans getEffe
-		scoreLibe += value*_SCORE_MP*duration*3;
-	}else if(type == EFFECT_SHACKLE_TP){ // /!\ ATTENTION c'est negatif dans getEffe
-		scoreLibe += value*_SCORE_TP*duration*3;
+	}else if(type == EFFECT_SHACKLE_MAGIC){
+		scoreLibe -= value*duration*6;
+	}else if(type == EFFECT_SHACKLE_MP){
+		scoreLibe -= value*_SCORE_MP*duration*3;
+	}else if(type == EFFECT_SHACKLE_TP){
+		scoreLibe -= value*_SCORE_TP*duration*3;
 	// A partir d'ici, effet positif, scoreLibe +=
 	}else if(type==EFFECT_HEAL){
 		scoreLibe += value*duration;
 	}else if(type == EFFECT_DAMAGE_RETURN){
-		scoreLibe += value*duration;
+		scoreLibe += value*duration*4;
 	}else if(type == EFFECT_ABSOLUTE_SHIELD){
 		scoreLibe += value*duration*5;
 	}else if(type == EFFECT_RELATIVE_SHIELD){
 		scoreLibe += value*_SCORE_REL_SHIELD*duration*5;
 	}else if(type == EFFECT_BUFF_STRENGTH){
-		scoreLibe += value*duration;
+		scoreLibe += value*duration*2;
 	}else if(type == EFFECT_BUFF_AGILITY){
 		scoreLibe += value*duration;
 	}else if(type == EFFECT_BUFF_MP){
@@ -345,7 +350,7 @@ function refreshGravityCells(@distToEnemy){
 							? ceil(coefAlly/count(_ALIVE_ENEMIES)) 
 							: floor(coefAlly/count(_ALIVE_ENEMIES));
 	if(coef<1)coef=1;
-	if(distToEnemy==null) distToEnemy = 30; 
+	if(distToEnemy==null){ distToEnemy = 30; coef=round(coef*0.5); } 
 	for(var en in _ALIVE_ENEMIES_LEEKS){
 		_GRAVITY_CELLS[getCell(en)] = distToEnemy;
 		_GRAVITY_COEFS[getCell(en)] = coef;

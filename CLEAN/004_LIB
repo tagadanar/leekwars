@@ -12,8 +12,8 @@ function sayCupidon(){
 		,"."
 		,"?!"
 	];
-
-	say(stupidSay[randInt(0, count(stupidSay))]);
+	if(rand()<0.1) lama();
+	else say(stupidSay[randInt(0, count(stupidSay))]);
 }
 
 function filterCooldownedCombos(@allCombos){
