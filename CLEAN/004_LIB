@@ -2,18 +2,43 @@ include('auto');
 ///////////////////////////////////////////
 // Ma lib
 ///////////////////////////////////////////
-
+global _poem = round(rand()), _poem_count=0;
 function sayCupidon(){
-	var stupidSay = [
-		"?"
-		,"!?"
-		,"!"
-		,".."
-		,"."
-		,"?!"
-	];
-	if(rand()<0.1) lama();
-	else say(stupidSay[randInt(0, count(stupidSay))]);
+	var poem = [0:[
+		"Un peu de poésie : Mon Diamant, Mon Amant"
+		,"Lucy quitte son ciel étoilé"
+		,"Pour se lover à mes cotés"
+		,"Son corps, son visage en nage"
+		,"Ses yeux perdues, en mydriase"
+		,"La mer effleure ses pieds nues"
+		,"S’écoule le long de la grève"
+		,"Soudain saisi d’un flot d’extase"
+		,"Elle m’enlace, moi l’Inconnu"
+		,"Et me murmure du bout des lèvres"
+		,"Le contenu de ses doux rêves."
+		,"Pour une nuit son âme en peine"
+		,"Du paradis est souveraine."
+	],1:[
+		"Un peu de poésie : Ophélie"
+		,"Ophélie, ma fée lit dans son lit et pâlit,"
+		,"car la vie l'asservie et ses rêves s'en vont."
+		,"Sans espoir dans le noir, désespoir disait on,"
+		,"mais pas de dépression, juste une déception,"
+		,"l'illusion dissipé, voit la vie comme elle est."
+		,"De ce monde parfait qu'enfant elle dessinait"
+		,"ne reste que fumées et cendres dispersées."
+		,"Elle ouvre désormais les yeux pour constater"
+		,"que jamais ses souhaits ne seront exaucés."
+		,"Alors elle lit, préfère la vie imaginaire"
+		,"d'un héros éphémère dans un autre univers."
+		,"Avec un goût amer, elle contemple les guerres"
+		,"ainsi dans sa tanière s'enterre la libertaire."
+	]];
+	if(getAliveEnemiesCount()==0) 
+		say("C'était... très sale.");
+	else if(poem[_poem][_poem_count]!=null && getTP()>0)
+		say(poem[_poem][_poem_count++]);
+	else lama();
 }
 
 function filterCooldownedCombos(@allCombos){
@@ -31,108 +56,22 @@ function filterCooldownedCombos(@allCombos){
 	return @filteredCombos;
 }
 
-function getComboSet(@entity){
-	var eType = getEntityType(entity), TP = getTP(), combos = [];
-	if(eType==ENTITY_LEEK_){
-		// liste des combos à tester
-		var comboz = jsonDecode(getFullRegister(TP));
-		if(comboz==null){
-			debugE("NO JSON FOR "+TP+" TP !");
-			while(comboz==null) comboz = jsonDecode(getFullRegister(--TP));
-		}
-		// choix du set de combo en fonction de mon état
-		if(getWeapon()==null) combos = @comboz["EMPTY"];
-		else combos = @comboz[string(getWeapon())];
-		combos = convertBinariesToCombos(combos);
-		if(TP>=17 && inArray(getWeapons(), WEAPON_M_LASER)) unshift(combos, [WEAPON_M_LASER, WEAPON_M_LASER]);
-		unshift(combos, []); // ajout d'une combo vide au début
-	}else if(eType==ENTITY_PUNY_BULB){
-		//TODO
-	}else if(eType==ENTITY_ROCKY_BULB){
-		if(TP>=12) push(combos, [CHIP_ROCKFALL, CHIP_ROCK, CHIP_PEBBLE]);
-		if(TP>=10) push(combos, [CHIP_ROCKFALL, CHIP_ROCK]);
-		if(TP>=8) push(combos, [CHIP_ROCKFALL, CHIP_HELMET]);
-		if(TP>=7) push(combos, [CHIP_ROCKFALL, CHIP_PEBBLE]);
-		if(TP>=8) push(combos, [CHIP_ROCK, CHIP_HELMET]);
-		if(TP>=5) push(combos, [CHIP_ROCKFALL]);
-		if(TP>=7) push(combos, [CHIP_ROCK, CHIP_PEBBLE]);
-		if(TP>=5) push(combos, [CHIP_ROCK]);
-		if(TP>=5) push(combos, [CHIP_HELMET, CHIP_PEBBLE]);
-		if(TP>=3) push(combos, [CHIP_HELMET]);
-		if(TP>=2) push(combos, [CHIP_PEBBLE]);
-	}else if(eType==ENTITY_ICED_BULB){
-		if(TP>=13) push(combos, [CHIP_ICEBERG, CHIP_STALACTITE]);
-		if(TP>=14) push(combos, [CHIP_REFLEXES, CHIP_ICEBERG]);
-		if(TP>=13) push(combos, [CHIP_REFLEXES, CHIP_STALACTITE]);
-		if(TP>=11) push(combos, [CHIP_ICEBERG, CHIP_ICE]);
-		if(TP>=10) push(combos, [CHIP_STALACTITE, CHIP_ICE]);
-		if(TP>=7) push(combos, [CHIP_ICEBERG]);
-		if(TP>=6) push(combos, [CHIP_STALACTITE]);
-		if(TP>=11) push(combos, [CHIP_REFLEXES, CHIP_ICE]);
-		if(TP>=12) push(combos, [CHIP_ICE, CHIP_ICE, CHIP_ICE]);
-		if(TP>=8) push(combos, [CHIP_ICE, CHIP_ICE]);
-		if(TP>=7) push(combos, [CHIP_REFLEXES]);
-		if(TP>=4) push(combos, [CHIP_ICE]);
-	}else if(eType==ENTITY_HEALER_BULB){
-		if(TP>=17) push(combos, [CHIP_CURE, CHIP_DRIP, CHIP_BANDAGE, CHIP_VACCINE]);
-		if(TP>=13) push(combos, [CHIP_DRIP, CHIP_BANDAGE, CHIP_VACCINE]);
-		if(TP>=12) push(combos, [CHIP_CURE, CHIP_BANDAGE, CHIP_VACCINE]);
-		if(TP>=11) push(combos, [CHIP_CURE, CHIP_DRIP, CHIP_BANDAGE]);
-		if(TP>=11) push(combos, [CHIP_DRIP, CHIP_VACCINE]);
-		if(TP>=10) push(combos, [CHIP_CURE, CHIP_VACCINE]);
-		if(TP>=9) push(combos, [CHIP_DRIP, CHIP_CURE]);
-		if(TP>=8) push(combos, [CHIP_BANDAGE, CHIP_VACCINE]);
-		if(TP>=7) push(combos, [CHIP_DRIP, CHIP_BANDAGE]);
-		if(TP>=6) push(combos, [CHIP_CURE, CHIP_BANDAGE]);
-		if(TP>=6) push(combos, [CHIP_VACCINE]);
-		if(TP>=5) push(combos, [CHIP_DRIP]);
-		if(TP>=4) push(combos, [CHIP_CURE]);
-		if(TP>=2) push(combos, [CHIP_BANDAGE]);
-	}else if(eType==ENTITY_METALLIC_BULB){
-		if(TP>=12) push(combos, [CHIP_ARMOR, CHIP_SEVEN_LEAGUE_BOOTS]);
-		if(TP>=10) push(combos, [CHIP_ARMOR, CHIP_SHIELD]);
-		if(TP>=10) push(combos, [CHIP_SEVEN_LEAGUE_BOOTS, CHIP_SHIELD]);
-		if(TP>=9) push(combos, [CHIP_SEVEN_LEAGUE_BOOTS, CHIP_WALL]);
-		if(TP>=9) push(combos, [CHIP_ARMOR, CHIP_WALL]);
-		if(TP>=7) push(combos, [CHIP_SHIELD, CHIP_WALL]);
-		if(TP>=6) push(combos, [CHIP_ARMOR]);
-		if(TP>=6) push(combos, [CHIP_SEVEN_LEAGUE_BOOTS]);
-		if(TP>=4) push(combos, [CHIP_SHIELD]);
-		if(TP>=3) push(combos, [CHIP_WALL]);
-	}else if(eType==ENTITY_FIRE_BULB){
-		if(TP>=14) push(combos, [CHIP_METEORITE, CHIP_DEVIL_STRIKE]);
-		if(TP>=12) push(combos, [CHIP_METEORITE, CHIP_FLAME]);
-		if(TP>=11) push(combos, [CHIP_METEORITE, CHIP_SPARK]);
-		if(TP>=10) push(combos, [CHIP_FLAME, CHIP_DEVIL_STRIKE]);
-		if(TP>=12) push(combos, [CHIP_FLAME, CHIP_FLAME, CHIP_FLAME]);
-		if(TP>=8) push(combos, [CHIP_METEORITE]);
-		if(TP>=9) push(combos, [CHIP_SPARK, CHIP_DEVIL_STRIKE]);
-		if(TP>=8) push(combos, [CHIP_FLAME, CHIP_FLAME]);
-		if(TP>=6) push(combos, [CHIP_DEVIL_STRIKE]);
-		if(TP>=12) push(combos, [CHIP_SPARK, CHIP_SPARK, CHIP_SPARK, CHIP_SPARK]);
-		if(TP>=9) push(combos, [CHIP_SPARK, CHIP_SPARK, CHIP_SPARK]);
-		if(TP>=6) push(combos, [CHIP_SPARK, CHIP_SPARK]);
-	}else if(eType==ENTITY_LIGHTNING_BULB){
-		if(TP>=16) push(combos, [CHIP_LIGHTNING, CHIP_LIGHTNING, CHIP_LIGHTNING, CHIP_LIGHTNING]);
-		if(TP>=14) push(combos, [CHIP_LIGHTNING, CHIP_LIGHTNING, CHIP_LIGHTNING, CHIP_SHOCK]);
-		if(TP>=12) push(combos, [CHIP_LIGHTNING, CHIP_LIGHTNING, CHIP_LIGHTNING]);
-		if(TP>=13) push(combos, [CHIP_DOPING, CHIP_LIGHTNING, CHIP_LIGHTNING]);
-		if(TP>=10) push(combos, [CHIP_LIGHTNING, CHIP_LIGHTNING, CHIP_SHOCK]);
-		if(TP>=11) push(combos, [CHIP_DOPING, CHIP_LIGHTNING]);
-		if(TP>=11) push(combos, [CHIP_DOPING, CHIP_FLASH]);
-		if(TP>=8) push(combos, [CHIP_LIGHTNING, CHIP_LIGHTNING]);
-		if(TP>=9)  push(combos, [CHIP_DOPING, CHIP_SHOCK]);
-		if(TP>=7)  push(combos, [CHIP_DOPING]);
-		if(TP>=12) push(combos, [CHIP_LIGHTNING, CHIP_LIGHTNING, CHIP_FLASH]);
-		if(TP>=10) push(combos, [CHIP_SHOCK, CHIP_SHOCK, CHIP_SHOCK, CHIP_SHOCK, CHIP_SHOCK]);
-		if(TP>=8) push(combos, [CHIP_FLASH, CHIP_SHOCK, CHIP_SHOCK]);
-		if(TP>=8) push(combos, [CHIP_SHOCK, CHIP_SHOCK, CHIP_SHOCK, CHIP_SHOCK]);
-		if(TP>=4) push(combos, [CHIP_LIGHTNING]);
-		if(TP>=4) push(combos, [CHIP_FLASH]);
-		if(TP>=6) push(combos, [CHIP_SHOCK, CHIP_SHOCK, CHIP_SHOCK]);
-		if(TP>=4) push(combos, [CHIP_SHOCK, CHIP_SHOCK]);
-		if(TP>=2) push(combos, [CHIP_SHOCK]);
+function getComboSet(){
+	var TP = getTP(), combos = [];
+	// liste des combos à tester
+	var comboz = jsonDecode(getFullRegister(TP));
+	if(comboz==null){
+		debugE("NO JSON FOR "+TP+" TP !");
+		while(comboz==null) comboz = jsonDecode(getFullRegister(--TP));
 	}
+	// choix du set de combo en fonction de mon état
+	if(getWeapon()==null) combos = @comboz["EMPTY"];
+	else combos = @comboz[string(getWeapon())];
+	combos = convertBinariesToCombos(combos);
+	if(TP>=17 && inArray(getWeapons(), WEAPON_M_LASER)) unshift(combos, [WEAPON_M_LASER, WEAPON_M_LASER]);
+	if(getTurn()==1&&getTP()==21) unshift(combos, [CHIP_ARMORING, CHIP_METALLIC_BULB]);
+	unshift(combos, []); // ajout d'une combo vide au début
+	
 	return @combos;
 }
 

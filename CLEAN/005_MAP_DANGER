@@ -206,8 +206,8 @@ function loadMapsDanger(maxOp){
 
 function getSimplifiedVirtualStateDef(@leek, @stackOfResult){
 	var state = [], info = @_LEEKS[leek];
-	state[_absShield] = info[_absShield];
-	state[_relShield] = info[_relShield];
+	state[_absShield] = info[_absShield]-_REDUC_ABS;
+	state[_relShield] = info[_relShield]-_REDUC_REL;
 	if(stackOfResult[leek]==null) return @state;
 	if(stackOfResult[leek][_debuff]==true){
 		state[_absShield]*=0.5;

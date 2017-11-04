@@ -65,11 +65,11 @@ function updateCoef(idbulb){
 				somme_life_ally+=infos[_life]; // SUM LIFE ALLY
 				count_ally++; // COUNT ALLY LEEK
 				_COEF_HEAL[target] = -10;
-				if(lifeRatio<0.9) _COEF_HEAL[target]+= -3;
-				if(lifeRatio<0.8) _COEF_HEAL[target]+= -3;
-				if(lifeRatio<0.7) _COEF_HEAL[target]+= -3;
-				if(target==_SELF&&lifeRatio<0.6) _COEF_HEAL[target]+= -15;
-				if(canDie) _COEF_HEAL[target]=-75; // !!!!!!!!!!!!!!!!!!
+				if(lifeRatio<0.9) _COEF_HEAL[target]+= -8;
+				if(lifeRatio<0.8) _COEF_HEAL[target]+= -8;
+				if(lifeRatio<0.7) _COEF_HEAL[target]+= -8;
+				if(target==_SELF&&lifeRatio<0.6) _COEF_HEAL[target]+= -16;
+				if(canDie) _COEF_HEAL[target]=-80; // !!!!!!!!!!!!!!!!!!
 				else if(target==_SELF)_COEF_HEAL[target]+= -0.5;
 				if(getLevel(target)<getLevel()/2) _COEF_HEAL[target]/=2;
 				// reminder: doit être positif sinon les moins s'annulent !
@@ -78,13 +78,14 @@ function updateCoef(idbulb){
 				_COEF_VACCIN[target] = -3;
 				if(lifeRatio<0.95 && !canDie) _COEF_VACCIN[target]+= -5;
 				if(getLevel(target)<getLevel()/2) _COEF_VACCIN[target]/=2;
-				_COEF_MAXHP_BOOST[target] = -8;
-				if(getTotalLife(target)<=2000)_COEF_MAXHP_BOOST[target]+= -1;
-				if(getTotalLife(target)<=1800)_COEF_MAXHP_BOOST[target]+= -2;
-				if(getTotalLife(target)<=1600)_COEF_MAXHP_BOOST[target]+= -2;
-				if(getTotalLife(target)<=1200)_COEF_MAXHP_BOOST[target]+= -3;
-				if(getTotalLife(target)<=800)_COEF_MAXHP_BOOST[target]+= -3;
-				if(target==_SELF && _IS_CAC)_COEF_MAXHP_BOOST[target]+= -3;
+				_COEF_MAXHP_BOOST[target] = -10;
+				if(getTotalLife(target)<=2200)_COEF_MAXHP_BOOST[target]+= -5;
+				if(getTotalLife(target)<=2000)_COEF_MAXHP_BOOST[target]+= -5;
+				if(getTotalLife(target)<=1800)_COEF_MAXHP_BOOST[target]+= -5;
+				if(getTotalLife(target)<=1600)_COEF_MAXHP_BOOST[target]+= -5;
+				if(getTotalLife(target)<=1200)_COEF_MAXHP_BOOST[target]+= -5;
+				if(getTotalLife(target)<=800)_COEF_MAXHP_BOOST[target]+= -5;
+				if(target==_SELF && _IS_CAC)_COEF_MAXHP_BOOST[target]+= -5;
 				_COEF_ABSSHIELD[target] = -1.5;
 				if(infos[_absShield]==0) _COEF_ABSSHIELD[target]+= -4;
 				if(lifeRatio<0.9)_COEF_ABSSHIELD[target]+= -0.2;
@@ -112,9 +113,13 @@ function updateCoef(idbulb){
 				if(canDie) _COEF_RELSHIELD[target]=-75; // !!!!!!!!!!!!!!!!!!
 				else if(target==_SELF && _IS_CAC)_COEF_RELSHIELD[target]+= -0.5;
 				else if(getScience(target)>500)_COEF_RELSHIELD[target]+= -1;
-				_COEF_STR_BOOST[target] = -2-(getStrength(target)/1000);
-				if(getStrength(target)>200) _COEF_STR_BOOST[target] += -2;
-				if(target!=_SELF && getStrength(target)>0) _COEF_STR_BOOST[target] += -0.1;
+				_COEF_STR_BOOST[target] = -1;
+				if(getStrength(target)>0) _COEF_STR_BOOST[target] += -5;
+				if(getStrength(target)>=200) _COEF_STR_BOOST[target] += -8;
+				if(getStrength(target)>=400) _COEF_STR_BOOST[target] += -8;
+				if(getStrength(target)>750) _COEF_STR_BOOST[target] += 6;
+				if(getStrength(target)>1000) _COEF_STR_BOOST[target] += 10;
+				if(target!=_SELF && getStrength(target)>0) _COEF_STR_BOOST[target] += -0.5;
 				_COEF_MP_BOOST[target] = -2;
 				if(getMP(target)<9) _COEF_MP_BOOST[target]+= -0.5;
 				if(infos[_str]>600) _COEF_MP_BOOST[target] += -1;
@@ -176,7 +181,7 @@ function updateCoef(idbulb){
 				//if(eType==ENTITY_METALLIC_BULB) _COEF_ABSSHIELD[target] = -0.1;
 				_COEF_RELSHIELD[target] = 0;// -1.2;
 				//if(eType==ENTITY_METALLIC_BULB) _COEF_RELSHIELD[target] = -0.1;
-				_COEF_STR_BOOST[target] = -2;
+				_COEF_STR_BOOST[target] = -1.9;
 				if(eType==ENTITY_HEALER_BULB) _COEF_STR_BOOST[target] = 0;
 				if(eType==ENTITY_METALLIC_BULB) _COEF_STR_BOOST[target] = 0;
 				if(infos[_psnlife] <= 0) _COEF_STR_BOOST[target]/=2;
@@ -216,13 +221,12 @@ function updateCoef(idbulb){
 				somme_life_enemy+=infos[_life]; // SUM LIFE ENEMY
 				count_enemy++; // COUNT ENEMY LEEK
 				// ADD JACE BR
-				var arrayAntiBR = ["Jace", "Artorias", "Beewiz", "gelbaz", "Eautaku"];
+				var arrayAntiBR = ["Jace", "Artorias", "Alpacah", "gelbaz", "Eautaku"];
 				if(getFightType()==FIGHT_TYPE_BATTLE_ROYALE 
-					&& inArray(arrayAntiBR, getFarmerName(target))) _COEF_DMG[target] = 20; 
-				else _COEF_DMG[target] = 15;
+					&& inArray(arrayAntiBR, getFarmerName(target))) _COEF_DMG[target] = 25; 
+				else _COEF_DMG[target] = 20;
 				// ADD JACE BR
-				if(getStrength()>200) _COEF_DMG[target] +=5;
-				if(getLife()/getTotalLife() > 0.9 && count(_ALIVE_ALLIES)>count(_ALIVE_ENEMIES)) _COEF_DMG[target]+= 5;
+				if(getLife()/getTotalLife() > 0.9 && count(_ALIVE_ALLIES)>count(_ALIVE_ENEMIES)) _COEF_DMG[target]+= 15;
 				if(lifeRatio<0.9)_COEF_DMG[target]+= 3;
 				if(lifeRatio<0.8)_COEF_DMG[target]+= 3;
 				if(lifeRatio<0.7)_COEF_DMG[target]+= 3;
@@ -230,14 +234,15 @@ function updateCoef(idbulb){
 				else if(infos[_psnlife]/infos[_totallife]<0.25)_COEF_DMG[target]+= 20;
 				else if(infos[_psnlife]/infos[_totallife]<0.5)_COEF_DMG[target]+= 10;
 
-				if(getTotalLife(target)<1400)_COEF_DMG[target]+=4;
-				if(getTotalLife(target)<1200)_COEF_DMG[target]+=4;
-				if(getTotalLife(target)<1000)_COEF_DMG[target]+=4;
-				if(getTotalLife(target)<800)_COEF_DMG[target]+=4;
+				if(getTotalLife(target)<1400)_COEF_DMG[target]+=5;
+				if(getTotalLife(target)<1200)_COEF_DMG[target]+=5;
+				if(getTotalLife(target)<1000)_COEF_DMG[target]+=5;
+				if(getTotalLife(target)<800)_COEF_DMG[target]+=5;
 				
 				if(getScience(target)>=400)_COEF_DMG[target]+= 5;
+				if(getWisdom(target)>=500)_COEF_DMG[target]+= -5;
 				if(getMagic()>300 && (getCooldown(CHIP_ANTIDOTE, target)>1 || !inArray(getChips(target), CHIP_ANTIDOTE)))
-					_COEF_DMG[target]+=15;
+					_COEF_DMG[target]+=25;
 				if(getLevel(target)<getLevel()/1.5) _COEF_DMG[target]/= 2;
 				if(infos[_psnlife]<=0) _COEF_DMG[target] /=3;
 				_COEF_HEAL[target] = _COEF_DMG[target];
@@ -246,8 +251,8 @@ function updateCoef(idbulb){
 				_COEF_SHACKLE_STR[target] = 20;
 				_COEF_SHACKLE_MGC[target] = 20;
 				if(infos[_mgc]<200&&infos[_str]>200){
-					if(infos[_str]>400) _COEF_SHACKLE_STR[target]*=5;
-					else _COEF_SHACKLE_STR[target]*=3;
+					if(infos[_str]>400) _COEF_SHACKLE_STR[target]*=6;
+					else _COEF_SHACKLE_STR[target]*=4;
 				}else if(infos[_mgc]>200&&infos[_str]<200){
 					_COEF_SHACKLE_MGC[target] *=3;
 				}
@@ -260,15 +265,15 @@ function updateCoef(idbulb){
 			else{//bulb
 				somme_life_enemy+=infos[_life]*0.2; // SUM LIFE ENEMY
 				count_enemy+=0.5;// COUNT ENEMY BULB
-				_COEF_DMG[target] = 13;
-				if(_SNC_400) _COEF_DMG[target]+=13;
+				_COEF_DMG[target] = 14;
+				if(_SNC_400) _COEF_DMG[target]+=16;
 				if(eType==ENTITY_PUNY_BULB) _COEF_DMG[target] = 1;
 				else if(eType==ENTITY_METALLIC_BULB){
-					if(getStrength()>=200 && getMagic()<200) _COEF_DMG[target] = 15;	
-					else if(getStrength()>=200) _COEF_DMG[target] = 8;
+					if(getStrength()>=200 && getMagic()<200) _COEF_DMG[target] = 19;	
+					else if(getStrength()>=200) _COEF_DMG[target] = 10;
 					else _COEF_DMG[target] = 1;
 				}
-				else if(eType==ENTITY_HEALER_BULB) _COEF_DMG[target] = 14;
+				else if(eType==ENTITY_HEALER_BULB) _COEF_DMG[target] = 30;
 				if(infos[_psnlife]<=0) _COEF_DMG[target] =0.1;
 				_COEF_HEAL[target] = _COEF_DMG[target];
 				_COEF_SHACKLE_TP[target] = 0.25;
@@ -291,27 +296,25 @@ function updateCoef(idbulb){
 		_STATE_RATIO_PV = somme_life_ally/somme_life_enemy;
 		_STATE_RATIO_NB = count_ally/count_enemy;
 		
-		if(_STATE_RATIO_PV > 3)  _RATIO_DANGER = 3;
-		else if(_STATE_RATIO_PV > 2) _RATIO_DANGER = 6;
-		else if(_STATE_RATIO_PV > 1.5) _RATIO_DANGER = 9;
-		else if(_STATE_RATIO_PV > 1) _RATIO_DANGER = 12;
-		else if(_STATE_RATIO_PV > 0.75) _RATIO_DANGER = 14;
-		else if(_STATE_RATIO_PV > 0.5) _RATIO_DANGER = 16;
-		else _RATIO_DANGER = 20;
+		if(_STATE_RATIO_PV > 3)  _RATIO_DANGER = 8;
+		else if(_STATE_RATIO_PV > 2) _RATIO_DANGER = 11;
+		else if(_STATE_RATIO_PV > 1.5) _RATIO_DANGER = 14;
+		else if(_STATE_RATIO_PV > 1) _RATIO_DANGER = 17;
+		else if(_STATE_RATIO_PV > 0.75) _RATIO_DANGER = 20;
+		else if(_STATE_RATIO_PV > 0.5) _RATIO_DANGER = 24;
+		else _RATIO_DANGER = 28;
 		
 		if(_STATE_RATIO_PV > 3 && getLife() > 1800 && (getRelativeShield()>0 || getAbsoluteShield()>0)) _RATIO_DANGER = 0;
 		
-		if(_STATE_RATIO_NB > 2.5) _RATIO_IGNORE_DANGER = 0.5;
-		else if(_STATE_RATIO_NB > 2) _RATIO_IGNORE_DANGER = 0.4;
-		else if(_STATE_RATIO_NB > 1.5) _RATIO_IGNORE_DANGER = 0.30;
-		else if(_STATE_RATIO_NB > 1) _RATIO_IGNORE_DANGER = 0.20;
+		if(_STATE_RATIO_NB > 2) _RATIO_IGNORE_DANGER = 0.30;
+		else if(_STATE_RATIO_NB > 1.2) _RATIO_IGNORE_DANGER = 0.20;
 		else if(_STATE_RATIO_NB > 0.5) _RATIO_IGNORE_DANGER = 0.10;
 		else _RATIO_IGNORE_DANGER = 0;
 				
 		if(getLife()<getTotalLife()*0.8) _RATIO_IGNORE_DANGER/=2;
-		if(getLife()==getTotalLife() && _STATE_RATIO_NB > 1) _RATIO_IGNORE_DANGER += 0.2;
-		if(count_ally>2.5) _RATIO_IGNORE_DANGER += 0.3;
-		if(count_ally>3.5 && _RATIO_IGNORE_DANGER>0.9) _RATIO_IGNORE_DANGER = 0.9;
+		if(getLife()==getTotalLife() && _STATE_RATIO_NB > 1) _RATIO_IGNORE_DANGER += 0.1;
+		if(count_ally>3) _RATIO_IGNORE_DANGER += 0.3;
+		if(count_ally>4 && _RATIO_IGNORE_DANGER>0.9) _RATIO_IGNORE_DANGER = 0.9;
 		else if(_RATIO_IGNORE_DANGER>0.7) _RATIO_IGNORE_DANGER = 0.7;
 		
 		if(_CANT_HEAL){
@@ -396,7 +399,7 @@ function getSpecialChipScore(@item){
 		}else if(count(_ALIVE_ALLIES_BULBS)-_COUNT_HEALER-_COUNT_METAL<=2){
 			cost+=4;
 		} 
-		score += cost*(500-(count(_ALIVE_ALLIES_BULBS)*30)); // TODO ???
+		score += cost*(600-(count(_ALIVE_ALLIES_BULBS)*60)); // TODO ???
 		if(_COUNT_HEALER>=3 && item == CHIP_HEALER_BULB) score/=5;
 		if(_COUNT_METAL>=2 && item == CHIP_METALLIC_BULB) score/=5;
 		if(_COUNT_METAL>=3 && item == CHIP_METALLIC_BULB) score=0;

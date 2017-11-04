@@ -8,7 +8,7 @@ function playBestMove(bestMove){
 	debug("kill: "+ bestMove[_dead]);
 	debug("totalscore: "+ bestMove[_score]);
 	if(bestMove[_danger]>=getLife()*_RATIO_RISK_DEATH
-	|| bestMove[_danger] > 500) _STATE_LEEK_MIGHT_DIE = true;
+	|| bestMove[_danger] > 300) _STATE_LEEK_MIGHT_DIE = true;
 	/*
 	
 	_scores:scores,
@@ -51,7 +51,11 @@ function playBestMove(bestMove){
 			var cell = findSafestCellToRez(_RESU_TARGET, getCell());
 			resurrect(_RESU_TARGET, cell);
 		}else{
-			summon(item, getCellToUseChip(item, _SELF), ia_bulb_main);
+			var bCell, isOff= (item != CHIP_METALLIC_BULB && item != CHIP_HEALER_BULB);
+			var eCell = getCell(getNearestEnemy());
+			if(isOff) 	bCell = getClosestCells(eCell, getCellsToUseChip(item, _SELF));
+			else 		bCell = getFarestCells(eCell, getCellsToUseChip(item, _SELF));
+			summon(item, bCell, ia_bulb_main);
 		}
 	}
 	// appel à la fonction failSafe défini dans le main, qui utilise les items dispos dans la limite des tps restant dispo
@@ -62,9 +66,34 @@ function playBestMove(bestMove){
 	else if(_MAINWEAPON != null && getWeapon()==null) setWeapon(_MAINWEAPON);
 }
 
+function getFarestCells(@from, @cells){
+	var dist=0, best;
+	for(var c in cells){
+		var d = getCellDistance(c, from);
+		if(best==null||d>dist){
+			best=c;
+			d=dist;
+		}
+	}
+	return @best;
+}
+function getClosestCells(@from, @cells){
+	var dist=_MAX_INT, best;
+	for(var c in cells){
+		var d = getCellDistance(c, from);
+		if(best==null||d<dist){
+			best=c;
+			d=dist;
+		}
+	}
+	return @best;
+}
+
 function getItemDamage(@item, @e, @inv){
 	if(item==WEAPON_KATANA) 
 		return 77*(1+getStrength()/100)*(1-getRelativeShield(e)/100)-getAbsoluteShield(e);
+	else if(item==WEAPON_AXE)
+		return 50*(1+getStrength()/100)*(1-getRelativeShield(e)/100)-getAbsoluteShield(e);
 	else if(item==CHIP_DEVIL_STRIKE)
 		return (25*0.83*(1+getStrength()/100)*(1-getRelativeShield(e)/100)-getAbsoluteShield(e))*5;
 	else if(item==CHIP_LIGHTNING)
@@ -77,13 +106,18 @@ function getItemDamage(@item, @e, @inv){
 		return 64*(1+getStrength()/100)*(1-getRelativeShield(e)/100)-getAbsoluteShield(e);
 	else if(item==WEAPON_M_LASER)
 		return 90*(1+getStrength()/100)*(1-(getRelativeShield(e)-(inv?20:0))/100)-getAbsoluteShield(e);
+	else if(item==WEAPON_FLAME_THROWER)
+		return 24*(1+getMagic()/100)+35*(1+getStrength()/100)*(1-getRelativeShield(e)/100)-getAbsoluteShield(e);
 	else if(item==WEAPON_GAZOR)
 		return 28*(1+getMagic()/100);
 	else if(item==CHIP_PLAGUE)
 		return 40*(1+getMagic()/100);
+	else if(item==CHIP_TOXIN)
+		return 26*(1+getMagic()/100);
 }
 
 function tryKillWithCombo(@combo, @e){
+	for(var item in combo) if(_ENCODING_STUFF[item]==null) return false;
 	var dmg=0, needSwap=0, tpCost=0, inHand = getWeapon(),
 		maxCost=getTP(), inver=false, strDbg = "";
 	for(var item in combo){
@@ -126,6 +160,7 @@ function tryKillWithCombo(@combo, @e){
 }
 
 function tryTeleKillWithCombo(@combo, @e){
+	for(var item in combo) if(_ENCODING_STUFF[item]==null) return false;
 	var dmg=0, needSwap=0, tpCost=0, inHand = getWeapon(),
 		maxCost=getTP()-_ITEM_COST[CHIP_TELEPORTATION], strDbg = "";
 	for(var item in combo){
@@ -154,7 +189,7 @@ function tryTeleKillWithCombo(@combo, @e){
 						if(_ITEM_ISWEAP[item] && getWeapon()!=item) setWeapon(item);
 						if(_ITEM_ISWEAP[item]) useWeapon(e);
 						else if(item==CHIP_DEVIL_STRIKE){
-							if(getTP()>=7) say(rand()>0.7?"Allah akbar !":"BOUMCHAKA");
+							if(getTP()>=7) say("Allah akbar !");
 							useChip(item, getLeek());
 						}else useChip(item, e);
 					}

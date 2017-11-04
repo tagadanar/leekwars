@@ -15,6 +15,7 @@ global _STUFF = getWeapons()+getChips(), _CURRENT_COMBO_ARRAY = [], _ITEM_TO_ID 
 if(getTurn()==1){
 	clearAllRegisters();
 	for(var item in _TO_REMOVE_STUFF) removeElement(_STUFF, item);
+	sort(_STUFF, SORT_DESC);
 	for(var id : var item in _STUFF){
 		_ITEM_TO_ID[item] = id;
 		stuffstr+=getItemName(item)+" ";

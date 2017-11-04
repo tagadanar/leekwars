@@ -146,6 +146,7 @@ function refreshLeeksCellsAndAliveStatus(){
 		for(var al in allies){
 			var score = getTotalLife(al)*2+getStrength(al)+getWisdom(al)
 						+getScience(al)+getResistance(al)+getAgility(al);
+			score*=2;
 			if(isSummon(al)){
 				if(getTotalLife(al) <= 1500) continue;
 				score/=3;
@@ -230,6 +231,19 @@ function refreshLeeksEffectsAndStates(){
 		if(getScience(e)>=400) _SNC_400 = true;
 	}
 	if(getLevel()<30) _STR_100 = true;
+	
+	_REDUC_ABS=0;
+	_REDUC_REL=0;
+	for(var e in getEffects()){
+		if(e[0]==EFFECT_ABSOLUTE_SHIELD){
+			if(e[2]!=getLeek() && e[3]<=1) // si c'est pas mon spell et qu'il reste 1tour
+				_REDUC_ABS+=e[1];
+		}
+		if(e[0]==EFFECT_RELATIVE_SHIELD){
+			if(e[2]!=getLeek() && e[3]<=1) // si c'est pas mon spell et qu'il reste 1tour
+				_REDUC_REL+=e[1];
+		}
+	}
 }
 
 function setEffectsArray(@effects, @scoreLibe, @psnDmgTurn, @psnDmgTotal, @alterateStr, @alterateMgc, @alterateTP, @alterateMP, @e){
@@ -335,7 +349,7 @@ function refreshGravityCells(@distToEnemy){
 			var ratioPV = getLife()/getTotalLife();
 			if(type==ENTITY_METALLIC_BULB){
 				_GRAVITY_CELLS[cell] = 1;
-				if(needArmor) coefi = 50;
+				if(needArmor) coefi = 80;
 				else coefi = 6;
 			}else if(type==ENTITY_HEALER_BULB){
 				_GRAVITY_CELLS[cell] = 4;
@@ -350,16 +364,16 @@ function refreshGravityCells(@distToEnemy){
 							? ceil(coefAlly/count(_ALIVE_ENEMIES)) 
 							: floor(coefAlly/count(_ALIVE_ENEMIES));
 	if(coef<1)coef=1;
-	if(distToEnemy==null){ distToEnemy = 30; coef=round(coef*0.5); } 
+	if(distToEnemy==null){ distToEnemy = 30; coef=round(coef*1.1); } 
 	for(var en in _ALIVE_ENEMIES_LEEKS){
 		_GRAVITY_CELLS[getCell(en)] = distToEnemy;
 		_GRAVITY_COEFS[getCell(en)] = coef;
 	}
-	if(distToEnemy<20) for(var en in _ALIVE_ENEMIES_BULBS){
+	if(distToEnemy<20 && !needArmor) for(var en in _ALIVE_ENEMIES_BULBS){
 		var eType = getEntityType(en);
 		if(eType==ENTITY_HEALER_BULB){
 			_GRAVITY_CELLS[getCell(en)] = 1;
-			_GRAVITY_COEFS[getCell(en)] = coef*2;
+			_GRAVITY_COEFS[getCell(en)] = coef;
 		}else if(eType==ENTITY_METALLIC_BULB && getStrength()>300){
 			_GRAVITY_CELLS[getCell(en)] = 1;
 			_GRAVITY_COEFS[getCell(en)] = coef*0.5;
