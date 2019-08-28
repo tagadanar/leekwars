@@ -5,5 +5,5 @@ le script attend le résultat de chaque fight pour lancer la suivante
 ## usage
 configurer ses comptes dans le fichier settings.py, puis :
 
-  pip install -r requirements.txt
-  python main.py
+- pip install -r requirements.txt
+- python main.py
