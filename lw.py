@@ -15,6 +15,7 @@ class behavior:
 	FARMING  = 'FARMING'  # focus on farmer
 	# EFARMING = 'EFARMING' # TODO regroup levels then focus on farmer
 	TODOLIST = 'TODOLIST' # do the todolist (ignore limit)
+	NONE = 'NONE'		  # do nothing \o/
 
 class bcolors:
 	HEADER = '\033[95m'		# purple
@@ -159,7 +160,9 @@ def getTodoList(account, farmer, behav):
 	size = len(farmer['leeks'])
 	if size != 1: # can do farmer fights
 		size += 1
-	if behav == behavior.TODOLIST:
+	if behav == behavior.NONE:
+		return {}
+	elif behav == behavior.TODOLIST:
 		return account.get('todolist')
 	elif behav == behavior.BALANCED:
 		nb = max(fights - limit, 0)
