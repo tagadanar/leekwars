@@ -25,7 +25,7 @@ class lwapi:
 		self.headers = {'Authorization': 'Bearer %s'%r.json()['token']}
 		# this get refresh connected status on account (for NONE behavior)
 		self.s.get("https://leekwars.com/api/garden/get-farmer-opponents", headers=self.headers)
-		return r
+		return r.json()['farmer']
 
 	# launch a solo fight against random adv, return fight_id
 	def solo_fight(self, leekid):

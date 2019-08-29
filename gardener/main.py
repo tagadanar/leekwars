@@ -16,8 +16,7 @@ for account in accounts.list:
 	
 	api = lwapi()
 	# connecting to leekwars
-	r = api.connect(login, password)
-	farmer = r.json()['farmer']
+	farmer = api.connect(login, password)
 	
 	# welcome & get leeks to realID
 	leeks_to_ID = api.display_welcome(farmer)
