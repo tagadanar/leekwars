@@ -1,5 +1,5 @@
 from behavior import behavior
-from glob import g
+from utils import g
 
 #################################################################
 # Declaring accounts

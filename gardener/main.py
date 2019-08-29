@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 from settings import accounts
-from glob import g
 from behavior import behavior
-from colors import bcolors
+from utils import bcolors, g
 from lwapi import lwapi
 
 #################################################################

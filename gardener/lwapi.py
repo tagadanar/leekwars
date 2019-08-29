@@ -4,8 +4,7 @@ import random
 import time
 import sys
 
-from colors import bcolors
-from glob import g
+from utils import bcolors, g
 
 #################################################################
 # leekwars API
