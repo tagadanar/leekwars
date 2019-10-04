@@ -12,11 +12,6 @@ from utils import bcolors, g
 class lwapi:
 	def __init__(self):
 		self.s = requests.session()
-		self.winnerSwitch = {
-			0: bcolors.WARNING+"DRAW"+bcolors.ENDC,
-			1: bcolors.OKGREEN+"WIN "+bcolors.ENDC,
-			2: bcolors.FAIL+"LOSE"+bcolors.ENDC,
-		}
 		self.rooturl = "https://leekwars.com/api"
 
 	# connecting to leekwars
@@ -68,7 +63,7 @@ class lwapi:
 				time.sleep(g._DELAY_)
 				continue
 			elif winner>=0:
-				win = self.winnerSwitch.get(winner, 'WTF?')
+				win = g._WINNERSWITCH_.get(winner, 'WTF?')
 				if is_farmer:
 					myTalent = result['report']['farmer1']['talent'] + result['report']['farmer1']['talent_gain']
 					enTalent = result['report']['farmer2']['talent'] + result['report']['farmer2']['talent_gain']
