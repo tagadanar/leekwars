@@ -6,7 +6,8 @@ class behavior:
 	TODOLIST = 'TODOLIST' # do the todolist (ignore limit)
 	NONE = 'NONE'
 	
-	def getTodoList(account, farmer, behav):
+	def getTodoList(account, farmer):
+		behav = account.get('behavior')
 		limit = account.get('limit')
 		fights = farmer['fights']
 		size = len(farmer['leeks'])

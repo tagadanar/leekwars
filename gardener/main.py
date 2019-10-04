@@ -11,7 +11,6 @@ from lwapi import lwapi
 for account in accounts.list:
 	login = account.get('login')
 	password = account.get('password')
-	behav = account.get('behavior')
 	
 	api = lwapi()
 	# connecting to leekwars
@@ -21,7 +20,7 @@ for account in accounts.list:
 	leeks_to_ID = api.display_welcome(farmer)
 	
 	# get todolist according to behavior
-	todolist = behavior.getTodoList(account, farmer, behav)
+	todolist = behavior.getTodoList(account, farmer)
 
 	# processing todolist
 	for leekid, nb_fight in todolist.items():
