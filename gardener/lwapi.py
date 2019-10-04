@@ -17,36 +17,37 @@ class lwapi:
 			1: bcolors.OKGREEN+"WIN "+bcolors.ENDC,
 			2: bcolors.FAIL+"LOSE"+bcolors.ENDC,
 		}
+		self.rooturl = "https://leekwars.com/api"
 
 	# connecting to leekwars
 	def connect(self, login, password):
-		r = self.s.post("https://leekwars.com/api/farmer/login-token/", data={'login':login,'password':password})
+		r = self.s.post("%s/farmer/login-token/"%self.rooturl, data={'login':login,'password':password})
 		self.headers = {'Authorization': 'Bearer %s'%r.json()['token']}
 		# this get refresh connected status on account (for NONE behavior)
-		self.s.get("https://leekwars.com/api/garden/get-farmer-opponents", headers=self.headers)
+		self.s.get("%s/garden/get-farmer-opponents"%self.rooturl, headers=self.headers)
 		return r.json()['farmer']
 
 	# launch a solo fight against random adv, return fight_id
 	def solo_fight(self, leekid):
 		# pick a rand adv from sologarden
-		r = self.s.get("https://leekwars.com/api/garden/get-leek-opponents/%s"%leekid, headers=self.headers, data={'leek_id':leekid})
+		r = self.s.get("%s/garden/get-leek-opponents/%s"%(self.rooturl,leekid), headers=self.headers, data={'leek_id':leekid})
 		garden = r.json()['opponents']
 		e = random.choice(garden)
 		eid = e['id']
 		# launch the fight
-		r = self.s.post("https://leekwars.com/api/garden/start-solo-fight/%s/%s"%(leekid,eid), headers=self.headers, data={'leek_id':leekid, 'target_id':eid})
+		r = self.s.post("%s/garden/start-solo-fight/%s/%s"%(self.rooturl,leekid,eid), headers=self.headers, data={'leek_id':leekid, 'target_id':eid})
 		fight_id = r.json()['fight']
 		return fight_id
 		
 	# launch a farmer fight against random adv, return fight_id
 	def farmer_fight(self):
 		# pick a rand adv from farmergarden
-		r = self.s.get("https://leekwars.com/api/garden/get-farmer-opponents", headers=self.headers)
+		r = self.s.get("%s/garden/get-farmer-opponents"%self.rooturl, headers=self.headers)
 		garden = r.json()['opponents']
 		e = random.choice(garden)
 		eid = e['id']
 		# launch the fight
-		r = self.s.post("https://leekwars.com/api/garden/start-farmer-fight/%s"%eid, headers=self.headers, data={'target_id':eid})
+		r = self.s.post("%s/garden/start-farmer-fight/%s"%(self.rooturl,eid), headers=self.headers, data={'target_id':eid})
 		fight_id = r.json()['fight']
 		return fight_id
 
@@ -54,7 +55,7 @@ class lwapi:
 	def wait_fight_result(self, fight_id, is_farmer):
 		firstwait = True
 		while True:
-			r = self.s.get("https://leekwars.com/api/fight/get/%s"%fight_id, headers=self.headers, data={'fight_id':fight_id})
+			r = self.s.get("%s/fight/get/%s"%(self.rooturl,fight_id), headers=self.headers, data={'fight_id':fight_id})
 			result = r.json()['fight']
 			winner = result['winner']
 			if winner==-1: # Fight isn't resolved yet
