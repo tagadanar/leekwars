@@ -1,3 +1,5 @@
+from utils import g
+
 class behavior:
 	BALANCED = 'BALANCED' # split fights in 5 for each leeks + farmer
 	EQUALIZE = 'EQUALIZE' # focus on the lowest leek
