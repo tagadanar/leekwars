@@ -5,44 +5,80 @@ class behavior:
 	# EFARMING = 'EFARMING' # TODO regroup levels then focus on farmer
 	TODOLIST = 'TODOLIST' # do the todolist (ignore limit)
 	NONE = 'NONE'
-	
-	def getTodoList(account, farmer):
-		behav = account.get('behavior')
-		limit = account.get('limit')
-		fights = farmer['fights']
-		size = len(farmer['leeks'])
-		if size != 1: # can do farmer fights
-			size += 1
-		if behav == behavior.NONE:
-			return {}
-		elif behav == behavior.TODOLIST:
-			return account.get('todolist')
-		elif behav == behavior.BALANCED:
-			nb = max(fights - limit, 0)
-			if size == 1:
-				return { g._LEEK_1_: nb }
-			else:
-				part = nb // size
-				left = nb % size
-				result = {}
-				for x in range(size):
-					result[x] = part
-				result[g._FARMER_] += left # adding what is left to farmer fight
-				return result
-		elif behav == behavior.EQUALIZE:
+
+class Todolist:
+	def __init__(self, account, api):
+		self.behavior = account.get('behavior')
+		self.todolist = account.get('todolist')
+		self.limit = account.get('limit')
+		self.api = api
+		self.fights = api.farmer['fights']
+		self.size = len(api.farmer['leeks'])
+		if self.size != 1: # can do farmer fights
+			self.size += 1
+
+	def getGenerator(self):
+		if self.behavior == behavior.NONE:
+			return []
+		elif self.behavior == behavior.TODOLIST:
+			return self.todolistGenerator()
+		elif self.behavior == behavior.BALANCED:
+			return self.balancedGenerator()
+		elif self.behavior == behavior.EQUALIZE:
+			return self.equalizeGenerator()
+		elif self.behavior == behavior.FARMING:
+			return self.farmingGenerator()
+		else:
+			print("%s/!\\ UNKNOWN BEHAVIOR /!\\%s"%(bcolors.FAIL, bcolors.ENDC))
+			return []
+
+	def todolistGenerator(self):
+		for leekid, nb_fight in self.todolist.items():
+			while nb_fight > 0:
+				yield leekid
+				nb_fight -= 1
+
+	def balancedGenerator(self):
+		nb = max(self.fights - self.limit, 0)
+		if self.size == 1:
+			while nb > 0:
+				yield g._LEEK_1_
+				nb -= 1
+		else:
+			while nb > 0:
+				for x in range(self.size):
+					yield x
+					nb -= 1
+
+	def equalizeGenerator(self):
+		nb = max(self.fights - self.limit, 0)
+		while nb > 0:
+			# TODO refresh leek state after each fight
+
+			# check same level
+			is_same_level = True
+			baselvl = self.api.farmer['leeks'][0].leekinfo['level']
+			for leekid, leekinfo in self.api.farmer['leeks'].items():
+				if baselvl != leekinfo['level']:
+					is_same_level = False
+					break
+			if is_same_level:
+				yield g._FARMER_
+
+			# not same lvl, focus on lower
 			index = g._LEEK_1_
 			lowestIndex = g._FARMER_
 			lowestLevel = 302
-			for leekid, leekinfo in farmer['leeks'].items():
+			for leekid, leekinfo in self.api.farmer['leeks'].items():
 				lLevel = leekinfo['level']
 				if lowestLevel > lLevel:
 					lowestIndex = index
 					lowestLevel = lLevel
 				index += 1
-			return { lowestIndex: max(fights - limit, 0) }
-		elif behav == behavior.FARMING :
-			return { g._FARMER_: max(fights - limit, 0) }
-		else:
-			print("%s/!\\ UNKNOWN BEHAVIOR /!\\%s"%(bcolors.FAIL, bcolors.ENDC))
-			return {}
-
+			yield lowestIndex
+		
+	def farmingGenerator(self):
+		nb = max(self.fights - self.limit, 0)
+		while nb > 0:
+			yield g._FARMER_
+			nb -= 1 

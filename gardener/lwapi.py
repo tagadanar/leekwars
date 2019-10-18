@@ -16,11 +16,15 @@ class lwapi:
 
 	# connecting to leekwars
 	def connect(self, login, password):
+		self.login = login
+		self.password = password
 		r = self.s.post("%s/farmer/login-token/"%self.rooturl, data={'login':login,'password':password})
 		self.headers = {'Authorization': 'Bearer %s'%r.json()['token']}
+		self.farmer = r.json()['farmer']
+		self.farmer_id = self.farmer['id']
 		# this get refresh connected status on account (for NONE behavior)
 		self.s.get("%s/garden/get-farmer-opponents"%self.rooturl, headers=self.headers)
-		return r.json()['farmer']
+		return self.farmer
 
 	# launch a solo fight against random adv, return fight_id
 	def solo_fight(self, leekid):
@@ -71,17 +75,18 @@ class lwapi:
 				else:
 					print("\r%s %s -lvl%s (%s) vs %s (%s)"%(win, result['leeks1'][0]['name'], result['leeks1'][0]['level'], result['leeks1'][0]['talent'], result['leeks2'][0]['name'], result['leeks2'][0]['talent']))
 				sys.stdout.flush()
+				self.refresh_account_state()
 				return
 
 	# print a resume of the account state & return leeks number to ID association
-	def display_welcome(self, farmer):
+	def display_status(self):
 		# handling farmer infos
-		fName = farmer['login']
-		fTalent = farmer['talent']
-		fLevel = farmer['total_level']
-		fHabs = farmer['habs']
-		nbFights = farmer['fights']
-		isOutOfGarden = farmer['in_garden'] != 1
+		fName = self.farmer['login']
+		fTalent = self.farmer['talent']
+		fLevel = self.farmer['total_level']
+		fHabs = self.farmer['habs']
+		nbFights = self.farmer['fights']
+		isOutOfGarden = self.farmer['in_garden'] != 1
 		
 		print("%sCurrent: %s%s%s - lvl%s | talent: %s | habs: %s | fights left: %s%s"%(bcolors.BOLD, bcolors.HEADER, fName, bcolors.ENDC, fLevel, fTalent, fHabs, nbFights, bcolors.ENDC))
 		if isOutOfGarden:
@@ -89,7 +94,7 @@ class lwapi:
 			
 		leeksID = {}
 		index = g._LEEK_1_
-		for leekid, leekinfo in farmer['leeks'].items():
+		for leekid, leekinfo in self.farmer['leeks'].items():
 			# saving leek realID
 			leeksID[index] = leekid
 			index += 1
@@ -104,3 +109,7 @@ class lwapi:
 				warn = "%s/!\\%s %s capital points unused %s/!\\%s"%(bcolors.FAIL, bcolors.WARNING, lCapital, bcolors.FAIL, bcolors.ENDC)
 			print("%s - lvl%s | talent: %s %s"%(lName, lLevel, lTalent, warn))
 		return leeksID
+
+	def refresh_account_state(self):
+		r = self.s.post("%s/farmer/login-token/"%self.rooturl, data={'login':self.login,'password':self.password})
+		self.farmer = r.json()['farmer']

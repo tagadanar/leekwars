@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from settings import accounts
-from behavior import behavior
+from behavior import behavior, Todolist
 from utils import bcolors, g
 from lwapi import lwapi
 
@@ -17,19 +17,17 @@ for account in accounts.list:
 	farmer = api.connect(login, password)
 	
 	# welcome & get leeks to realID
-	leeks_to_ID = api.display_welcome(farmer)
+	leeks_to_ID = api.display_status()
 	
-	# get todolist according to behavior
-	todolist = behavior.getTodoList(account, farmer)
+	todolist = Todolist(account, api)
+	for leekid in todolist.getGenerator():
+		is_farmer = leekid == g._FARMER_
+		if is_farmer:
+			fight_id = api.farmer_fight()
+		else:
+			fight_id = api.solo_fight(leeks_to_ID[leekid])
+			
+		api.wait_fight_result(fight_id, is_farmer)
 
-	# processing todolist
-	for leekid, nb_fight in todolist.items():
-		while nb_fight > 0:
-			is_farmer = leekid == g._FARMER_
-			if is_farmer:
-				fight_id = api.farmer_fight()
-			else:
-				fight_id = api.solo_fight(leeks_to_ID[leekid])
-				
-			nb_fight -= 1
-			api.wait_fight_result(fight_id, is_farmer)
+	if account.get('behavior') != behavior.NONE:
+		api.display_status()
