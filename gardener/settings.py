@@ -4,7 +4,12 @@ from utils import g
 #################################################################
 # Declaring accounts
 #################################################################
-
+class switchoff:
+	ON = 'ON'
+	ASK = 'ASK'
+	OFF = 'OFF'
+class mode:
+	mode = switchoff.OFF
 class accounts:
 	list= [
 		{
