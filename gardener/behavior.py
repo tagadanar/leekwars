@@ -2,9 +2,8 @@ from utils import g
 
 class behavior:
 	BALANCED = 'BALANCED' # split fights in 5 for each leeks + farmer
-	EQUALIZE = 'EQUALIZE' # focus on the lowest leek
+	EQUALIZE = 'EQUALIZE' # regroup levels then focus on farmer
 	FARMING  = 'FARMING'  # focus on farmer
-	# EFARMING = 'EFARMING' # TODO regroup levels then focus on farmer
 	TODOLIST = 'TODOLIST' # do the todolist (ignore limit)
 	NONE = 'NONE'
 
@@ -55,30 +54,32 @@ class Todolist:
 	def equalizeGenerator(self):
 		nb = max(self.fights - self.limit, 0)
 		while nb > 0:
-			# TODO refresh leek state after each fight
-
 			# check same level
 			is_same_level = True
-			baselvl = self.api.farmer['leeks'][0].leekinfo['level']
+			baselvl = -1
 			for leekid, leekinfo in self.api.farmer['leeks'].items():
+				if baselvl == -1:
+					baselvl = leekinfo['level']
 				if baselvl != leekinfo['level']:
 					is_same_level = False
 					break
 			if is_same_level:
 				yield g._FARMER_
+				nb -= 1
+			else:
+				# not same lvl, focus on lower
+				index = g._LEEK_1_
+				lowestIndex = g._FARMER_
+				lowestLevel = 302
+				for leekid, leekinfo in self.api.farmer['leeks'].items():
+					lLevel = leekinfo['level']
+					if lowestLevel > lLevel:
+						lowestIndex = index
+						lowestLevel = lLevel
+					index += 1
+				yield lowestIndex
+				nb -= 1
 
-			# not same lvl, focus on lower
-			index = g._LEEK_1_
-			lowestIndex = g._FARMER_
-			lowestLevel = 302
-			for leekid, leekinfo in self.api.farmer['leeks'].items():
-				lLevel = leekinfo['level']
-				if lowestLevel > lLevel:
-					lowestIndex = index
-					lowestLevel = lLevel
-				index += 1
-			yield lowestIndex
-		
 	def farmingGenerator(self):
 		nb = max(self.fights - self.limit, 0)
 		while nb > 0:
