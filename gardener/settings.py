@@ -1,21 +1,16 @@
 from behavior import behavior
-from utils import g
+from utils import g, shutdown
 
 #################################################################
 # Declaring accounts
 #################################################################
-class switchoff:
-	ON = 'ON'
-	ASK = 'ASK'
-	OFF = 'OFF'
-class mode:
-	mode = switchoff.OFF
 class accounts:
+	shutdown = shutdown.OFF
 	list= [
 		{
-			'login': 'myLogin',
+			'login': 'myAccount',
 			'password': 'myPassword',
-			'behavior': behavior.TODOLIST,
+			'behavior': behavior.EQUALIZE,
 			'limit': 50, # if behavior != TODOLIST, how many fights we always keep in stock
 			'todolist': { # only needed if behavior = TODOLIST
 				g._FARMER_: 0,
@@ -26,8 +21,8 @@ class accounts:
 			}
 		},
 		{
-			'login': 'my2ndLogin',
-			'password': 'my2ndPassword',
+			'login': 'myAccount2',
+			'password': 'myPassword2',
 			'behavior': behavior.NONE,
-		},
+		}
 	]

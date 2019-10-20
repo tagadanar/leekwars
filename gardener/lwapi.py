@@ -10,15 +10,15 @@ from utils import bcolors, g
 # leekwars API
 #################################################################
 class lwapi:
-	def __init__(self):
+	def __init__(self, login, password):
+		self.login = login
+		self.password = password
 		self.s = requests.session()
 		self.rooturl = "https://leekwars.com/api"
 
 	# connecting to leekwars
-	def connect(self, login, password):
-		self.login = login
-		self.password = password
-		r = self.s.post("%s/farmer/login-token/"%self.rooturl, data={'login':login,'password':password})
+	def connect(self):
+		r = self.s.post("%s/farmer/login-token/"%self.rooturl, data={'login':self.login,'password':self.password})
 		self.headers = {'Authorization': 'Bearer %s'%r.json()['token']}
 		self.farmer = r.json()['farmer']
 		self.farmer_id = self.farmer['id']
@@ -113,3 +113,10 @@ class lwapi:
 	def refresh_account_state(self):
 		r = self.s.post("%s/farmer/login-token/"%self.rooturl, data={'login':self.login,'password':self.password})
 		self.farmer = r.json()['farmer']
+
+	def spend_capital(self, leekid, stats):
+		'''
+		TODO
+		'''
+		#stats = {"life":0,"strength":2,"wisdom":0,"agility":0,"resistance":0,"frequency":0,"science":0,"magic":0,"tp":0,"mp":0}
+		r = self.s.post("%s/leek/spend-capital/"%self.rooturl, data={'leek':leek_id,'characteristics':stats})

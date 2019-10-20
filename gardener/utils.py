@@ -21,3 +21,8 @@ class g:
 		1: bcolors.OKGREEN+"WIN "+bcolors.ENDC,
 		2: bcolors.FAIL+"LOSE"+bcolors.ENDC,
 	}
+
+class shutdown:
+	ON = 2
+	ASK= 1
+	OFF= 0
