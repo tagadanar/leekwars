@@ -22,7 +22,32 @@ class g:
 		2: bcolors.FAIL+"LOSE"+bcolors.ENDC,
 	}
 
+class behavior:
+	BALANCED = 'BALANCED' # split fights in 5 for each leeks + farmer
+	EQUALIZE = 'EQUALIZE' # regroup levels then focus on farmer
+	FARMING  = 'FARMING'  # focus on farmer
+	TODOLIST = 'TODOLIST' # do the todolist (ignore limit)
+	NONE = 'NONE'
+
 class shutdown:
-	ON = 2
-	ASK= 1
 	OFF= 0
+	ASK= 1
+	ON = 2
+
+class goal:
+	NONE = 'NONE'
+	FOCUS_LIFE = 'life'
+	FOCUS_STRENGTH = 'strength'
+	FOCUS_WISDOM = 'wisdom'
+	FOCUS_AGILITY = 'agility'
+	FOCUS_RESISTANCE = 'resistance'
+	FOCUS_FREQUENCY = 'frequency'
+	FOCUS_SCIENCE = 'science'
+	FOCUS_MAGIC = 'magic'
+	FOCUS_TP = 'tp'
+	FOCUS_MP = 'mp'
+	ADVANCED = { # todo
+		'STR': [
+			{"life":0,"strength":0,"wisdom":0,"agility":0,"resistance":0,"frequency":0,"science":0,"magic":0,"tp":10,"mp":3},
+		]
+	}

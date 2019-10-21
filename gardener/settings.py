@@ -1,10 +1,9 @@
-from behavior import behavior
-from utils import g, shutdown
+from utils import g, behavior, shutdown, goal
 
 #################################################################
 # Declaring accounts
 #################################################################
-class accounts:
+class Accounts:
 	shutdown = shutdown.OFF
 	list= [
 		{
@@ -18,11 +17,17 @@ class accounts:
 				g._LEEK_2_: 0,
 				g._LEEK_3_: 0,
 				g._LEEK_4_: 0,
-			}
+			},
+			'goals': {
+				g._LEEK_1_: goal.NONE,
+				g._LEEK_2_: goal.FOCUS_LIFE,
+				g._LEEK_3_: goal.FOCUS_STRENGTH,
+				g._LEEK_4_: goal.FOCUS_WISDOM,
+			},
 		},
 		{
 			'login': 'myAccount2',
 			'password': 'myPassword2',
 			'behavior': behavior.NONE,
-		}
+		},
 	]

@@ -114,9 +114,14 @@ class lwapi:
 		r = self.s.post("%s/farmer/login-token/"%self.rooturl, data={'login':self.login,'password':self.password})
 		self.farmer = r.json()['farmer']
 
-	def spend_capital(self, leekid, stats):
-		'''
-		TODO
-		'''
-		#stats = {"life":0,"strength":2,"wisdom":0,"agility":0,"resistance":0,"frequency":0,"science":0,"magic":0,"tp":0,"mp":0}
-		r = self.s.post("%s/leek/spend-capital/"%self.rooturl, data={'leek':leek_id,'characteristics':stats})
+	def spend_capital(self, leek_id, stats):
+		r = self.s.post("%s/leek/spend-capital"%self.rooturl, data={'leek':leek_id,'characteristics':stats})
+		if r:
+			print("%s%s%s spent %s"%(bcolors.OKBLUE,self.farmer['leeks'][leek_id]['name'],bcolors.ENDC,stats))
+		else:
+			print("%s%s%s when trying to spend %s on %s"%(bcolors.FAIL,r.json()['error'],bcolors.ENDC,stats,self.farmer['leeks'][leek_id]['name']))
+
+	def get_leek(self, leek_id):
+		r = self.s.get("%s/leek/get/%s"%(self.rooturl,leek_id), data={'leek':leek_id})
+		return r.json()
+		
